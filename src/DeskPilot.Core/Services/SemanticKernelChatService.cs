@@ -47,6 +47,7 @@ public sealed class SemanticKernelChatService : IChatService
     private readonly Kernel _kernel;
     private readonly IToolRegistry _toolRegistry;
     private readonly IToolPermissionService? _permission;
+    private readonly IMemoryStore? _memoryStore;
     private readonly ChatHistory _history = new();
 
     /// <summary>
@@ -59,11 +60,16 @@ public sealed class SemanticKernelChatService : IChatService
     /// </summary>
     public event EventHandler<ToolEventArgs>? ToolInvoked;
 
-    public SemanticKernelChatService(Kernel kernel, IToolRegistry? toolRegistry = null, IToolPermissionService? permission = null)
+    public SemanticKernelChatService(Kernel kernel, IToolRegistry? toolRegistry = null, IToolPermissionService? permission = null, IMemoryStore? memoryStore = null)
     {
         _kernel = kernel;
         _toolRegistry = toolRegistry ?? new ToolRegistry();
         _permission = permission;
+        _memoryStore = memoryStore;
+
+        // v0.7: 从本地加载历史记忆（如果有）
+        LoadHistoryAsync();
+
         _history.AddSystemMessage(BuildSystemPrompt());
 
         // 用 SK 推荐的 FunctionInvocationFilter 监听工具调用
@@ -113,10 +119,70 @@ public sealed class SemanticKernelChatService : IChatService
 
         var assistantMessage = result.Content ?? string.Empty;
         _history.AddAssistantMessage(assistantMessage);
+        SaveHistoryAsync();
         return assistantMessage;
     }
 
     public void Dispose() { /* Kernel 生命周期由 DI 容器管理 */ }
+
+    // ──── v0.7: 本地记忆 ────
+
+    private void LoadHistoryAsync()
+    {
+        if (_memoryStore == null) return;
+
+        try
+        {
+            var task = _memoryStore.LoadAsync();
+            task.Wait();
+            var entries = task.Result;
+            foreach (var e in entries)
+            {
+                var role = e.Role switch
+                {
+                    "user" => AuthorRole.User,
+                    "assistant" => AuthorRole.Assistant,
+                    "tool" => AuthorRole.Tool,
+                    _ => AuthorRole.System
+                };
+                _history.Add(new ChatMessageContent(role, e.Content));
+            }
+        }
+        catch { /* 静默降级：加载失败不影响启动 */ }
+    }
+
+    private void SaveHistoryAsync()
+    {
+        if (_memoryStore == null) return;
+
+        try
+        {
+            var entries = new List<MemoryEntry>(_history.Count);
+            foreach (var msg in _history)
+            {
+                // 跳过 System prompt（每次启动会重新注入）
+                if (msg.Role == AuthorRole.System) continue;
+
+                entries.Add(new MemoryEntry(
+                    msg.Role.Label.ToLowerInvariant(),
+                    msg.Content ?? string.Empty));
+            }
+
+            if (entries.Count > 0)
+                _ = _memoryStore.SaveAsync(entries); // fire-and-forget
+        }
+        catch { /* 静默降级 */ }
+    }
+
+    /// <summary>
+    /// 清空本地记忆（用户手动清空对话时调用）。
+    /// </summary>
+    public void ClearMemory()
+    {
+        _history.Clear();
+        _history.AddSystemMessage(BuildSystemPrompt());
+        _memoryStore?.ClearAsync();
+    }
 
     /// <summary>
     /// 流式对话：逐 token 返回 AI 回复，实现"打字机"效果。
@@ -145,6 +211,7 @@ public sealed class SemanticKernelChatService : IChatService
         }
 
         _history.AddAssistantMessage(fullResponse.ToString());
+        SaveHistoryAsync();
     }
 
     /// <summary>

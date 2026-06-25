@@ -162,5 +162,9 @@ public partial class ChatViewModel : ObservableObject
         Messages.Clear();
         Messages.Add(new ChatMessage("assistant", "对话已清空。有什么可以帮你的？"));
         ToolStatus = string.Empty;
+
+        // v0.7: 同时清空本地持久化记忆
+        if (_chatService is SemanticKernelChatService sk)
+            sk.ClearMemory();
     }
 }

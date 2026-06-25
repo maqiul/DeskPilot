@@ -170,9 +170,12 @@ public partial class App : Application
         var permService = new ToolPermissionService();
         services.AddSingleton<IToolPermissionService>(permService);
 
+        // v0.7: 本地记忆存储
+        services.AddSingleton<IMemoryStore>(new LocalJsonMemoryStore());
+
         // IChatService 用工厂模式，支持运行时重建
         services.AddSingleton<IChatService>(sp =>
-            CreateChatService(sp.GetRequiredService<AppSettings>(), permService));
+            CreateChatService(sp.GetRequiredService<AppSettings>(), permService, sp.GetRequiredService<IMemoryStore>()));
 
         Services = services.BuildServiceProvider();
 
@@ -185,7 +188,7 @@ public partial class App : Application
             CopySettings(newSettings, oldSettings);
 
             // 重建 IChatService（直接 Dispose 旧的 Kernel）
-            var newChatService = CreateChatService(newSettings, Services.GetRequiredService<IToolPermissionService>());
+            var newChatService = CreateChatService(newSettings, Services.GetRequiredService<IToolPermissionService>(), Services.GetRequiredService<IMemoryStore>());
             var oldChatService = Services.GetService<IChatService>();
             (oldChatService as IDisposable)?.Dispose();
 
@@ -262,7 +265,7 @@ public partial class App : Application
     /// <summary>
     /// 根据当前设置创建 ChatService。
     /// </summary>
-    private IChatService CreateChatService(AppSettings settings, IToolPermissionService permission)
+    private IChatService CreateChatService(AppSettings settings, IToolPermissionService permission, IMemoryStore memoryStore)
     {
         var kernelBuilder = Kernel.CreateBuilder();
 
@@ -301,7 +304,7 @@ public partial class App : Application
             kernel.Plugins.Add(plugin);
         }
 
-        return new SemanticKernelChatService(kernel, toolRegistry, permission);
+        return new SemanticKernelChatService(kernel, toolRegistry, permission, memoryStore);
     }
 
     private static void CopySettings(AppSettings src, AppSettings dst)
