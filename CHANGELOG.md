@@ -1,86 +1,134 @@
-# 更新日志
+# 📝 Changelog
 
-所有显著的更改都将记录在此文件中。
+DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
-格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
-本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+## [v0.2.0] - 2026-06-25
 
-## [Unreleased]
+### 🎉 新增功能
 
-### 🎉 新增
+#### 3 个新 MCP 工具
+- **MoveFilesTool** (`move_files`) - 批量移动文件
+  - 支持 glob 过滤（如 `*.pdf`）
+  - 可选递归子目录
+  - 自动创建目标目录
+  - Collision 自动加 `_2`/`_3` 后缀
+- **FindDuplicatesTool** (`find_duplicates`) - 查找内容完全相同的文件
+  - 按 SHA256 哈希判断（先按 size 预筛提速）
+  - 报告浪费空间（可清理多少 MB）
+  - 可选递归 + 最小文件大小过滤
+- **RenameByPatternTool** (`rename_by_pattern`) - 批量重命名
+  - 正则替换（支持 `$1`/`$2` 捕获组）
+  - 前缀/后缀添加
+  - DryRun 模式（只预览不重命名）
+  - 3 种模式可组合使用
 
-- **v0.1.2 — GitHub 上线 + E2E 验证工具**
-  - **GitHub 仓库上线**：[https://github.com/maqiul/DeskPilot](https://github.com/maqiul/DeskPilot)
-  - 推送全部 commits + tags（v0.0.3, v0.1.0, v0.1.1）
-  - **`DeskPilot.Verify` 项目**：无需 API Key 的 E2E 工具验证程序
-    - 控制台交互：DryRun 预览 → 确认 → 真实归档 → 验证结果
-    - 验证流程：扫描原始文件 → 列出修改/创建时间 → DryRun 预览 → 真实归档 → 检查 archive/ 子目录
-    - 支持参数：`[sourceDir] [granularity] [dateField] [--no]`
-    - E2E 实测结果：5 个发票文件 → `archive/2026-06/` 子目录 ✅
-  - **`publish-to-github.bat`** 推送向导（已用完，可删除）
+#### UI 进度展示
+- `ChatViewModel` 新增 `ToolStatus` 字段（底部状态栏）
+- `SemanticKernelChatService` 暴露 `ToolInvoking`/`ToolInvoked` 事件
+- 使用 SK 1.32 推荐的 `IFunctionInvocationFilter`（替代过时的 events API）
+- 工具调用时状态栏实时显示：
+  - `🔧 正在调用 archive_files_by_date...`
+  - `✅ archive_files_by_date 完成 (123ms)`
+- WPF 状态栏带 ⚙️ 图标 + 蚂蚁灰文字 + 边框
 
-### 🛠️ v0.1.1 之前的版本
+### 🛠️ 改进
+- `DeskPilot.Verify` 程序扩展为 4 工具统一 E2E 验证
+  - 支持 `--tool <name>` 指定单个工具
+  - 支持 `--no` DryRun 模式
+  - 真实执行 + 总结报告
 
-- **v0.1.1 — AI 自动调用工具（Tool Calling 闭环）**
-  - `ToolRegistry` 工具注册中心（`IToolRegistry` 接口 + 实现）
-    - `Register()` 验证工具必须有 `[KernelFunction]` 方法
-    - `CreateKernelPlugins()` 把工具打包为 SK 的 `KernelPlugin` 列表
-    - `ListTools()` 返回描述符（含 schema + function 数量）
+### 📦 项目变更
+- 4 个工具统一注册到 `App.xaml.cs` DI 容器
+- AI 系统 prompt 自动列出 4 个工具描述
+
+### ✅ 测试
+- **104/104 全过**（从 v0.1.2 的 73 → 104，+31）
+  - `MoveFilesToolTests`: 7 个
+  - `FindDuplicatesToolTests`: 10 个
+  - `RenameByPatternToolTests`: 11 个
+  - `ToolEventArgsTests`: 3 个
+- 0 警告 0 错误
+
+### 📊 E2E 验证（DeskPilot.Verify）
+- 4 工具在真实文件系统上端到端通过
+  - ArchiveByDate: 3 文件 → 按月归档 ✅
+  - MoveFiles: 3 文件 → move_dst ✅
+  - FindDuplicates: 找到 1 组重复 ✅
+  - RenameByPattern: IMG_001~003 → photo_001~003 ✅
+
+---
+
+## [v0.1.2] - 2026-06-25
+
+### 🎉 新增功能
+- **GitHub 公开仓库上线**：https://github.com/maqiul/DeskPilot
+  - 推送 master + 4 tags (v0.0.3, v0.1.0, v0.1.1, v0.1.2)
+  - CI workflow + Issue 模板 + Contributing 指南
+- **DeskPilot.Verify 项目**：离线 E2E 验证程序
+  - 无需 API Key，直接跑工具看真实效果
+  - 用法：`dotnet run --project src/DeskPilot.Verify -- <sourceDir> [granularity] [dateField] [--no]`
+
+### ✅ 测试
+- 73/73 全过（v0.1.1 → v0.1.2 测试无变化）
+
+---
+
+## [v0.1.1] - 2026-06-25
+
+### 🎉 新增功能
+- **AI 自动调用工具闭环**
+  - `IToolRegistry` + `ToolRegistry` 工具注册中心
   - `ArchiveByDateTool` 加 `[KernelFunction("archive_by_date")]` 标注
-    - SK 自动识别为可调用 function（参数自动推断 schema）
-    - 强类型参数 → JSON → 走 `ITool.ExecuteAsync` 单一实现路径
-  - `SemanticKernelChatService` 启用 `FunctionChoiceBehavior.Auto()`
-    - 系统 prompt 自动包含工具清单
-    - SK 1.32 自动处理 tool calling 循环（无需手动循环）
-  - `App.xaml.cs` DI 注册 `IToolRegistry` + 创建 Kernel 后注入工具 plugin
-  - **新增 14 个单元测试**（ToolRegistry 7 + ChatService 7）
-  - **测试统计**：59 → **73 测试**
+  - `SemanticKernelChatService` 启用 `FunctionChoiceBehavior.Auto()`（SK 自动处理 tool calling 循环）
+  - `App.xaml.cs` DI 注入工具到 Kernel
+- **杀手锏工作流**：用户说"把 D:\发票 按月归档" → AI 自动调工具 → 报告
 
-### 🛠️ v0.1 之前的版本
+### ✅ 测试
+- 73/73 全过（v0.1.0 → v0.1.1，+14 测试）
 
-- **v0.1 — 第一个 MCP 工具：按日期归档文件**
-- **v0.0.3 — 动态模型列表（UI 闭环）**
+---
 
-### 🐛 修复
+## [v0.1.0] - 2026-06-25
 
-- **`dotnet test` 缓存旧版 App.dll 导致测试与代码错位**：新增 `clean.bat` 一键清 bin/obj + 重建
-- `SecureSettingsService.Load` 的 `catch` 收紧为只捕获 `CryptographicException`，让其他异常可见
-- `SettingsFilePath_IsUnderAppData` 用 `Assert.EndsWith` 消除 xUnit2009 警告
+### 🎉 新增功能
+- **第一个 MCP 工具**：`ArchiveByDateTool`（按日期归档）
+  - `ITool` + `ToolResult` 统一抽象
+  - 按修改/创建时间 + 年/月/日粒度归档
+  - DryRun / glob 过滤 / 自定义目标 / collision 处理
 
-## [0.0.2] - 2026-06-25
+### ✅ 测试
+- 59/59 全过（+13 测试）
 
-### 🎉 新增
+---
 
-- **设置窗口**：UI 配置 Provider / API Key / Model（不再手动改 .env）
-- **DPAPI 加密存储**：API Key 等敏感信息用 Windows DPAPI 加密到 `%APPDATA%\DeskPilot\settings.dat`
-- **动态重建**：切换 Provider 不重启，自动重建 Kernel 和 ChatService
-- **`SettingsViewModel`** + **可注入 Action 模式**（测试不依赖 WPF STA）
-- **测试覆盖**：从 3 个测试 → 24 个（新增 SettingsViewModel 12 + SecureSettingsService 9）
+## [v0.0.3] - 2026-06-25
 
-### 🛠️ 技术栈新增
+### 🎉 新增功能
+- **动态模型列表 UI 闭环**
+  - 设置窗口的"🔄 刷新模型列表"按钮
+  - `OpenAIModelLister` / `DeepSeekModelLister` / `OllamaModelLister` 三个动态 Lister
+  - 静态兜底（OpenAI 6 + DeepSeek 3）
+  - 错误吞咽策略（网络错误返回空列表）
 
-- `Microsoft.Extensions.Configuration.{Json,EnvironmentVariables,UserSecrets} 10.0.9`
-- `Microsoft.Extensions.DependencyInjection 10.0.9`
+### ✅ 测试
+- 46/46 全过
 
-## [0.0.1] - 2026-06-25
+---
 
-### 🎉 新增
+## [v0.0.2] - 2026-06-25
 
-- 首个 MVP 版本发布
-- 智能问答窗口，支持多 AI Provider（OpenAI / DeepSeek / Ollama）
+### 🎉 新增功能
+- **多 AI Provider 支持**：OpenAI / DeepSeek / Ollama
+- **4 种配置方式**：.env / User Secrets / 环境变量 / DPAPI 加密
+- **设置窗口**：UI 配置 Provider/Key/Model
+- **DPAPI 加密**：`%APPDATA%\DeskPilot\settings.dat`
+
+---
+
+## [v0.0.1] - 2026-06-25
+
+### 🎉 首个发布
+- 项目骨架 + WPF 聊天窗口
+- Semantic Kernel 集成 + 蚂蚁金服橙配色
 - MVVM 架构（CommunityToolkit.Mvvm）
-- 三种配置方式：.env 文件 / User Secrets / 环境变量
-- 缺 Key 时友好弹窗提示
-- 一键启动脚本（run.bat）
-- 单元测试覆盖（3 个测试用例）
-
-### 🛠️ 技术栈
-
-- .NET 8 + WPF
-- Semantic Kernel 1.32.0
-- CommunityToolkit.Mvvm 8.4.2
-- DotNetEnv 3.2.0
-- xUnit + 自写 Stub
-
-[Unreleased]: https://github.com/yourname/deskpilot/compare/v0.0.1...HEAD
-[0.0.1]: https://github.com/yourname/deskpilot/releases/tag/v0.0.1
+- 完整 CI 文档

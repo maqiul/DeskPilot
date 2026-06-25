@@ -6,7 +6,7 @@
 [![WPF](https://img.shields.io/badge/WPF-Windows-0078D4)](https://github.com/dotnet/wpf)
 [![Semantic Kernel](https://img.shields.io/badge/Semantic%20Kernel-AI-FF6F00)](https://github.com/microsoft/semantic-kernel)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](.github/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-73%20passed-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-104%20passed-brightgreen)](#)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 

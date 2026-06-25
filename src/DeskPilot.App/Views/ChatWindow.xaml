@@ -16,6 +16,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- 顶部标题栏 -->
@@ -123,6 +124,19 @@
                 <ProgressBar IsIndeterminate="True" Width="80" Height="4"
                              Foreground="{StaticResource PrimaryBrush}" BorderThickness="0"/>
                 <TextBlock Text="AI 思考中..." Margin="8,0,0,0"
+                           Foreground="{StaticResource SecondaryTextBrush}"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- 工具状态栏（显示当前工具调用状态） -->
+        <Border Grid.Row="3" Background="{StaticResource BackgroundBrush}"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"
+                Padding="16,6"
+                Visibility="{Binding ToolStatus, Converter={x:Static local:StringToVisibilityConverter.Instance}}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="⚙️" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBlock Text="{Binding ToolStatus}" FontSize="12"
                            Foreground="{StaticResource SecondaryTextBrush}"
                            VerticalAlignment="Center"/>
             </StackPanel>

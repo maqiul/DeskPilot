@@ -82,7 +82,14 @@ public partial class App : Application
         services.AddSingleton<IToolRegistry>(sp =>
         {
             var registry = new ToolRegistry();
+            // v0.1: 按日期归档
             registry.Register(new ArchiveByDateTool());
+            // v0.2: 批量移动
+            registry.Register(new MoveFilesTool());
+            // v0.2: 找重复文件
+            registry.Register(new FindDuplicatesTool());
+            // v0.2: 批量重命名
+            registry.Register(new RenameByPatternTool());
             return registry;
         });
 

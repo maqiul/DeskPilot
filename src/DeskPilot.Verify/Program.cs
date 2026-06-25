@@ -6,138 +6,179 @@ namespace DeskPilot.Verify;
 /// <summary>
 /// DeskPilot 工具离线验证程序。
 ///
-/// 用途：在没有 API Key 的情况下，端到端验证 ArchiveByDateTool 的真实归档行为。
+/// 用途：在没有 API Key 的情况下，端到端验证 4 个核心工具的真实行为：
+/// 1. ArchiveByDateTool（按日期归档）
+/// 2. MoveFilesTool（批量移动）
+/// 3. FindDuplicatesTool（找重复文件）
+/// 4. RenameByPatternTool（批量重命名）
+///
 /// 用法：
-///   dotnet run --project src/DeskPilot.Verify -- "D:\deskpilot_e2e_test\invoices" Month Created
+///   dotnet run --project src/DeskPilot.Verify -- "D:\deskpilot_e2e_test"
+///   dotnet run --project src/DeskPilot.Verify -- "D:\deskpilot_e2e_test" --no
 /// </summary>
 internal static class Program
 {
     private static async Task<int> Main(string[] args)
     {
         Console.WriteLine("=========================================");
-        Console.WriteLine("  DeskPilot 工具验证程序 v0.1.1");
+        Console.WriteLine("  DeskPilot 工具验证程序 v0.2");
         Console.WriteLine("=========================================");
         Console.WriteLine();
 
-        // 默认参数
-        var sourceDir = args.Length > 0 ? args[0] : @"D:\deskpilot_e2e_test\invoices";
-        var granularity = args.Length > 1 ? args[1] : "Month";
-        var dateField = args.Length > 2 ? args[2] : "Created";
+        var sourceDir = args.Length > 0 ? args[0] : @"D:\deskpilot_e2e_test";
+        var dryRunOnly = args.Contains("--no");
+        var specificTool = GetArgValue(args, "--tool");
 
-        Console.WriteLine($"📂 源目录:   {sourceDir}");
-        Console.WriteLine($"📅 日期字段: {dateField}");
-        Console.WriteLine($"📊 粒度:     {granularity}");
+        Console.WriteLine($"📂 工作目录: {sourceDir}");
+        Console.WriteLine($"🔍 模式: {(dryRunOnly ? "DryRun 预览（不修改）" : "真实执行")}");
+        if (specificTool != null) Console.WriteLine($"🛠️  指定工具: {specificTool}");
         Console.WriteLine();
 
-        // 1) 检查源目录
         if (!Directory.Exists(sourceDir))
         {
-            Console.WriteLine($"❌ 源目录不存在: {sourceDir}");
+            Console.WriteLine($"❌ 工作目录不存在: {sourceDir}");
             return 1;
         }
 
-        // 2) 列出原始文件
-        var originalFiles = Directory.GetFiles(sourceDir);
-        Console.WriteLine($"📄 原始文件数: {originalFiles.Length}");
-        foreach (var f in originalFiles)
+        var results = new List<(string tool, bool success, string summary)>();
+
+        // ========== 1. ArchiveByDateTool ==========
+        if (ShouldRun(specificTool, "archive"))
+            results.Add(await TestArchiveByDate(sourceDir, dryRunOnly));
+
+        // ========== 2. MoveFilesTool ==========
+        if (ShouldRun(specificTool, "move"))
+            results.Add(await TestMoveFiles(sourceDir, dryRunOnly));
+
+        // ========== 3. FindDuplicatesTool ==========
+        if (ShouldRun(specificTool, "find"))
+            results.Add(await TestFindDuplicates(sourceDir));
+
+        // ========== 4. RenameByPatternTool ==========
+        if (ShouldRun(specificTool, "rename"))
+            results.Add(await TestRenameByPattern(sourceDir, dryRunOnly));
+
+        // ========== 总结 ==========
+        Console.WriteLine();
+        Console.WriteLine("=========================================");
+        Console.WriteLine("  📊 验证总结");
+        Console.WriteLine("=========================================");
+        foreach (var (tool, success, summary) in results)
         {
-            var created = File.GetCreationTime(f);
-            var modified = File.GetLastWriteTime(f);
-            Console.WriteLine($"   - {Path.GetFileName(f),-20} 创建:{created:yyyy-MM-dd HH:mm} 修改:{modified:yyyy-MM-dd HH:mm}");
+            var icon = success ? "✅" : "❌";
+            Console.WriteLine($"  {icon} {tool,-30} {summary}");
         }
         Console.WriteLine();
+        var allOk = results.All(r => r.success);
+        Console.WriteLine(allOk ? "  🎉 全部通过" : "  ⚠️  有失败");
+        Console.WriteLine("=========================================");
+        return allOk ? 0 : 1;
+    }
 
-        // 3) DryRun 预览
-        Console.WriteLine("━━━ Step 1: DryRun 预览 ━━━");
+    private static string? GetArgValue(string[] args, string flag)
+    {
+        var idx = Array.IndexOf(args, flag);
+        if (idx >= 0 && idx + 1 < args.Length) return args[idx + 1];
+        return null;
+    }
+
+    private static bool ShouldRun(string? specific, string name)
+        => specific == null || string.Equals(specific, name, StringComparison.OrdinalIgnoreCase);
+
+    private static async Task<(string tool, bool success, string summary)> TestArchiveByDate(string sourceDir, bool dryRunOnly)
+    {
+        Console.WriteLine("━━━ [1/4] ArchiveByDateTool: 按月归档 ━━━");
         var tool = new ArchiveByDateTool();
-        var dryRunArgs = JsonSerializer.Serialize(new
+        var args = JsonSerializer.Serialize(new
         {
             sourceDirectory = sourceDir,
-            dateField,
-            granularity,
-            dryRun = true
+            dateField = "Created",
+            granularity = "Month",
+            dryRun = dryRunOnly
         });
-        var dryRunResult = await tool.ExecuteAsync(dryRunArgs);
-        Console.WriteLine(dryRunResult.Success ? "✅" : "❌");
-        Console.WriteLine(dryRunResult.Summary);
-        if (dryRunResult.Data is ArchiveReport dryReport)
-        {
-            Console.WriteLine($"   扫描: {dryReport.Scanned}, 将移动: {dryReport.WouldMove}, 子目录: {dryReport.Subdirectories}");
-            foreach (var d in dryReport.Details.Take(5))
-            {
-                Console.WriteLine($"   · {Path.GetFileName(d.SourcePath)} → {Path.GetFileName(Path.GetDirectoryName(d.TargetPath))}");
-            }
-            if (dryReport.Details.Count > 5)
-                Console.WriteLine($"   ... 还有 {dryReport.Details.Count - 5} 个");
-        }
+        var result = await tool.ExecuteAsync(args);
+        var data = result.Data as ArchiveReport;
+        var summary = data != null
+            ? $"扫描 {data.Scanned}, 移动 {data.Moved}, 失败 {data.Failed}"
+            : result.Summary;
+        Console.WriteLine($"  {result.Summary}");
+        Console.WriteLine($"  📊 {summary}");
         Console.WriteLine();
+        return ("ArchiveByDateTool", result.Success, summary);
+    }
 
-        // 4) 真实归档（自动确认模式：除非传 --no 跳过）
-        if (args.Contains("--no"))
-        {
-            Console.WriteLine("⏸️  --no 模式，跳过真实归档");
-            return 0;
-        }
-        Console.WriteLine("▶️  执行真实归档（自动确认模式）...");
+    private static async Task<(string tool, bool success, string summary)> TestMoveFiles(string sourceDir, bool dryRunOnly)
+    {
+        Console.WriteLine("━━━ [2/4] MoveFilesTool: 批量移动 ━━━");
+        // 准备：在 sourceDir/move_src 里放 3 个测试文件，移到 sourceDir/move_dst
+        var src = Path.Combine(sourceDir, "move_src");
+        var dst = Path.Combine(sourceDir, "move_dst");
+        if (!Directory.Exists(src)) Directory.CreateDirectory(src);
+        if (!Directory.Exists(dst)) Directory.CreateDirectory(dst);
+        for (int i = 1; i <= 3; i++)
+            File.WriteAllText(Path.Combine(src, $"file_{i}.txt"), $"content {i}");
+
+        var tool = new MoveFilesTool();
+        var args = JsonSerializer.Serialize(new { sourceDirectory = src, targetDirectory = dst });
+        var result = await tool.ExecuteAsync(args);
+        var data = result.Data as MoveReport;
+        var summary = data != null
+            ? $"扫描 {data.Scanned}, 移动 {data.Moved}, 失败 {data.Failed}"
+            : result.Summary;
+        Console.WriteLine($"  {result.Summary}");
+        Console.WriteLine($"  📊 {summary}");
         Console.WriteLine();
+        return ("MoveFilesTool", result.Success, summary);
+    }
 
-        Console.WriteLine("━━━ Step 2: 真实归档 ━━━");
-        var realArgs = JsonSerializer.Serialize(new
+    private static async Task<(string tool, bool success, string summary)> TestFindDuplicates(string sourceDir)
+    {
+        Console.WriteLine("━━━ [3/4] FindDuplicatesTool: 找重复 ━━━");
+        // 准备：3 个文件，其中 2 个内容相同
+        var dir = Path.Combine(sourceDir, "dup_test");
+        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "a.txt"), "hello world");
+        File.WriteAllText(Path.Combine(dir, "b.txt"), "hello world");
+        File.WriteAllText(Path.Combine(dir, "c.txt"), "different");
+
+        var tool = new FindDuplicatesTool();
+        var args = JsonSerializer.Serialize(new { directory = dir });
+        var result = await tool.ExecuteAsync(args);
+        var data = result.Data as DuplicateReport;
+        var summary = data != null
+            ? $"扫描 {data.Scanned}, 重复组 {data.DuplicateGroups}, 重复文件 {data.DuplicateFiles}"
+            : result.Summary;
+        Console.WriteLine($"  {result.Summary}");
+        Console.WriteLine($"  📊 {summary}");
+        Console.WriteLine();
+        return ("FindDuplicatesTool", result.Success, summary);
+    }
+
+    private static async Task<(string tool, bool success, string summary)> TestRenameByPattern(string sourceDir, bool dryRunOnly)
+    {
+        Console.WriteLine("━━━ [4/4] RenameByPatternTool: 批量重命名 ━━━");
+        // 准备：3 个 IMG_xxx.jpg，用正则改成 photo_xxx.jpg
+        var dir = Path.Combine(sourceDir, "rename_test");
+        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+        for (int i = 1; i <= 3; i++)
+            File.WriteAllText(Path.Combine(dir, $"IMG_{i:D3}.jpg"), $"image {i}");
+
+        var tool = new RenameByPatternTool();
+        var args = JsonSerializer.Serialize(new
         {
-            sourceDirectory = sourceDir,
-            dateField,
-            granularity,
-            dryRun = false
+            directory = dir,
+            find = "IMG_",
+            replace = "photo_",
+            dryRun = dryRunOnly
         });
-        var realResult = await tool.ExecuteAsync(realArgs);
-        Console.WriteLine(realResult.Success ? "✅" : "❌");
-        Console.WriteLine(realResult.Summary);
-
+        var result = await tool.ExecuteAsync(args);
+        var data = result.Data as RenameReport;
+        var summary = data != null
+            ? $"扫描 {data.Scanned}, 重命名 {data.Renamed}, 失败 {data.Failed}"
+            : result.Summary;
+        Console.WriteLine($"  {result.Summary}");
+        Console.WriteLine($"  📊 {summary}");
         Console.WriteLine();
-
-        // 5) 验证归档结果
-        Console.WriteLine("━━━ Step 3: 验证归档结果 ━━━");
-        var archiveDir = Path.Combine(sourceDir, "archive");
-        if (Directory.Exists(archiveDir))
-        {
-            var subDirs = Directory.GetDirectories(archiveDir);
-            Console.WriteLine($"📂 archive/ 下有 {subDirs.Length} 个子目录:");
-            foreach (var sub in subDirs.OrderBy(s => s))
-            {
-                var dirName = Path.GetFileName(sub);
-                var files = Directory.GetFiles(sub);
-                Console.WriteLine($"   📁 {dirName}/ ({files.Length} 个文件)");
-                foreach (var f in files)
-                {
-                    Console.WriteLine($"      - {Path.GetFileName(f)}");
-                }
-            }
-
-            // 验证源目录已清空
-            var remainingFiles = Directory.GetFiles(sourceDir);
-            if (remainingFiles.Length == 0)
-            {
-                Console.WriteLine();
-                Console.WriteLine("✅ 源目录已全部清空，所有文件已归档");
-            }
-            else
-            {
-                Console.WriteLine();
-                Console.WriteLine($"⚠️  源目录还有 {remainingFiles.Length} 个文件未归档:");
-                foreach (var f in remainingFiles)
-                    Console.WriteLine($"   - {Path.GetFileName(f)}");
-            }
-        }
-        else
-        {
-            Console.WriteLine("❌ archive/ 目录未创建！");
-            return 1;
-        }
-
-        Console.WriteLine();
-        Console.WriteLine("=========================================");
-        Console.WriteLine("  ✅ 验证完成");
-        Console.WriteLine("=========================================");
-        return 0;
+        return ("RenameByPatternTool", result.Success, summary);
     }
 }

@@ -2,10 +2,31 @@ using DeskPilot.Core.Tools;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace DeskPilot.Core.Services;
+
+/// <summary>
+/// 工具调用事件参数。
+/// </summary>
+public sealed class ToolEventArgs : EventArgs
+{
+    public string ToolName { get; }
+    public bool Success { get; }
+    public long ElapsedMs { get; }
+    public string? Detail { get; }
+
+    public ToolEventArgs(string toolName, bool success, long elapsedMs, string? detail = null)
+    {
+        ToolName = toolName;
+        Success = success;
+        ElapsedMs = elapsedMs;
+        Detail = detail;
+    }
+}
 
 /// <summary>
 /// 基于 Semantic Kernel 的聊天服务。
@@ -14,6 +35,8 @@ namespace DeskPilot.Core.Services;
 /// - 启用 FunctionChoiceBehavior.Auto() 后，SK 自动决定何时调工具
 /// - SK 自动执行工具 + 把结果塞回 ChatHistory + 让 AI 生成自然语言响应
 /// - 我们只管调用 + 拿最终响应，不手动循环
+/// - 通过 SK 的 FunctionInvocationFilter（推荐做法，替代过时的 events）暴露
+///   ToolInvoking / ToolInvoked 事件给上层（UI 层）用来显示实时状态
 /// </summary>
 public sealed class SemanticKernelChatService : IChatService
 {
@@ -21,11 +44,25 @@ public sealed class SemanticKernelChatService : IChatService
     private readonly IToolRegistry _toolRegistry;
     private readonly ChatHistory _history = new();
 
+    /// <summary>
+    /// 工具开始调用前触发。供 UI 显示"🔧 正在调用 xxx..."
+    /// </summary>
+    public event EventHandler<ToolEventArgs>? ToolInvoking;
+
+    /// <summary>
+    /// 工具调用完成后触发（无论成功失败）。供 UI 显示"✅ xxx 完成 (123ms)"。
+    /// </summary>
+    public event EventHandler<ToolEventArgs>? ToolInvoked;
+
     public SemanticKernelChatService(Kernel kernel, IToolRegistry? toolRegistry = null)
     {
         _kernel = kernel;
         _toolRegistry = toolRegistry ?? new ToolRegistry();
         _history.AddSystemMessage(BuildSystemPrompt());
+
+        // 用 SK 推荐的 FunctionInvocationFilter 监听工具调用
+        // 替代过时的 Kernel.FunctionInvoking/FunctionInvoked events
+        _kernel.FunctionInvocationFilters.Add(new ToolCallObserver(this));
     }
 
     private string BuildSystemPrompt()
@@ -71,5 +108,36 @@ public sealed class SemanticKernelChatService : IChatService
         var assistantMessage = result.Content ?? string.Empty;
         _history.AddAssistantMessage(assistantMessage);
         return assistantMessage;
+    }
+
+    /// <summary>
+    /// 工具调用观察者：把 SK 的 FunctionInvocationFilter 转成我们自己的事件。
+    /// </summary>
+    private sealed class ToolCallObserver : IFunctionInvocationFilter
+    {
+        private readonly SemanticKernelChatService _owner;
+
+        public ToolCallObserver(SemanticKernelChatService owner) => _owner = owner;
+
+        public async Task OnFunctionInvocationAsync(FunctionInvocationContext context, Func<FunctionInvocationContext, Task> next)
+        {
+            var name = context.Function.Name;
+            var sw = Stopwatch.StartNew();
+
+            _owner.ToolInvoking?.Invoke(_owner, new ToolEventArgs(name, true, 0, "Invoking"));
+
+            try
+            {
+                await next(context).ConfigureAwait(false);
+                sw.Stop();
+                _owner.ToolInvoked?.Invoke(_owner, new ToolEventArgs(name, true, sw.ElapsedMilliseconds, "Invoked"));
+            }
+            catch
+            {
+                sw.Stop();
+                _owner.ToolInvoked?.Invoke(_owner, new ToolEventArgs(name, false, sw.ElapsedMilliseconds, "Failed"));
+                throw;
+            }
+        }
     }
 }
