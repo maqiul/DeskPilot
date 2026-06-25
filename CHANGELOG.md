@@ -2,6 +2,58 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.3.0] - 2026-06-25
+
+### 🎉 新增功能
+
+#### MCP Server 封装（杀手锏新方向）
+- **新项目**：`src/DeskPilot.Mcp/` —— .NET 8 控制台 stdio MCP server
+- **4 个工具暴露**：archive_files_by_date / move_files / find_duplicates / rename_by_pattern
+- **外部 AI 客户端可接入**：
+  - Claude Desktop（JSON 配置文件）
+  - Cursor
+  - Continue.dev
+  - 任何支持 MCP 协议的 AI 客户端
+- **设计**：
+  - 每个工具一个 `[McpServerTool]` 方法（强类型参数 + /// XML doc comment 描述）
+  - 内部转 JSON 调 `ITool.ExecuteAsync` —— 零业务逻辑，全部复用现有工具
+  - 日志走 stderr（避免污染 JSON-RPC 协议）
+  - 用 `ModelContextProtocol 0.3.0-preview.4` SDK
+
+#### MCP Server 端到端测试
+- `McpServerTests` (3 个)：
+  - `Server_Initialize_ReturnsServerInfo` — 握手成功
+  - `Server_ToolsList_Returns4Tools` — 4 个工具全部注册
+  - `Server_ToolsCall_FindDuplicates_ReturnsResult` — 真实调用 find_duplicates
+- **真实启停 Mcp server 进程 + stdio JSON-RPC 通信**
+
+### 📦 项目变更
+- `DeskPilot.Mcp` 加入 `DeskPilot.slnx`
+- 4 → **5 个项目**（Core/App/Tests/Verify/Mcp）
+
+### ✅ 测试
+- **107/107 全过**（v0.2.0 → v0.3.0，+3 MCP E2E）
+
+### 🔧 集成示例（Claude Desktop）
+
+`%APPDATA%\Claude\claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "deskpilot": {
+      "command": "dotnet",
+      "args": ["run", "--project", "D:\\opensource\\DeskPilot\\src\\DeskPilot.Mcp"]
+    }
+  }
+}
+```
+
+之后在 Claude Desktop 就能直接说：
+- "用 DeskPilot 把我桌面上重复的文件找出来"
+- "把 D:\\发票 按月归档"
+
+---
+
 ## [v0.2.0] - 2026-06-25
 
 ### 🎉 新增功能
