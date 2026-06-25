@@ -2,6 +2,18 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.7.0] - 2026-06-25
+
+### 🧠 新增功能
+
+#### 本地记忆持久化：AI 跨会话记住你
+- **`IMemoryStore`** 接口：抽象记忆存储（支持未来扩展 SQLite/云同步）
+- **`LocalJsonMemoryStore`**：JSON 文件存储（`%AppData%/DeskPilot/memory.json`）
+- **自动保存**：每次对话后自动保存，最多保留 100 条消息
+- **启动恢复**：打开 DeskPilot 后 AI 自动加载上次对话上下文
+- **清空功能**：点"清空对话"按钮同时删除本地记忆文件
+- **容错**：文件损坏自动备份 + 降级（不影响启动）
+
 ## [v0.6.0] - 2026-06-25
 
 ### 🛡️ 新增功能
