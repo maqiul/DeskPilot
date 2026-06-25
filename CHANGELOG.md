@@ -2,7 +2,41 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
-## [v0.3.0] - 2026-06-25
+## [v0.5.1] - 2026-06-25
+
+### 🎉 新增功能
+
+#### AI 流式输出（打字机效果）
+- **IChatService 新增 `ChatStreamAsync`**：`IAsyncEnumerable<string>` 逐 token 返回
+- **SK 流式 API**：`GetStreamingChatMessageContentsAsync` + `FunctionChoiceBehavior.Auto()`
+  - Tool Calling 自动处理——工具先内部执行，后流式输出最终 LLM 回复
+- **ChatViewModel 改造**：先插入空 assistant 气泡 → 逐片追加 → 打字机效果
+- **取消键优化**：取消后消息气泡保留已输出的内容 + `⏸️ 已取消`
+
+#### CI 启动 smoke test（防 XAML 崩溃回归）
+- `DESKPILOT_SMOKE_TEST=1` 环境变量触发简化启动路径
+- `StubChatService`：不调 AI，直接走完 XAML 解析 → DI 注入 → 窗口创建全链路
+- 自动 `Shutdown(0)` 退出：exit 0 = 通过，exit 2 = 崩溃
+
+### 🔧 改进
+- `IChatService` 继承 `IDisposable`（统一生命周期管理）
+- `ci.yml` smoke test 改用 `DESKPILOT_SMOKE_TEST=1` + `-Wait` 模式（替代旧的手动 kill）
+
+## [v0.5.0] - 2026-06-25
+
+### 🎉 新增功能
+
+#### 7 工具矩阵（4 → 7）
+- **BatchResizeImageTool**：批量缩放图片（依赖 System.Drawing.Common）
+- **ExtractArchiveTool**：解压 zip 文件（System.IO.Compression 内置）
+- **HashFilesTool**：计算文件哈希（SHA256/SHA1/MD5 等，无额外依赖）
+- **MCP Server 同步更新**：4 → 7 工具暴露
+
+#### 修复 WPF 启动崩溃
+- **根因**：`App.xaml` 残留 `StartupUri="Views/ChatWindow.xaml"` 导致无参构造 XamlParseException
+- **修复**：移除 StartupUri，全走 DI 构造
+
+#### 全部历史版本见下文
 
 ### 🎉 新增功能
 

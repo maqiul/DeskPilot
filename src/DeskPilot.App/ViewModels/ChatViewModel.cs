@@ -112,17 +112,35 @@ public partial class ChatViewModel : ObservableObject
 
         _cts = new CancellationTokenSource();
         ToolStatus = "💭 思考中...";
+
+        // 先插入空 assistant 气泡，流式追加内容
+        var assistantMsg = new ChatMessage("assistant", "");
+        Messages.Add(assistantMsg);
+
         try
         {
-            var reply = await _chatService.ChatAsync(prompt, _cts.Token);
-            Messages.Add(new ChatMessage("assistant", reply));
+            await foreach (var chunk in _chatService.ChatStreamAsync(prompt, _cts.Token))
+            {
+                assistantMsg.Content += chunk;
+            }
             if (string.IsNullOrEmpty(ToolStatus) || ToolStatus.StartsWith("💭"))
                 ToolStatus = string.Empty;
         }
         catch (System.Exception ex)
         {
-            Messages.Add(new ChatMessage("assistant", $"❌ 出错了：{ex.Message}"));
-            ToolStatus = $"❌ 异常：{ex.Message}";
+            if (ex is OperationCanceledException)
+            {
+                if (assistantMsg.Content.Length == 0)
+                    assistantMsg.Content = "⏸️ 已取消";
+                else
+                    assistantMsg.Content += "\n\n⏸️ 已取消";
+                ToolStatus = string.Empty;
+            }
+            else
+            {
+                assistantMsg.Content = $"❌ 出错了：{ex.Message}";
+                ToolStatus = $"❌ 异常：{ex.Message}";
+            }
         }
         finally
         {

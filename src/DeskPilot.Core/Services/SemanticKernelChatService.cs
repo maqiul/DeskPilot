@@ -3,7 +3,10 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -108,6 +111,37 @@ public sealed class SemanticKernelChatService : IChatService
         var assistantMessage = result.Content ?? string.Empty;
         _history.AddAssistantMessage(assistantMessage);
         return assistantMessage;
+    }
+
+    public void Dispose() { /* Kernel 生命周期由 DI 容器管理 */ }
+
+    /// <summary>
+    /// 流式对话：逐 token 返回 AI 回复，实现"打字机"效果。
+    /// SK 1.32 的 GetStreamingChatMessageContentsAsync + FunctionChoiceBehavior.Auto()
+    /// 会自动处理 tool calling 循环——先内部执行工具，再流式输出最终 LLM 回复。
+    /// </summary>
+    public async IAsyncEnumerable<string> ChatStreamAsync(
+        string userMessage,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        _history.AddUserMessage(userMessage);
+
+        var chatService = _kernel.GetRequiredService<IChatCompletionService>();
+        var executionSettings = new OpenAIPromptExecutionSettings
+        {
+            FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
+        };
+
+        var fullResponse = new StringBuilder();
+        await foreach (var chunk in chatService.GetStreamingChatMessageContentsAsync(
+            _history, executionSettings, _kernel, cancellationToken).ConfigureAwait(false))
+        {
+            var text = chunk.Content ?? string.Empty;
+            fullResponse.Append(text);
+            yield return text;
+        }
+
+        _history.AddAssistantMessage(fullResponse.ToString());
     }
 
     /// <summary>

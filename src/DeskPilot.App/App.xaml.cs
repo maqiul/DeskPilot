@@ -25,6 +25,65 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // v0.5.1: CI smoke test — 设置 DESKPILOT_SMOKE_TEST=1 启动验证 XAML+DI 全链路
+        if (Environment.GetEnvironmentVariable("DESKPILOT_SMOKE_TEST") == "1")
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable("DESKPILOT_PROVIDER", "OpenAI");
+                Environment.SetEnvironmentVariable("DESKPILOT_API_KEY", "smoke-test-dummy-key");
+                Environment.SetEnvironmentVariable("DESKPILOT_MODEL", "smoke-test-model");
+
+                TryLoadDotEnv();
+                var stBuilder = new ConfigurationBuilder()
+                    .SetBasePath(AppContext.BaseDirectory)
+                    .AddJsonFile("appsettings.json", optional: true)
+                    .AddEnvironmentVariables(prefix: "DESKPILOT_");
+                Configuration = stBuilder.Build();
+
+                var stSettingsService = new SecureSettingsService();
+                var stSettings = LoadSettings(stSettingsService);
+
+                var stServices = new ServiceCollection();
+                stServices.AddSingleton<IConfiguration>(Configuration);
+                stServices.AddSingleton<ISettingsService>(stSettingsService);
+                stServices.AddSingleton(stSettings);
+                stServices.AddSingleton<IChatService>(new StubChatService());
+                stServices.AddHttpClient();
+                stServices.AddSingleton<IModelListerFactory, ModelListerFactory>();
+                stServices.AddSingleton<IToolRegistry>(sp =>
+                {
+                    var registry = new ToolRegistry();
+                    registry.Register(new ArchiveByDateTool());
+                    registry.Register(new MoveFilesTool());
+                    registry.Register(new FindDuplicatesTool());
+                    registry.Register(new RenameByPatternTool());
+                    registry.Register(new BatchResizeImageTool());
+                    registry.Register(new ExtractArchiveTool());
+                    registry.Register(new HashFilesTool());
+                    return registry;
+                });
+                stServices.AddSingleton<ChatViewModel>();
+                stServices.AddTransient<ChatWindow>();
+                stServices.AddTransient<SettingsWindow>();
+                stServices.AddSingleton<SettingsViewModel>(sp => new SettingsViewModel(
+                    sp.GetRequiredService<ISettingsService>(),
+                    sp.GetRequiredService<IModelListerFactory>(),
+                    closeWindow: null));
+                Services = stServices.BuildServiceProvider();
+
+                var stWindow = Services.GetRequiredService<ChatWindow>();
+                stWindow.Show();
+                Shutdown(0);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[smoke-test] FAIL: {ex.GetType().Name}: {ex.Message}");
+                Console.Error.WriteLine(ex.StackTrace);
+                Shutdown(2);
+            }
+        }
+
         // === 1) .env 文件加载（兼容命令行用户）===
         TryLoadDotEnv();
 
@@ -313,4 +372,23 @@ public partial class App : Application
         };
         return false;
     }
+}
+
+/// <summary>
+/// v0.5.1 CI smoke test 用的 stub — 不调 AI，只返回固定回复
+/// </summary>
+internal sealed class StubChatService : IChatService
+{
+    public Task<string> ChatAsync(string userMessage, CancellationToken cancellationToken = default)
+        => Task.FromResult("[smoke-test] Stub reply");
+
+    public async IAsyncEnumerable<string> ChatStreamAsync(
+        string userMessage,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        yield return "[smoke-test] Stub reply";
+        await Task.CompletedTask;
+    }
+
+    public void Dispose() { }
 }
