@@ -2,6 +2,33 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.8.0] - 2026-06-25
+
+### 🎨 视觉升级 + 暗色主题
+
+#### 暗色主题（Dark Mode）
+- **`Styles/DarkColors.xaml`**：暗色配色（深灰底 `#1A1A1A` + 卡片 `#252525` + 橙色 `#FF7A28`）
+- **`Services/ThemeManager.cs`**：运行时合并/移除 `ResourceDictionary`，即时切换
+- **三档模式**：浅色 / 暗色 / 跟随系统（从 Windows 注册表读 `AppsUseLightTheme`）
+- **持久化**：用户选择写入 `settings.json`，重启后保持
+- **设置窗口**：新增"🎨 外观"卡片，三选一 RadioButton
+
+#### 视觉细节升级
+- **卡片阴影**：`DropShadowEffect` 软阴影（BlurRadius 10-12，Opacity 0.05-0.06）
+- **圆角统一**：SectionCard 10→12，按钮 6→8，输入框 10→12
+- **消息气泡**：圆形 36×36 头像（user 在右 / assistant 在左）+ 圆角 12 + 阴影
+- **空状态欢迎卡片**：👋 标题 + 4 个建议按钮（PDF 归档/找重复/重命名/聊天），点击自动填入输入框
+- **加载动画**：3 个跳动圆点（`Storyboard` + `Canvas.Top` 动画，错峰 0/0.15/0.3 秒）
+- **标题栏**：橙色方块 logo（圆角 8）+ DeskPilot 名 + 副标题
+- **图标统一**：🤖/🔑/💻/🛡️/🎨 Section 标题图标
+
+#### 内部结构
+- `RoleToAvatarConverter` / `RoleToAvatarBrushConverter` / `RoleToAvatarColumnConverter`：头像三件套
+- `EnumToBoolConverter`：三个静态实例（LightInstance/DarkInstance/SystemInstance）给 RadioButton 用
+- `StringToVisibilityConverter` 支持 `Invert` 参数：空状态卡片反向绑定
+- `OrangeCheckBox` 统一样式：前景色/字号/光标一致
+- `ChatViewModel.HasMessages` 属性：`Messages.CollectionChanged` 触发通知
+
 ## [v0.7.0] - 2026-06-25
 
 ### 🧠 新增功能
