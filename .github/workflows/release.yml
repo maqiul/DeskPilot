@@ -164,21 +164,21 @@ jobs:
           if [ ! -f "$NOTES_FILE" ]; then
             NOTES_FILE="CHANGELOG.md"
           fi
+          # v0.5: 改用 body_path 而非 body=GITHUB_OUTPUT
+          # 原因：GITHUB_OUTPUT 多行传递经常被 GitHub 截断/吞行
+          # 写文件 + body_path 是社区最稳的方案
           if [ -f "$NOTES_FILE" ]; then
             echo "Using release notes from $NOTES_FILE"
-            {
-              echo "notes<<NOTES_EOF"
-              cat "$NOTES_FILE"
-              echo "NOTES_EOF"
-            } >> "$GITHUB_OUTPUT"
+            cp "$NOTES_FILE" release_notes.md
           else
             echo "No release notes file found, using default"
-            echo "notes<<EOF" >> "$GITHUB_OUTPUT"
-            echo "## DeskPilot ${VERSION}" >> "$GITHUB_OUTPUT"
-            echo "" >> "$GITHUB_OUTPUT"
-            echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md) for details." >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
+            {
+              echo "## DeskPilot ${VERSION}"
+              echo ""
+              echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/master/CHANGELOG.md) for details."
+            } > release_notes.md
           fi
+          echo "notes_file=release_notes.md" >> "$GITHUB_OUTPUT"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -186,7 +186,7 @@ jobs:
           name: ${{ github.ref_name }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
-          body: ${{ steps.notes.outputs.notes }}
+          body_path: release_notes.md
           files: |
             artifacts/**/*.zip
             artifacts/**/*.zip.sha256
