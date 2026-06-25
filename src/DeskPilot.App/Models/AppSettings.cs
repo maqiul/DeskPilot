@@ -1,3 +1,4 @@
+using DeskPilot.App.Services;
 using System.Text.Json.Serialization;
 
 namespace DeskPilot.App.Models;
@@ -44,6 +45,11 @@ public class AppSettings
     /// v0.6: 危险操作（移动/重命名/解压/缩放）是否需要用户确认。默认 true。
     /// </summary>
     public bool RequireConfirmation { get; set; } = true;
+
+    /// <summary>
+    /// v0.8: 主题（浅色/暗色/跟随系统）。默认 Light。
+    /// </summary>
+    public AppTheme Theme { get; set; } = AppTheme.Light;
 
     [JsonIgnore]
     public static AppSettings Default => new();

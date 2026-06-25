@@ -21,21 +21,35 @@
             <Setter Property="Margin" Value="0,12,0,6"/>
         </Style>
 
-        <Style x:Key="FieldInput" TargetType="TextBox">
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Padding" Value="10,8"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-        </Style>
-
         <Style x:Key="SectionCard" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource CardBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Padding" Value="16"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="18"/>
+            <Setter Property="Margin" Value="0,0,0,14"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="0" Opacity="0.05" Color="Black"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
             <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+
+        <Style x:Key="FieldInput" TargetType="TextBox">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="12,9"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
         </Style>
     </Window.Resources>
 
@@ -61,7 +75,7 @@
                 <!-- AI Provider -->
                 <Border Style="{StaticResource SectionCard}">
                     <StackPanel>
-                        <TextBlock Text="AI 提供商" Style="{StaticResource FieldLabel}" Margin="0"/>
+                        <TextBlock Text="🤖  AI 提供商" Style="{StaticResource SectionTitle}"/>
                         <ComboBox FontSize="13" Padding="10,8"
                                   ItemsSource="{Binding Source={x:Static local:ProviderOptions.ProviderList}}"
                                   SelectedItem="{Binding Provider, Mode=TwoWay}"/>
@@ -75,8 +89,7 @@
                 <Border Style="{StaticResource SectionCard}"
                         Visibility="{Binding IsOpenAiSelected, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
                     <StackPanel>
-                        <TextBlock Text="OpenAI 设置" FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
+                        <TextBlock Text="🔑  OpenAI 设置" Style="{StaticResource SectionTitle}"/>
 
                         <TextBlock Text="API Key" Style="{StaticResource FieldLabel}"/>
                         <Grid>
@@ -121,8 +134,7 @@
                 <Border Style="{StaticResource SectionCard}"
                         Visibility="{Binding IsDeepSeekSelected, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
                     <StackPanel>
-                        <TextBlock Text="DeepSeek 设置" FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
+                        <TextBlock Text="🔑  DeepSeek 设置" Style="{StaticResource SectionTitle}"/>
 
                         <TextBlock Text="API Key" Style="{StaticResource FieldLabel}"/>
                         <Grid>
@@ -165,8 +177,7 @@
                 <Border Style="{StaticResource SectionCard}"
                         Visibility="{Binding IsOllamaSelected, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
                     <StackPanel>
-                        <TextBlock Text="Ollama 设置" FontSize="14" FontWeight="SemiBold"
-                                   Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
+                        <TextBlock Text="💻  Ollama 设置" Style="{StaticResource SectionTitle}"/>
 
                         <TextBlock Text="Endpoint" Style="{StaticResource FieldLabel}"/>
                         <TextBox Style="{StaticResource FieldInput}"
@@ -212,11 +223,9 @@
                 <!-- 权限控制 -->
                 <Border Style="{StaticResource SectionCard}">
                     <StackPanel>
-                        <TextBlock Text="🛡 权限控制" FontSize="14" FontWeight="Bold"
-                                   Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,10"/>
+                        <TextBlock Text="🛡️  权限控制" Style="{StaticResource SectionTitle}"/>
                         <CheckBox IsChecked="{Binding RequireConfirmation}"
-                                  Foreground="{StaticResource TextBrush}" FontSize="13"
-                                  VerticalContentAlignment="Center">
+                                  Style="{StaticResource OrangeCheckBox}">
                             <TextBlock TextWrapping="Wrap">
                                 启用危险操作确认
                                 <LineBreak/>
@@ -228,11 +237,34 @@
                         </CheckBox>
                     </StackPanel>
                 </Border>
+
+                <!-- 外观 -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="🎨  外观" Style="{StaticResource SectionTitle}"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <RadioButton Content="浅色" GroupName="Theme"
+                                         IsChecked="{Binding Theme, Converter={x:Static local:EnumToBoolConverter.LightInstance}}"
+                                         Foreground="{StaticResource TextBrush}" FontSize="13"
+                                         VerticalContentAlignment="Center" Margin="0,0,20,0" Cursor="Hand"/>
+                            <RadioButton Content="暗色" GroupName="Theme"
+                                         IsChecked="{Binding Theme, Converter={x:Static local:EnumToBoolConverter.DarkInstance}}"
+                                         Foreground="{StaticResource TextBrush}" FontSize="13"
+                                         VerticalContentAlignment="Center" Margin="0,0,20,0" Cursor="Hand"/>
+                            <RadioButton Content="跟随系统" GroupName="Theme"
+                                         IsChecked="{Binding Theme, Converter={x:Static local:EnumToBoolConverter.SystemInstance}}"
+                                         Foreground="{StaticResource TextBrush}" FontSize="13"
+                                         VerticalContentAlignment="Center" Cursor="Hand"/>
+                        </StackPanel>
+                        <TextBlock Text="切换立刻生效，重启后保持" FontSize="12"
+                                   Foreground="{StaticResource SecondaryTextBrush}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 
         <!-- 底部按钮 + 状态 -->
-        <Grid Grid.Row="2" Margin="0,16,0,0">
+        <Grid Grid.Row="2" Margin="0,18,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>

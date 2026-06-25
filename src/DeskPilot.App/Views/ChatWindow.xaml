@@ -6,10 +6,32 @@
         xmlns:vm="clr-namespace:DeskPilot.App.ViewModels"
         xmlns:local="clr-namespace:DeskPilot.App"
         mc:Ignorable="d"
-        Title="DeskPilot 桌面 AI 助手" Height="640" Width="920"
+        Title="DeskPilot 桌面 AI 助手" Height="680" Width="960"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource BackgroundBrush}"
         d:DataContext="{d:DesignInstance Type=vm:ChatViewModel}">
+
+    <Window.Resources>
+        <!-- 圆角输入框（12px） -->
+        <Style x:Key="RoundInput" TargetType="TextBox">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+        </Style>
+
+        <!-- 卡片阴影 -->
+        <Style x:Key="CardShadow" TargetType="Border">
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="0" Opacity="0.06" Color="Black"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -22,7 +44,7 @@
         <!-- 顶部标题栏 -->
         <Border Grid.Row="0" Background="{StaticResource CardBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
-                Padding="16,12">
+                Padding="20,14">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -31,13 +53,18 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="✈️" FontSize="22" VerticalAlignment="Center"/>
-                    <TextBlock Text="DeskPilot" FontSize="18" FontWeight="Bold"
-                               Foreground="{StaticResource PrimaryBrush}"
-                               VerticalAlignment="Center" Margin="8,0,0,0"/>
-                    <TextBlock Text="· 你的桌面 AI 副驾驶" FontSize="12"
-                               Foreground="{StaticResource SecondaryTextBrush}"
-                               VerticalAlignment="Center" Margin="6,0,0,0"/>
+                    <Border Width="36" Height="36" CornerRadius="8"
+                            Background="{StaticResource PrimaryBrush}">
+                        <TextBlock Text="✈" FontSize="20" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontWeight="Bold"/>
+                    </Border>
+                    <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="DeskPilot" FontSize="16" FontWeight="Bold"
+                                   Foreground="{StaticResource TextBrush}"/>
+                        <TextBlock Text="你的桌面 AI 副驾驶" FontSize="11"
+                                   Foreground="{StaticResource SecondaryTextBrush}"/>
+                    </StackPanel>
                 </StackPanel>
                 <Button Grid.Column="2" Content="清空对话"
                         Style="{StaticResource SecondaryButton}"
@@ -49,59 +76,115 @@
             </Grid>
         </Border>
 
-        <!-- 消息列表 -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
-                      Padding="16" x:Name="MessagesScrollViewer">
-            <ItemsControl ItemsSource="{Binding Messages}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Margin="0,0,0,12">
-                            <Grid.HorizontalAlignment>
-                                <PriorityBinding>
-                                    <Binding Path="Role" Converter="{x:Static local:RoleToAlignmentConverter.Instance}"/>
-                                </PriorityBinding>
-                            </Grid.HorizontalAlignment>
-                            <Border CornerRadius="10" Padding="12"
-                                    MaxWidth="640"
-                                    Background="{Binding Role, Converter={x:Static local:RoleToBubbleBrushConverter.Instance}}"
-                                    BorderBrush="{StaticResource BorderBrush}"
-                                    BorderThickness="1">
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Role, Converter={x:Static local:RoleToLabelConverter.Instance}}"
-                                               FontSize="11" FontWeight="SemiBold"
-                                               Foreground="{StaticResource PrimaryBrush}"
-                                               Margin="0,0,0,4"/>
-                                    <TextBlock Text="{Binding Content}"
-                                               TextWrapping="Wrap"
-                                               FontSize="14"
-                                               Foreground="{StaticResource TextBrush}"/>
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <!-- 消息区 -->
+        <Grid Grid.Row="1">
+            <!-- 消息列表（无消息时隐藏） -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          Padding="20,16" x:Name="MessagesScrollViewer"
+                          Visibility="{Binding HasMessages, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                <ItemsControl ItemsSource="{Binding Messages}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,16">
+                                <Grid.HorizontalAlignment>
+                                    <PriorityBinding>
+                                        <Binding Path="Role" Converter="{x:Static local:RoleToAlignmentConverter.Instance}"/>
+                                    </PriorityBinding>
+                                </Grid.HorizontalAlignment>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- 头像（user 在右，assistant 在左）-->
+                                <Border Grid.Column="{Binding Role, Converter={x:Static local:RoleToAvatarColumnConverter.Instance}}"
+                                        Width="36" Height="36" CornerRadius="18"
+                                        Background="{Binding Role, Converter={x:Static local:RoleToAvatarBrushConverter.Instance}}"
+                                        VerticalAlignment="Top" Margin="0,2,10,0">
+                                    <TextBlock Text="{Binding Role, Converter={x:Static local:RoleToAvatarConverter.Instance}}"
+                                               FontSize="18"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+
+                                <!-- 气泡 -->
+                                <Border Grid.Column="1" Style="{StaticResource CardShadow}"
+                                        CornerRadius="12" Padding="14,10"
+                                        MaxWidth="620"
+                                        Background="{Binding Role, Converter={x:Static local:RoleToBubbleBrushConverter.Instance}}"
+                                        BorderBrush="{StaticResource BorderBrush}"
+                                        BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Role, Converter={x:Static local:RoleToLabelConverter.Instance}}"
+                                                   FontSize="11" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource PrimaryBrush}"
+                                                   Margin="0,0,0,4"/>
+                                        <TextBlock Text="{Binding Content}"
+                                                   TextWrapping="Wrap"
+                                                   FontSize="14" LineHeight="20"
+                                                   Foreground="{StaticResource TextBrush}"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- 空状态欢迎卡片 -->
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                    MaxWidth="520" Padding="32,28"
+                    Background="{StaticResource CardBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="16"
+                    Style="{StaticResource CardShadow}"
+                    Visibility="{Binding HasMessages, Converter={x:Static local:BoolToVisibilityConverter.Instance}, ConverterParameter=Invert}">
+                <StackPanel>
+                    <TextBlock Text="👋 你好，我是 DeskPilot" FontSize="22" FontWeight="Bold"
+                               Foreground="{StaticResource TextBrush}"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="有什么可以帮你的？" FontSize="13"
+                               Foreground="{StaticResource SecondaryTextBrush}"
+                               HorizontalAlignment="Center" Margin="0,4,0,20"/>
+
+                    <UniformGrid Columns="2" Width="460" HorizontalAlignment="Center">
+                        <Button Content="📁 整理下载文件夹里的 PDF" Margin="4"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="Suggestion_Click" Tag="帮我把下载文件夹里的 PDF 按月份归档"/>
+                        <Button Content="🔍 找出重复的照片" Margin="4"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="Suggestion_Click" Tag="帮我找出桌面上重复的照片"/>
+                        <Button Content="📝 批量重命名文件" Margin="4"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="Suggestion_Click" Tag="把 D:\docs 下所有 txt 改成 md 后缀"/>
+                        <Button Content="💬 跟我聊聊" Margin="4"
+                                Style="{StaticResource SecondaryButton}"
+                                Click="Suggestion_Click" Tag="跟我随便聊聊吧"/>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+        </Grid>
 
         <!-- 输入区 -->
         <Border Grid.Row="2" Background="{StaticResource CardBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"
-                Padding="16,12">
+                Padding="20,14">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="InputBox" Grid.Column="0"
-                         Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
-                         AcceptsReturn="False"
-                         FontSize="14"
-                         Padding="10,8"
-                         BorderBrush="{StaticResource BorderBrush}"
-                         BorderThickness="1"
-                         VerticalContentAlignment="Center"
-                         KeyDown="InputBox_KeyDown"/>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                <Border Grid.Column="0" CornerRadius="12"
+                        Background="{StaticResource CardBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                    <TextBox x:Name="InputBox"
+                             Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
+                             AcceptsReturn="False"
+                             Style="{StaticResource RoundInput}"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             KeyDown="InputBox_KeyDown"/>
+                </Border>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10,0,0,0">
                     <Button Content="取消" Style="{StaticResource SecondaryButton}"
                             Command="{Binding CancelCommand}"
                             Visibility="{Binding IsBusy, Converter={x:Static local:BoolToVisibilityConverter.Instance}}"
@@ -113,29 +196,71 @@
             </Grid>
         </Border>
 
-        <!-- 加载指示器 -->
+        <!-- 跳动点加载指示器 -->
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center"
                 Background="{StaticResource CardBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                CornerRadius="6" Padding="12,6"
-                Margin="0,0,0,16"
+                CornerRadius="20" Padding="14,8"
+                Margin="0,0,0,18"
                 Visibility="{Binding IsBusy, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
             <StackPanel Orientation="Horizontal">
-                <ProgressBar IsIndeterminate="True" Width="80" Height="4"
-                             Foreground="{StaticResource PrimaryBrush}" BorderThickness="0"/>
-                <TextBlock Text="AI 思考中..." Margin="8,0,0,0"
+                <Canvas Width="48" Height="10" x:Name="DotsCanvas">
+                    <Ellipse Canvas.Left="0" Canvas.Top="3" Width="8" Height="8"
+                             Fill="{StaticResource PrimaryBrush}">
+                        <Ellipse.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetProperty="(Canvas.Top)"
+                                                         From="3" To="-2" Duration="0:0:0.4"
+                                                         AutoReverse="True" BeginTime="0:0:0"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Ellipse.Triggers>
+                    </Ellipse>
+                    <Ellipse Canvas.Left="20" Canvas.Top="3" Width="8" Height="8"
+                             Fill="{StaticResource PrimaryBrush}">
+                        <Ellipse.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetProperty="(Canvas.Top)"
+                                                         From="3" To="-2" Duration="0:0:0.4"
+                                                         AutoReverse="True" BeginTime="0:0:0.15"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Ellipse.Triggers>
+                    </Ellipse>
+                    <Ellipse Canvas.Left="40" Canvas.Top="3" Width="8" Height="8"
+                             Fill="{StaticResource PrimaryBrush}">
+                        <Ellipse.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetProperty="(Canvas.Top)"
+                                                         From="3" To="-2" Duration="0:0:0.4"
+                                                         AutoReverse="True" BeginTime="0:0:0.3"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Ellipse.Triggers>
+                    </Ellipse>
+                </Canvas>
+                <TextBlock Text="AI 思考中..." Margin="10,0,0,0" FontSize="12"
                            Foreground="{StaticResource SecondaryTextBrush}"
                            VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
 
-        <!-- 工具状态栏（显示当前工具调用状态） -->
+        <!-- 工具状态栏 -->
         <Border Grid.Row="3" Background="{StaticResource BackgroundBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"
-                Padding="16,6"
+                Padding="20,8"
                 Visibility="{Binding ToolStatus, Converter={x:Static local:StringToVisibilityConverter.Instance}}">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="⚙️" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBlock Text="⚙" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
                 <TextBlock Text="{Binding ToolStatus}" FontSize="12"
                            Foreground="{StaticResource SecondaryTextBrush}"
                            VerticalAlignment="Center"/>

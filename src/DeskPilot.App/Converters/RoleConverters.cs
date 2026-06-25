@@ -25,6 +25,24 @@ public sealed class RoleToAlignmentConverter : IValueConverter
 }
 
 /// <summary>
+/// role 决定头像列顺序：user 头像在右（Column 1），assistant 头像在左（Column 0）。
+/// </summary>
+public sealed class RoleToAvatarColumnConverter : IValueConverter
+{
+    public static readonly RoleToAvatarColumnConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string role && role.Equals("user", StringComparison.OrdinalIgnoreCase))
+            return 1; // 头像在气泡右侧
+        return 0;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
 /// 将 role 字符串转为气泡背景色。
 /// </summary>
 public sealed class RoleToBubbleBrushConverter : IValueConverter
@@ -83,6 +101,7 @@ public sealed class BoolToVisibilityConverter : IValueConverter
 
 /// <summary>
 /// 非空字符串转 Visible，空字符串/Null 转 Collapsed。
+/// ConverterParameter=Invert 时反转（用于空状态显示欢迎卡片）。
 /// </summary>
 public sealed class StringToVisibilityConverter : IValueConverter
 {
@@ -90,8 +109,46 @@ public sealed class StringToVisibilityConverter : IValueConverter
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is string s && !string.IsNullOrEmpty(s)) return Visibility.Visible;
-        return Visibility.Collapsed;
+        bool visible = value is string s && !string.IsNullOrEmpty(s);
+        if (parameter is string p && p == "Invert") visible = !visible;
+        return visible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
+/// 把 role 字符串转成头像 emoji：user → 👤，assistant → ✈。
+/// </summary>
+public sealed class RoleToAvatarConverter : IValueConverter
+{
+    public static readonly RoleToAvatarConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string role && role.Equals("user", StringComparison.OrdinalIgnoreCase))
+            return "👤";
+        return "✈";
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
+/// 把 role 字符串转成头像背景：user 浅橙，assistant 卡片色。
+/// </summary>
+public sealed class RoleToAvatarBrushConverter : IValueConverter
+{
+    public static readonly RoleToAvatarBrushConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        var app = Application.Current;
+        if (value is string role && role.Equals("user", StringComparison.OrdinalIgnoreCase))
+            return app?.TryFindResource("UserBubbleBrush") ?? Brushes.Orange;
+        return app?.TryFindResource("PrimaryBrush") ?? Brushes.Orange;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

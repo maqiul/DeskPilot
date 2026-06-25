@@ -56,4 +56,14 @@ public partial class ChatWindow : Window
         settingsWindow.Owner = this;
         settingsWindow.ShowDialog();
     }
+
+    private void Suggestion_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string text })
+        {
+            _viewModel.UserInput = text;
+            if (_viewModel.SendCommand.CanExecute(null))
+                _viewModel.SendCommand.Execute(null);
+        }
+    }
 }

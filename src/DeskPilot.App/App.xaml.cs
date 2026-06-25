@@ -199,7 +199,11 @@ public partial class App : Application
             chatVm.ResetChatService(newChatService);
         };
 
-        // === 7) 启动窗口 ===
+        // === 7) 应用主题（按设置） ===
+        var initialSettings = settingsService.Load();
+        ThemeManager.ApplyTheme(initialSettings.Theme);
+
+        // === 8) 启动窗口 ===
         var chatWindow = Services.GetRequiredService<ChatWindow>();
         chatWindow.Show();
     }

@@ -64,6 +64,7 @@ public partial class SettingsViewModel : ObservableObject
         OllamaEndpoint = current.OllamaEndpoint;
         OllamaModel = current.OllamaModel;
         RequireConfirmation = current.RequireConfirmation;
+        Theme = current.Theme;
 
         // 初始化可用模型列表（先静态兜底）
         LoadModelsForProvider(Provider);
@@ -117,6 +118,15 @@ public partial class SettingsViewModel : ObservableObject
 
     // ===== 权限控制 =====
     [ObservableProperty] private bool _requireConfirmation = true;
+
+    // ===== 主题（v0.8）=====
+    [ObservableProperty] private AppTheme _theme = AppTheme.Light;
+
+    partial void OnThemeChanged(AppTheme value)
+    {
+        // 即时应用主题，不需重启
+        ThemeManager.ApplyTheme(value);
+    }
 
     // ===== 保存状态 =====
     [ObservableProperty] private string _statusMessage = string.Empty;
@@ -250,7 +260,8 @@ public partial class SettingsViewModel : ObservableObject
             OllamaEndpoint = string.IsNullOrWhiteSpace(OllamaEndpoint) ? "http://localhost:11434" : OllamaEndpoint.Trim(),
             OllamaModel = string.IsNullOrWhiteSpace(OllamaModel) ? "qwen2.5:7b" : OllamaModel.Trim(),
             CachedModels = _settingsService.Load().CachedModels ?? new Dictionary<string, List<string>>(),
-            RequireConfirmation = RequireConfirmation
+            RequireConfirmation = RequireConfirmation,
+            Theme = Theme
         };
     }
 

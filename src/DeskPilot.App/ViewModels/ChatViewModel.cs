@@ -34,12 +34,15 @@ public partial class ChatViewModel : ObservableObject
     public ChatViewModel(IChatService chatService)
     {
         _chatService = chatService;
-        Messages = new ObservableCollection<ChatMessage>
-        {
-            new("assistant", "你好！我是 DeskPilot 桌面 AI 助手 ✈️\n请告诉我你想做什么，比如：\n• 帮我整理桌面文件\n• 把这个 Excel 按部门拆分\n• 解释这段代码")
-        };
+        Messages = new ObservableCollection<ChatMessage>();
+        Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
         HookToolEvents(chatService);
     }
+
+    /// <summary>
+    /// 是否有消息：用于切换"空状态欢迎卡片"和"消息列表"。
+    /// </summary>
+    public bool HasMessages => Messages.Count > 0;
 
     /// <summary>
     /// 切换 AI 服务实例（设置窗口保存后调用）。
