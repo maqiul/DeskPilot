@@ -197,6 +197,7 @@ jobs:
         with:
           name: ${{ github.ref_name }}
           draft: false
+          overwrite: true
           prerelease: ${{ contains(github.ref_name, '-') }}
           body_path: release_notes.md
           files: |
