@@ -162,13 +162,17 @@ public sealed class McpServerTests
             Assert.True(result.TryGetProperty("tools", out var tools));
             var toolList = tools.EnumerateArray().ToList();
 
-            Assert.Equal(4, toolList.Count);
+            // v0.5: 4 → 7 工具
+            Assert.Equal(7, toolList.Count);
 
             var toolNames = toolList.Select(t => t.GetProperty("name").GetString()!).ToList();
             Assert.Contains("archive_files_by_date", toolNames);
             Assert.Contains("move_files", toolNames);
             Assert.Contains("find_duplicates", toolNames);
             Assert.Contains("rename_by_pattern", toolNames);
+            Assert.Contains("batch_resize_image", toolNames);
+            Assert.Contains("extract_archive", toolNames);
+            Assert.Contains("hash_files", toolNames);
         }
         finally
         {

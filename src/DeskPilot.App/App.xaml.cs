@@ -90,6 +90,12 @@ public partial class App : Application
             registry.Register(new FindDuplicatesTool());
             // v0.2: 批量重命名
             registry.Register(new RenameByPatternTool());
+            // v0.5: 批量缩放图片
+            registry.Register(new BatchResizeImageTool());
+            // v0.5: 解压 zip
+            registry.Register(new ExtractArchiveTool());
+            // v0.5: 计算文件哈希
+            registry.Register(new HashFilesTool());
             return registry;
         });
 

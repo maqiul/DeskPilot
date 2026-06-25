@@ -39,11 +39,14 @@ internal static class Program
         // 日志走 stderr (避免污染 MCP stdio 协议)
         builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
 
-        // 注册 DeskPilot 4 个工具
+        // 注册 DeskPilot 工具 (v0.5: 4 → 7)
         builder.Services.AddSingleton<ArchiveByDateTool>();
         builder.Services.AddSingleton<MoveFilesTool>();
         builder.Services.AddSingleton<FindDuplicatesTool>();
         builder.Services.AddSingleton<RenameByPatternTool>();
+        builder.Services.AddSingleton<BatchResizeImageTool>();
+        builder.Services.AddSingleton<ExtractArchiveTool>();
+        builder.Services.AddSingleton<HashFilesTool>();
 
         // 注册 MCP server + 标记工具类
         builder.Services
@@ -70,17 +73,26 @@ internal sealed class DeskPilotMcpTools
     private readonly MoveFilesTool _move;
     private readonly FindDuplicatesTool _find;
     private readonly RenameByPatternTool _rename;
+    private readonly BatchResizeImageTool _resize;
+    private readonly ExtractArchiveTool _extract;
+    private readonly HashFilesTool _hash;
 
     public DeskPilotMcpTools(
         ArchiveByDateTool archive,
         MoveFilesTool move,
         FindDuplicatesTool find,
-        RenameByPatternTool rename)
+        RenameByPatternTool rename,
+        BatchResizeImageTool resize,
+        ExtractArchiveTool extract,
+        HashFilesTool hash)
     {
         _archive = archive;
         _move = move;
         _find = find;
         _rename = rename;
+        _resize = resize;
+        _extract = extract;
+        _hash = hash;
     }
 
     /// <summary>
@@ -198,6 +210,87 @@ internal sealed class DeskPilotMcpTools
             dryRun
         });
         var result = await _rename.ExecuteAsync(args);
+        return FormatResult(result);
+    }
+
+    /// <summary>
+    /// 批量缩放图片到指定尺寸（保持原图比例）。支持 jpg/png/bmp/gif，可选 JPEG 质量。
+    /// </summary>
+    /// <param name="directory">目标目录绝对路径</param>
+    /// <param name="maxWidth">最大宽度（像素）</param>
+    /// <param name="maxHeight">最大高度（像素）</param>
+    /// <param name="pattern">glob 过滤（如 *.jpg）</param>
+    /// <param name="quality">JPEG 质量 1-100，默认 85</param>
+    /// <param name="suffix">输出文件后缀，默认 _resized</param>
+    /// <param name="dryRun">只预览不保存</param>
+    [McpServerTool(Name = "batch_resize_image")]
+    public async Task<string> BatchResizeImage(
+        string directory,
+        int maxWidth,
+        int maxHeight,
+        string? pattern = null,
+        int? quality = null,
+        string? suffix = null,
+        bool dryRun = false)
+    {
+        var args = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            directory,
+            maxWidth,
+            maxHeight,
+            pattern,
+            quality,
+            suffix,
+            dryRun
+        });
+        var result = await _resize.ExecuteAsync(args);
+        return FormatResult(result);
+    }
+
+    /// <summary>
+    /// 解压 zip 文件到指定目录。自动防 Zip Slip 攻击。
+    /// </summary>
+    /// <param name="archivePath">zip 文件绝对路径</param>
+    /// <param name="outputDirectory">解压目标目录（留空则解压到 zip 同名的子目录）</param>
+    /// <param name="overwrite">是否覆盖已存在文件</param>
+    [McpServerTool(Name = "extract_archive")]
+    public async Task<string> ExtractArchive(
+        string archivePath,
+        string? outputDirectory = null,
+        bool overwrite = false)
+    {
+        var args = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            archivePath,
+            outputDirectory,
+            overwrite
+        });
+        var result = await _extract.ExecuteAsync(args);
+        return FormatResult(result);
+    }
+
+    /// <summary>
+    /// 批量计算文件的哈希值。支持 md5/sha1/sha256/sha512，可选递归。
+    /// </summary>
+    /// <param name="directory">目标目录绝对路径</param>
+    /// <param name="pattern">glob 过滤（如 *.pdf）</param>
+    /// <param name="algorithm">哈希算法: md5 / sha1 / sha256 / sha512，默认 sha256</param>
+    /// <param name="recursive">是否递归子目录</param>
+    [McpServerTool(Name = "hash_files")]
+    public async Task<string> HashFiles(
+        string directory,
+        string? pattern = null,
+        string? algorithm = null,
+        bool recursive = false)
+    {
+        var args = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            directory,
+            pattern,
+            algorithm,
+            recursive
+        });
+        var result = await _hash.ExecuteAsync(args);
         return FormatResult(result);
     }
 
