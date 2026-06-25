@@ -1,34 +1,38 @@
-## 🛡️ DeskPilot v0.6.0 — 权限控制
+## 🧠 DeskPilot v0.7.0 — 本地记忆
 
-### 危险工具需用户确认
+### AI 跨会话记住你
 
-DeskPilot 现在有了真正的安全边界。AI 在调用危险工具（移动/重命名/解压/缩放图片）前，会先征求你的同意。
+DeskPilot 现在有了真记忆。关掉应用、第二天再开，AI 仍然记得上次聊了什么、你们怎么聊的。
 
 **怎么工作：**
-1. 你让 AI 做一件事（比如"把桌面的 PDF 移到 D:\docs"）
-2. AI 决定调 `move_files` 工具
-3. 🛑 **拦截！** AI 回复："⚠️ 即将移动 15 个文件到 D:\docs。确认执行吗？"
-4. 你回复"确认" → AI 再次调用 → ✅ 执行
+1. 你问 AI 一个问题 → 它回复
+2. 双方对话**自动保存**到本地（`%AppData%\DeskPilot\memory.json`）
+3. 关闭 DeskPilot → 下次打开 → **AI 自动加载历史上下文**
+4. 觉得记忆太多？点"清空对话" → 同步删除本地文件
 
-**工具风险分级：**
+**核心特点：**
+- **本地优先**：所有数据存在你的电脑上，不上云
+- **持久化**：关闭再打开、关机重启都不丢
+- **容量控制**：最多保留 100 条消息，超出自动裁剪最旧
+- **容错降级**：文件损坏自动备份 + 静默降级，不影响启动
+- **可清空**：一键清除本地记忆
 
-| 风险等级 | 工具 |
-|---------|------|
-| ✅ Safe | find_duplicates, hash_files |
-| ⚠️ Destructive | archive_files_by_date, move_files, rename_by_pattern, batch_resize_image, extract_archive |
+### 🛡️ 顺手加：权限开关
 
-**可配置：** 设置窗口里可以开关"危险操作需确认"（默认开启）。
+设置窗口里加了"启用危险操作确认"开关。关掉后 AI 直接执行文件操作（适合"信任模式"）；默认开启，安全第一。
 
 ### 🔧 其他改进
 
-- 修复 `release.yml` release job 缺少代码 checkout（导致 Release Notes 始终为空）
-- 修复 CI workflow 分支监听：`main` → `master`
+- 修复 `release.yml`：`sparse-checkout + ref:master` 导致 `softprops/action-gh-release` git 操作报 exit code 128
+- 修复 release notes 提取：原代码 `cp` 整个 CHANGELOG.md，现在按版本号 `awk` 裁剪当前 section
+- 修复 release notes 覆盖：加 `overwrite: true` 让重新 tag 时更新 release page
+- 修复 `files: '**/*.zip'` glob 失败：改用精确文件名
 
 ### 📦 下载
 
 | 文件 | 说明 |
 |------|------|
-| `DeskPilot-App-v0.6.0-win-x64.zip` | DeskPilot App（需要 .NET 8 运行时） |
-| `DeskPilot-Mcp-v0.6.0-win-x64.zip` | MCP Server（自包含，无需运行时） |
+| `DeskPilot-App-v0.7.0-win-x64.zip` | DeskPilot App（需要 .NET 8 运行时） |
+| `DeskPilot-Mcp-v0.7.0-win-x64.zip` | MCP Server（自包含，无需运行时） |
 
 > 完整变更历史见 [CHANGELOG.md](https://github.com/maqiul/DeskPilot/blob/master/CHANGELOG.md)
