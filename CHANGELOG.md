@@ -2,6 +2,66 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.9.0] - 2026-06-25
+
+### 🛠 新增功能
+
+#### 技能系统（Skills）
+- **`Skill` 数据模型**：`Id` / `Name` / `Description` / `Icon` / `PromptTemplate` / `Tools` / `Category` / `IsEnabled`
+- **`ISkillService` + `SkillService`**：加载嵌入式默认技能 JSON（8 个内置）+ 合并用户文件（`%AppData%/DeskPilot/skills.json`）
+- **`ToggleAsync` + 持久化**：用户禁用/启用后立即写回用户文件，重启后保持
+- **损坏文件容错**：用户文件损坏 → 自动备份 `skills.json.corrupted.{timestamp}` → 用默认技能启动
+- **`SkillsChanged` 事件**：UI 自动刷新（ChatWindow 顶部横条 + SettingsWindow 列表）
+
+#### 顶部快捷技能横条
+- ChatWindow 标题栏下方加 `ScrollViewer + ItemsControl` 横条
+- 圆角 10 卡片 + 软阴影 + Emoji + 名称 + 悬浮 ToolTip 显示描述
+- 点击卡片 → 自动把 `PromptTemplate` 填入输入框 + 触发 `SendCommand`
+- 水平滚动，宽度不够也不换行
+
+#### 设置窗口技能管理页
+- 🛠 技能 SectionCard：列出全部 8 个技能
+- 每行：32px Emoji + 名称 + 分类胶囊 + 描述 + 橙色 CheckBox 启用开关
+- `IsEnabled` 双向绑定 → OnIsEnabledChanged 写回 `SkillService`（fire-and-forget）
+
+#### 8 个内置技能（默认全部启用）
+| 图标 | 名称 | 分类 |
+|------|------|------|
+| 📁 | 整理下载文件夹 | 文件整理 |
+| 🔍 | 找出重复的照片 | 文件整理 |
+| ✏️ | 批量重命名文件 | 文件整理 |
+| 🖼 | 批量压缩图片 | 图片处理 |
+| 📦 | 批量解压压缩包 | 文件整理 |
+| 🔐 | 计算文件哈希值 | 文件整理 |
+| 📊 | 清理大文件 | 文件整理 |
+| 🗓 | 按日期归档文件 | 文件整理 |
+
+### 🐛 Bug 修复
+
+#### 欢迎卡片叠加 bug
+- **根因**：`BoolToVisibilityConverter.Convert` 不读 `ConverterParameter`，导致 `ConverterParameter=Invert` 永远失效 → 欢迎卡片始终显示
+- **症状**：切换 AI 服务后，"AI 服务已切换"消息和 👋 你好卡片同时显示（视觉上像"中间悬浮弹窗"）
+- **修复**：converter 增加 `Invert` 参数支持（1 行改动），有消息时正确折叠欢迎卡片
+
+### 📦 内部改动
+- `DeskPilot.Core/Models/Skill.cs` 新建（record 类型）
+- `DeskPilot.Core/Models/SkillSet.cs` 新建（集合 + 分组辅助）
+- `DeskPilot.Core/Resources/default-skills.json` 新建（8 个内置技能）
+- `DeskPilot.Core/Services/ISkillService.cs` 新建
+- `DeskPilot.Core/Services/SkillService.cs` 新建（含 `ForTesting` 静态构造）
+- `DeskPilot.Core.csproj` 注册 `default-skills.json` 为 EmbeddedResource
+- `App.xaml.cs` 三处 DI 注册（真实启动 / smoke test / PromptForSettings）
+- `ChatViewModel` 加 `EnabledSkills` ObservableCollection + 订阅 `SkillsChanged`
+- `ChatWindow.xaml` 顶部快捷技能横条 XAML
+- `ChatWindow.xaml.cs` 加 `SkillCard_Click` 处理
+- `SettingsViewModel` 注入 `ISkillService` + `Skills` 集合 + `SkillRow` 内部类 + `ToggleSkillCommand`
+- `SettingsWindow.xaml` 加 🛠 技能 SectionCard
+
+### 🧪 测试
+- `SkillModelTests` 7 个：默认 8 个 / 字段非空 / Id 唯一 / 序列化往返 / Enabled 过滤 / Category 分组 / Icon 长度
+- `SkillServiceTests` 7 个：默认加载 / 默认启用 / Toggle 持久化 / null 翻转 / 未知 ID / 损坏备份 / SkillsChanged 事件
+- 全量 147/147 测试通过（133 原有 + 14 新增）
+
 ## [v0.8.0] - 2026-06-25
 
 ### 🎨 视觉升级 + 暗色主题
