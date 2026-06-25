@@ -55,6 +55,43 @@ public sealed class ArchiveByDateTool : ITool
         }
         """;
 
+    /// <summary>
+    /// Semantic Kernel 调用的入口。
+    /// SK 会根据 [KernelFunction] 标注的方法名 + 参数类型生成 schema 推给 AI。
+    /// AI 决定调这个方法时，会填好下面每个参数 → 我们转 JSON 再走 ITool.ExecuteAsync 路径。
+    /// </summary>
+    [Microsoft.SemanticKernel.KernelFunction("archive_by_date")]
+    public async Task<string> ArchiveByDateKernelAsync(
+        string sourceDirectory,
+        string? targetDirectory = null,
+        string? dateField = null,
+        string? granularity = null,
+        bool dryRun = false,
+        string? pattern = null)
+    {
+        // 把 SK 的强类型参数重新打包为 JSON 走 ITool 路径（保持单一实现路径）
+        var args = new
+        {
+            sourceDirectory,
+            targetDirectory,
+            dateField = string.IsNullOrWhiteSpace(dateField) ? "Modified" : dateField,
+            granularity = string.IsNullOrWhiteSpace(granularity) ? "Month" : granularity,
+            dryRun,
+            pattern
+        };
+        var json = System.Text.Json.JsonSerializer.Serialize(args);
+        var result = await ExecuteAsync(json).ConfigureAwait(false);
+
+        // SK 期望返回 string（结果会进 ChatHistory）
+        return System.Text.Json.JsonSerializer.Serialize(new
+        {
+            success = result.Success,
+            summary = result.Summary,
+            error = result.ErrorMessage,
+            data = result.Data
+        });
+    }
+
     public async Task<ToolResult> ExecuteAsync(string argumentsJson, CancellationToken ct = default)
     {
         ArchiveArgs args;

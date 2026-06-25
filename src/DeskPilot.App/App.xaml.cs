@@ -3,12 +3,14 @@ using DeskPilot.App.Services;
 using DeskPilot.App.ViewModels;
 using DeskPilot.App.Views;
 using DeskPilot.Core.Services;
+using DeskPilot.Core.Tools;
 using DotNetEnv;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 
@@ -75,6 +77,14 @@ public partial class App : Application
         // v0.0.3: HTTP 客户端工厂 + 模型列表工厂
         services.AddHttpClient();
         services.AddSingleton<IModelListerFactory, ModelListerFactory>();
+
+        // v0.1.1: 工具注册中心 + 内置工具
+        services.AddSingleton<IToolRegistry>(sp =>
+        {
+            var registry = new ToolRegistry();
+            registry.Register(new ArchiveByDateTool());
+            return registry;
+        });
 
         services.AddSingleton<ChatViewModel>();
         services.AddTransient<ChatWindow>();
@@ -176,7 +186,7 @@ public partial class App : Application
     /// <summary>
     /// 根据当前设置创建 ChatService。
     /// </summary>
-    private static IChatService CreateChatService(AppSettings settings)
+    private IChatService CreateChatService(AppSettings settings)
     {
         var kernelBuilder = Kernel.CreateBuilder();
 
@@ -207,7 +217,15 @@ public partial class App : Application
         }
 
         var kernel = kernelBuilder.Build();
-        return new SemanticKernelChatService(kernel);
+
+        // 注册工具到 Kernel（让 AI 能调用）
+        var toolRegistry = Services.GetRequiredService<IToolRegistry>();
+        foreach (var plugin in toolRegistry.CreateKernelPlugins())
+        {
+            kernel.Plugins.Add(plugin);
+        }
+
+        return new SemanticKernelChatService(kernel, toolRegistry);
     }
 
     private static void CopySettings(AppSettings src, AppSettings dst)

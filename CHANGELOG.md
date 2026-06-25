@@ -9,22 +9,24 @@
 
 ### 🎉 新增
 
-- **v0.1 — 第一个 MCP 工具：按日期归档文件**
-  - `ITool` 接口 + `ToolResult`（统一工具抽象，未来可暴露为 MCP Server）
-  - `ArchiveByDateTool`：按修改时间/创建时间 + 年/月/日粒度归档
-  - **功能特性**：
-    - 支持修改时间 / 创建时间切换
-    - 支持年 / 月 / 日三种粒度
-    - 支持自定义目标目录（默认 `{source}/archive/`）
-    - 支持文件 glob 过滤（`*.pdf`）
-    - 支持 **DryRun 模式**（只预览不实际移动）
-    - 智能 collision 处理（同名 + `_2`/`_3`/`_4` 后缀）
-    - 标准 `ToolResult` 输出（Success / Summary / Data / ErrorMessage）
-  - **新增 13 个单元测试**（月粒度 / 年粒度 / 日粒度 / Created时间 / DryRun / 自定义目标 / 模式过滤 / 重名冲突 / 错误处理 / 空目录 / 不存在目录 / 无效 JSON / 报告统计）
-  - **测试统计**：46 → **59 测试**
+- **v0.1.1 — AI 自动调用工具（Tool Calling 闭环）**
+  - `ToolRegistry` 工具注册中心（`IToolRegistry` 接口 + 实现）
+    - `Register()` 验证工具必须有 `[KernelFunction]` 方法
+    - `CreateKernelPlugins()` 把工具打包为 SK 的 `KernelPlugin` 列表
+    - `ListTools()` 返回描述符（含 schema + function 数量）
+  - `ArchiveByDateTool` 加 `[KernelFunction("archive_by_date")]` 标注
+    - SK 自动识别为可调用 function（参数自动推断 schema）
+    - 强类型参数 → JSON → 走 `ITool.ExecuteAsync` 单一实现路径
+  - `SemanticKernelChatService` 启用 `FunctionChoiceBehavior.Auto()`
+    - 系统 prompt 自动包含工具清单
+    - SK 1.32 自动处理 tool calling 循环（无需手动循环）
+  - `App.xaml.cs` DI 注册 `IToolRegistry` + 创建 Kernel 后注入工具 plugin
+  - **新增 14 个单元测试**（ToolRegistry 7 + ChatService 7）
+  - **测试统计**：59 → **73 测试**
 
 ### 🛠️ v0.1 之前的版本
 
+- **v0.1 — 第一个 MCP 工具：按日期归档文件**
 - **v0.0.3 — 动态模型列表（UI 闭环）**
 
 ### 🐛 修复
