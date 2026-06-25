@@ -175,7 +175,13 @@ jobs:
           # 写文件 + body_path 是社区最稳的方案
           if [ -f "$NOTES_FILE" ]; then
             echo "Using release notes from $NOTES_FILE"
-            cp "$NOTES_FILE" release_notes.md
+            # 从完整 CHANGELOG 中提取当前版本 section (## [vX.Y.Z] ...)
+            # 然后写进 release_notes.md
+            awk "/^## \\[${VERSION}\\]/,/^## \\[/" "$NOTES_FILE" | head -n -1 > release_notes.md
+            # 确保非空（如果没匹配到，回退到整文件）
+            if [ ! -s release_notes.md ]; then
+              cp "$NOTES_FILE" release_notes.md
+            fi
           else
             echo "No release notes file found, using default"
             {
