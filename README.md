@@ -154,15 +154,42 @@ DeskPilot/
 │   │   ├── Tools/                # 可调用的工具（文件操作、文档处理）
 │   │   ├── Services/             # 业务服务
 │   │   └── Models/               # 数据模型
-│   └── DeskPilot.App/            # WPF 应用
-│       ├── Views/                # 视图（XAML）
-│       ├── ViewModels/           # 视图模型
-│       ├── Resources/            # 资源（图标、字符串）
-│       └── Styles/               # 样式
-├── samples/                      # 示例项目
+│   ├── DeskPilot.App/            # WPF 应用
+│   │   ├── Views/                # 视图（XAML）
+│   │   ├── ViewModels/           # 视图模型
+│   │   ├── Resources/            # 资源（图标、字符串）
+│   │   └── Styles/               # 样式
+│   └── DeskPilot.Verify/         # 工具 E2E 验证程序（控制台，调试用）
 ├── tests/                        # 单元测试
 ├── docs/                         # 文档
 └── .github/                      # GitHub 配置（CI/CD、Issue 模板）
+
+### 🛠️ 工具 E2E 验证（无需 API Key）
+
+```bash
+# 准备测试文件
+mkdir -p D:\deskpilot_e2e_test\invoices
+echo "发票A" > D:\deskpilot_e2e_test\invoices\inv_001.txt
+echo "发票B" > D:\deskpilot_e2e_test\invoices\inv_002.txt
+
+# 运行验证（默认 Created + Month）
+dotnet run --project src/DeskPilot.Verify -- "D:\deskpilot_e2e_test\invoices" Month Created
+# 跳过真实归档只预览：加 --no
+dotnet run --project src/DeskPilot.Verify -- "D:\deskpilot_e2e_test\invoices" Month Created --no
+```
+
+输出示例：
+```
+📂 源目录:   D:\deskpilot_e2e_test\invoices
+📄 原始文件数: 5
+━━━ Step 1: DryRun 预览 ━━━
+📋 [预览] 共 5 个文件，将移动 5 个，跳过 0 个
+━━━ Step 2: 真实归档 ━━━
+✅ 归档完成：移动 5 个，跳过 0 个，失败 0 个
+━━━ Step 3: 验证归档结果 ━━━
+📂 archive/ 下有 1 个子目录: 📁 2026-06/ (5 个文件)
+✅ 源目录已全部清空，所有文件已归档
+```
 ```
 
 ---

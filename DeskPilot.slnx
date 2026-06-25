@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/DeskPilot.App/DeskPilot.App.csproj" />
     <Project Path="src/DeskPilot.Core/DeskPilot.Core.csproj" />
+    <Project Path="src/DeskPilot.Verify/DeskPilot.Verify.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/DeskPilot.Tests/DeskPilot.Tests.csproj" />

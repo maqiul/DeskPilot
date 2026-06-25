@@ -9,6 +9,18 @@
 
 ### 🎉 新增
 
+- **v0.1.2 — GitHub 上线 + E2E 验证工具**
+  - **GitHub 仓库上线**：[https://github.com/maqiul/DeskPilot](https://github.com/maqiul/DeskPilot)
+  - 推送全部 commits + tags（v0.0.3, v0.1.0, v0.1.1）
+  - **`DeskPilot.Verify` 项目**：无需 API Key 的 E2E 工具验证程序
+    - 控制台交互：DryRun 预览 → 确认 → 真实归档 → 验证结果
+    - 验证流程：扫描原始文件 → 列出修改/创建时间 → DryRun 预览 → 真实归档 → 检查 archive/ 子目录
+    - 支持参数：`[sourceDir] [granularity] [dateField] [--no]`
+    - E2E 实测结果：5 个发票文件 → `archive/2026-06/` 子目录 ✅
+  - **`publish-to-github.bat`** 推送向导（已用完，可删除）
+
+### 🛠️ v0.1.1 之前的版本
+
 - **v0.1.1 — AI 自动调用工具（Tool Calling 闭环）**
   - `ToolRegistry` 工具注册中心（`IToolRegistry` 接口 + 实现）
     - `Register()` 验证工具必须有 `[KernelFunction]` 方法
