@@ -141,11 +141,9 @@ jobs:
     steps:
       - name: Checkout code (for release notes)
         uses: actions/checkout@v4
-        with:
-          ref: master
-          sparse-checkout: |
-            RELEASE_NOTES*.md
-            CHANGELOG.md
+        # v0.7 修复：不用 sparse-checkout + ref:master（会导致 detached HEAD
+        # 让 softprops/action-gh-release 的 git 操作报错 exit code 128）。
+        # tag 前的 commit 已包含 CHANGELOG/RELEASE_NOTES，直接 checkout 即可。
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -196,7 +194,9 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
           body_path: release_notes.md
           files: |
-            artifacts/**/*.zip
-            artifacts/**/*.zip.sha256
+            artifacts/DeskPilot-Mcp-${{ github.ref_name }}-win-x64.zip
+            artifacts/DeskPilot-Mcp-${{ github.ref_name }}-win-x64.zip.sha256
+            artifacts/DeskPilot-App-${{ github.ref_name }}-win-x64.zip
+            artifacts/DeskPilot-App-${{ github.ref_name }}-win-x64.zip.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
