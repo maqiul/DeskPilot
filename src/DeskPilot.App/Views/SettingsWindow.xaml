@@ -208,6 +208,26 @@
                                    Foreground="{StaticResource PrimaryBrush}"/>
                     </StackPanel>
                 </Border>
+
+                <!-- 权限控制 -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="🛡 权限控制" FontSize="14" FontWeight="Bold"
+                                   Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,10"/>
+                        <CheckBox IsChecked="{Binding RequireConfirmation}"
+                                  Foreground="{StaticResource TextBrush}" FontSize="13"
+                                  VerticalContentAlignment="Center">
+                            <TextBlock TextWrapping="Wrap">
+                                启用危险操作确认
+                                <LineBreak/>
+                                <Run Foreground="{StaticResource SecondaryTextBrush}" FontSize="12">
+                                    AI 执行文件操作（移动、删除、重命名等）前弹出确认窗口。
+                                    关闭后 AI 将直接执行，如需恢复请重新打开。
+                                </Run>
+                            </TextBlock>
+                        </CheckBox>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 

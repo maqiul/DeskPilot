@@ -8,73 +8,90 @@ using System.Threading.Tasks;
 namespace DeskPilot.Core.Services;
 
 /// <summary>
-/// 本地 JSON 文件记忆存储。
-/// 
-/// - 文件路径：%AppData%/DeskPilot/memory.json
-/// - 最大保留 100 条消息，超出裁剪最旧的
-/// - 自动创建目录
+/// JSON 文件记忆存储。保存在 %AppData%/DeskPilot/memory.json。
+///
+/// 特性：
+/// - 启动时加载完整历史
+/// - 每次对话后自动保存（fire-and-forget，不阻塞 UI）
+/// - 最多保留 100 条（裁剪最早的消息）
+/// - 文件损坏时自动备份为 .bak + 重建
 /// </summary>
 public sealed class LocalJsonMemoryStore : IMemoryStore
 {
-    private const int MaxEntries = 100;
-    private readonly string _filePath;
+    private static readonly string StoreDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "DeskPilot");
+
+    private static readonly string StorePath = Path.Combine(StoreDir, "memory.json");
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        WriteIndented = false, // 省空间
+        WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public LocalJsonMemoryStore(string? customPath = null)
-    {
-        _filePath = customPath ?? GetDefaultPath();
-    }
+    private readonly SemaphoreSlim _lock = new(1, 1);
 
-    private static string GetDefaultPath()
-    {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var dir = Path.Combine(appData, "DeskPilot");
-        Directory.CreateDirectory(dir);
-        return Path.Combine(dir, "memory.json");
-    }
+    /// <summary>最多保留的消息条数。</summary>
+    public int MaxEntries { get; set; } = 100;
 
-    public Task<List<MemoryEntry>> LoadAsync(CancellationToken ct = default)
+    public async Task<List<MemoryEntry>> LoadAsync(CancellationToken ct = default)
     {
-        if (!File.Exists(_filePath))
-            return Task.FromResult(new List<MemoryEntry>());
-
+        await _lock.WaitAsync(ct);
         try
         {
-            var json = File.ReadAllText(_filePath);
-            var entries = JsonSerializer.Deserialize<List<MemoryEntry>>(json, JsonOptions);
-            return Task.FromResult(entries ?? new List<MemoryEntry>());
+            if (!File.Exists(StorePath))
+                return new List<MemoryEntry>();
+
+            var json = await File.ReadAllTextAsync(StorePath, ct);
+            var entries = JsonSerializer.Deserialize<List<MemoryEntry>>(json, JsonOptions)
+                          ?? new List<MemoryEntry>();
+            return entries;
         }
-        catch (Exception ex)
+        catch (JsonException)
         {
-            // 文件损坏 → 备份旧文件 + 新建空记忆
-            var backup = _filePath + ".corrupted." + DateTime.Now.ToString("yyyyMMddHHmmss");
-            try { File.Move(_filePath, backup); } catch { /* 尽力而为 */ }
-            System.Diagnostics.Debug.WriteLine($"[Memory] 文件损坏，已备份到 {backup}: {ex.Message}");
-            return Task.FromResult(new List<MemoryEntry>());
+            // 文件损坏 → 备份并重建
+            var bak = StorePath + ".bak";
+            try { File.Copy(StorePath, bak, overwrite: true); }
+            catch { /* 备份失败不阻塞 */ }
+            return new List<MemoryEntry>();
+        }
+        finally
+        {
+            _lock.Release();
         }
     }
 
     public async Task SaveAsync(List<MemoryEntry> entries, CancellationToken ct = default)
     {
-        // 裁剪最旧的消息
-        if (entries.Count > MaxEntries)
-            entries = entries.GetRange(entries.Count - MaxEntries, MaxEntries);
+        await _lock.WaitAsync(ct);
+        try
+        {
+            // 裁剪：只保留最近 MaxEntries 条
+            if (entries.Count > MaxEntries)
+                entries = entries.GetRange(entries.Count - MaxEntries, MaxEntries);
 
-        var dir = Path.GetDirectoryName(_filePath)!;
-        Directory.CreateDirectory(dir);
-
-        var json = JsonSerializer.Serialize(entries, JsonOptions);
-        await File.WriteAllTextAsync(_filePath, json, ct).ConfigureAwait(false);
+            Directory.CreateDirectory(StoreDir);
+            var json = JsonSerializer.Serialize(entries, JsonOptions);
+            await File.WriteAllTextAsync(StorePath, json, ct);
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
-    public Task ClearAsync(CancellationToken ct = default)
+    public async Task ClearAsync(CancellationToken ct = default)
     {
-        if (File.Exists(_filePath))
-            File.Delete(_filePath);
-        return Task.CompletedTask;
+        await _lock.WaitAsync(ct);
+        try
+        {
+            if (File.Exists(StorePath))
+                File.Delete(StorePath);
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 }

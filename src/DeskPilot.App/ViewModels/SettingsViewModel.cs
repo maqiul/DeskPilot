@@ -63,6 +63,7 @@ public partial class SettingsViewModel : ObservableObject
         DeepSeekModel = current.DeepSeekModel;
         OllamaEndpoint = current.OllamaEndpoint;
         OllamaModel = current.OllamaModel;
+        RequireConfirmation = current.RequireConfirmation;
 
         // 初始化可用模型列表（先静态兜底）
         LoadModelsForProvider(Provider);
@@ -113,6 +114,9 @@ public partial class SettingsViewModel : ObservableObject
 
     // ===== Key 可见性切换 =====
     [ObservableProperty] private bool _isApiKeyVisible;
+
+    // ===== 权限控制 =====
+    [ObservableProperty] private bool _requireConfirmation = true;
 
     // ===== 保存状态 =====
     [ObservableProperty] private string _statusMessage = string.Empty;
@@ -245,7 +249,8 @@ public partial class SettingsViewModel : ObservableObject
             DeepSeekModel = string.IsNullOrWhiteSpace(DeepSeekModel) ? "deepseek-chat" : DeepSeekModel.Trim(),
             OllamaEndpoint = string.IsNullOrWhiteSpace(OllamaEndpoint) ? "http://localhost:11434" : OllamaEndpoint.Trim(),
             OllamaModel = string.IsNullOrWhiteSpace(OllamaModel) ? "qwen2.5:7b" : OllamaModel.Trim(),
-            CachedModels = _settingsService.Load().CachedModels ?? new Dictionary<string, List<string>>()
+            CachedModels = _settingsService.Load().CachedModels ?? new Dictionary<string, List<string>>(),
+            RequireConfirmation = RequireConfirmation
         };
     }
 
