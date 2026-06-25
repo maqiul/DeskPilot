@@ -1,6 +1,17 @@
 namespace DeskPilot.Core.Tools;
 
 /// <summary>
+/// 工具风险等级。
+/// </summary>
+public enum RiskLevel
+{
+    /// <summary>只读操作，不会修改任何文件</summary>
+    Safe,
+    /// <summary>会修改/移动/删除文件，需要用户确认</summary>
+    Destructive
+}
+
+/// <summary>
 /// 工具统一接口。所有 DeskPilot "能干活"的工具都实现此接口。
 /// 类似 MCP 的 Function Calling 风格（先做内嵌实现，未来可暴露为 MCP Server）。
 /// </summary>
@@ -22,6 +33,11 @@ public interface ITool
     /// 输入参数 JSON Schema（供 AI 解析参数）。
     /// </summary>
     string InputSchemaJson { get; }
+
+    /// <summary>
+    /// 风险等级。Safe = 只读，Destructive = 会修改文件。
+    /// </summary>
+    RiskLevel Risk { get; }
 
     /// <summary>
     /// 执行工具。

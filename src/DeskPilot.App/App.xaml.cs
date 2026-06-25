@@ -166,9 +166,13 @@ public partial class App : Application
             sp.GetRequiredService<ISettingsService>(),
             sp.GetRequiredService<IModelListerFactory>()));
 
+        // v0.6: 权限服务（危险操作需确认）
+        var permService = new ToolPermissionService();
+        services.AddSingleton<IToolPermissionService>(permService);
+
         // IChatService 用工厂模式，支持运行时重建
         services.AddSingleton<IChatService>(sp =>
-            CreateChatService(sp.GetRequiredService<AppSettings>()));
+            CreateChatService(sp.GetRequiredService<AppSettings>(), permService));
 
         Services = services.BuildServiceProvider();
 
@@ -181,7 +185,7 @@ public partial class App : Application
             CopySettings(newSettings, oldSettings);
 
             // 重建 IChatService（直接 Dispose 旧的 Kernel）
-            var newChatService = CreateChatService(newSettings);
+            var newChatService = CreateChatService(newSettings, Services.GetRequiredService<IToolPermissionService>());
             var oldChatService = Services.GetService<IChatService>();
             (oldChatService as IDisposable)?.Dispose();
 
@@ -258,7 +262,7 @@ public partial class App : Application
     /// <summary>
     /// 根据当前设置创建 ChatService。
     /// </summary>
-    private IChatService CreateChatService(AppSettings settings)
+    private IChatService CreateChatService(AppSettings settings, IToolPermissionService permission)
     {
         var kernelBuilder = Kernel.CreateBuilder();
 
@@ -297,7 +301,7 @@ public partial class App : Application
             kernel.Plugins.Add(plugin);
         }
 
-        return new SemanticKernelChatService(kernel, toolRegistry);
+        return new SemanticKernelChatService(kernel, toolRegistry, permission);
     }
 
     private static void CopySettings(AppSettings src, AppSettings dst)

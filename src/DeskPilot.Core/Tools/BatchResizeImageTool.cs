@@ -26,6 +26,8 @@ public sealed class BatchResizeImageTool : ITool
         ".jpg", ".jpeg", ".png", ".bmp", ".gif"
     };
 
+    public RiskLevel Risk => RiskLevel.Destructive;
+
     public string Name => "batch_resize_image";
     public string Description =>
         "批量缩放目录里的图片到指定尺寸（保持原图比例）。" +

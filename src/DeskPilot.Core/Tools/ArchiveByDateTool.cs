@@ -35,6 +35,8 @@ public enum ArchiveGranularity
 /// </summary>
 public sealed class ArchiveByDateTool : ITool
 {
+    public RiskLevel Risk => RiskLevel.Destructive;
+
     public string Name => "archive_files_by_date";
     public string Description =>
         "按文件日期（修改时间或创建时间）把目录里的文件归档到子文件夹。 " +

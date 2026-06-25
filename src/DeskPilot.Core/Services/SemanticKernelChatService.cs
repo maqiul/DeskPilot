@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,6 +46,7 @@ public sealed class SemanticKernelChatService : IChatService
 {
     private readonly Kernel _kernel;
     private readonly IToolRegistry _toolRegistry;
+    private readonly IToolPermissionService? _permission;
     private readonly ChatHistory _history = new();
 
     /// <summary>
@@ -57,15 +59,16 @@ public sealed class SemanticKernelChatService : IChatService
     /// </summary>
     public event EventHandler<ToolEventArgs>? ToolInvoked;
 
-    public SemanticKernelChatService(Kernel kernel, IToolRegistry? toolRegistry = null)
+    public SemanticKernelChatService(Kernel kernel, IToolRegistry? toolRegistry = null, IToolPermissionService? permission = null)
     {
         _kernel = kernel;
         _toolRegistry = toolRegistry ?? new ToolRegistry();
+        _permission = permission;
         _history.AddSystemMessage(BuildSystemPrompt());
 
         // 用 SK 推荐的 FunctionInvocationFilter 监听工具调用
         // 替代过时的 Kernel.FunctionInvoking/FunctionInvoked events
-        _kernel.FunctionInvocationFilters.Add(new ToolCallObserver(this));
+        _kernel.FunctionInvocationFilters.Add(new ToolCallObserver(this, _toolRegistry, _permission));
     }
 
     private string BuildSystemPrompt()
@@ -145,13 +148,21 @@ public sealed class SemanticKernelChatService : IChatService
     }
 
     /// <summary>
-    /// 工具调用观察者：把 SK 的 FunctionInvocationFilter 转成我们自己的事件。
+    /// 工具调用观察者：把 SK 的 FunctionInvocationFilter 转成我们自己的事件，
+    /// 并在工具执行前进行权限检查。
     /// </summary>
     private sealed class ToolCallObserver : IFunctionInvocationFilter
     {
         private readonly SemanticKernelChatService _owner;
+        private readonly IToolRegistry _toolRegistry;
+        private readonly IToolPermissionService? _permission;
 
-        public ToolCallObserver(SemanticKernelChatService owner) => _owner = owner;
+        public ToolCallObserver(SemanticKernelChatService owner, IToolRegistry toolRegistry, IToolPermissionService? permission)
+        {
+            _owner = owner;
+            _toolRegistry = toolRegistry;
+            _permission = permission;
+        }
 
         public async Task OnFunctionInvocationAsync(FunctionInvocationContext context, Func<FunctionInvocationContext, Task> next)
         {
@@ -159,6 +170,24 @@ public sealed class SemanticKernelChatService : IChatService
             var sw = Stopwatch.StartNew();
 
             _owner.ToolInvoking?.Invoke(_owner, new ToolEventArgs(name, true, 0, "Invoking"));
+
+            // v0.6: 权限检查 —— 危险工具需确认
+            if (_permission != null)
+            {
+                var tool = _toolRegistry.Get(name);
+                if (tool?.Risk == Tools.RiskLevel.Destructive)
+                {
+                    var argsJson = System.Text.Json.JsonSerializer.Serialize(context.Arguments);
+                    var confirmMsg = _permission.CheckAndTrack(name, argsJson);
+                    if (confirmMsg != null)
+                    {
+                        // 拦截：不执行工具，返回确认提示
+                        context.Result = new FunctionResult(context.Function, confirmMsg);
+                        _owner.ToolInvoked?.Invoke(_owner, new ToolEventArgs(name, true, 0, "Blocked: needs confirmation"));
+                        return;
+                    }
+                }
+            }
 
             try
             {

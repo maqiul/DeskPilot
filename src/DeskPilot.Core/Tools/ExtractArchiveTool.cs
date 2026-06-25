@@ -15,6 +15,8 @@ namespace DeskPilot.Core.Tools;
 /// </summary>
 public sealed class ExtractArchiveTool : ITool
 {
+    public RiskLevel Risk => RiskLevel.Destructive;
+
     public string Name => "extract_archive";
     public string Description =>
         "解压 zip 文件到指定目录。" +

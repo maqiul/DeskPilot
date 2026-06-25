@@ -15,6 +15,8 @@ namespace DeskPilot.Core.Tools;
 /// </summary>
 public sealed class MoveFilesTool : ITool
 {
+    public RiskLevel Risk => RiskLevel.Destructive;
+
     public string Name => "move_files";
     public string Description =>
         "把源目录里的文件批量移动到目标目录。可选 glob 过滤（如 *.pdf）。" +

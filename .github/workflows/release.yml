@@ -141,6 +141,11 @@ jobs:
     steps:
       - name: Checkout code (for release notes)
         uses: actions/checkout@v4
+        with:
+          ref: master
+          sparse-checkout: |
+            RELEASE_NOTES*.md
+            CHANGELOG.md
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4

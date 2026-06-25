@@ -15,6 +15,8 @@ namespace DeskPilot.Core.Tools;
 /// </summary>
 public sealed class HashFilesTool : ITool
 {
+    public RiskLevel Risk => RiskLevel.Safe;
+
     public string Name => "hash_files";
     public string Description =>
         "批量计算目录里文件的哈希值。支持 md5/sha1/sha256/sha512。" +

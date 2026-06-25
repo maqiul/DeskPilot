@@ -19,6 +19,8 @@ namespace DeskPilot.Core.Tools;
 /// </summary>
 public sealed class RenameByPatternTool : ITool
 {
+    public RiskLevel Risk => RiskLevel.Destructive;
+
     public string Name => "rename_by_pattern";
     public string Description =>
         "批量重命名目录里的文件。支持正则替换（如 IMG_001 → photo_001）、添加前缀或后缀。" +

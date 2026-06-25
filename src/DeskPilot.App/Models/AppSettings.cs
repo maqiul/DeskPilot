@@ -40,6 +40,11 @@ public class AppSettings
     /// </summary>
     public Dictionary<string, List<string>> CachedModels { get; set; } = new();
 
+    /// <summary>
+    /// v0.6: 危险操作（移动/重命名/解压/缩放）是否需要用户确认。默认 true。
+    /// </summary>
+    public bool RequireConfirmation { get; set; } = true;
+
     [JsonIgnore]
     public static AppSettings Default => new();
 }

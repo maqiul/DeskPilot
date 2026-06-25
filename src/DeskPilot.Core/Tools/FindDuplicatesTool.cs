@@ -16,6 +16,8 @@ namespace DeskPilot.Core.Tools;
 /// </summary>
 public sealed class FindDuplicatesTool : ITool
 {
+    public RiskLevel Risk => RiskLevel.Safe;
+
     public string Name => "find_duplicates";
     public string Description =>
         "在指定目录里查找内容完全相同的重复文件（按 SHA256 哈希）。" +

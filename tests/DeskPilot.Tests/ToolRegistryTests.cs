@@ -11,6 +11,7 @@ internal sealed class StubKernelTool : ITool
     public string Name => "stub_tool";
     public string Description => "用于测试";
     public string InputSchemaJson => "{}";
+    public RiskLevel Risk => RiskLevel.Safe;
 
     public Task<ToolResult> ExecuteAsync(string argumentsJson, CancellationToken ct = default)
         => Task.FromResult(ToolResult.Ok("stub executed"));
@@ -25,6 +26,7 @@ internal sealed class NoKernelFunctionTool : ITool
     public string Name => "no_kf_tool";
     public string Description => "测试无效工具";
     public string InputSchemaJson => "{}";
+    public RiskLevel Risk => RiskLevel.Safe;
 
     public Task<ToolResult> ExecuteAsync(string argumentsJson, CancellationToken ct = default)
         => Task.FromResult(ToolResult.Ok("x"));
@@ -38,6 +40,7 @@ internal sealed class EmptyNameTool : ITool
     public string Name => ""; // 故意为空
     public string Description => "";
     public string InputSchemaJson => "{}";
+    public RiskLevel Risk => RiskLevel.Safe;
 
     public Task<ToolResult> ExecuteAsync(string argumentsJson, CancellationToken ct = default)
         => Task.FromResult(ToolResult.Ok("x"));
