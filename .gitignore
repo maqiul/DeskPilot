@@ -1,5 +1,6 @@
 # .NET 编译产物
 bin/
+publish/
 obj/
 *.user
 *.suo

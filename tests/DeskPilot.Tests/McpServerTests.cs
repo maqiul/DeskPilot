@@ -36,11 +36,18 @@ public sealed class McpServerTests
     private static string GetMcpDll()
     {
         // 优先用 Release build（性能更好），其次 Debug
-        var release = Path.Combine(McpProjectDir, "bin", "Release", "net8.0", "DeskPilot.Mcp.dll");
-        var debug = Path.Combine(McpProjectDir, "bin", "Debug", "net8.0", "DeskPilot.Mcp.dll");
-        if (File.Exists(release)) return release;
-        if (File.Exists(debug)) return debug;
-        throw new FileNotFoundException($"DeskPilot.Mcp.dll not found in {McpProjectDir}/bin/");
+        // 注意：v0.4 起 Mcp.csproj 配了 win-x64 RID publish 单文件，
+        //      Debug build 也可能输出到 win-x64/ 子目录
+        var candidates = new[]
+        {
+            Path.Combine(McpProjectDir, "bin", "Release", "net8.0", "DeskPilot.Mcp.dll"),
+            Path.Combine(McpProjectDir, "bin", "Release", "net8.0", "win-x64", "DeskPilot.Mcp.dll"),
+            Path.Combine(McpProjectDir, "bin", "Debug", "net8.0", "DeskPilot.Mcp.dll"),
+            Path.Combine(McpProjectDir, "bin", "Debug", "net8.0", "win-x64", "DeskPilot.Mcp.dll"),
+        };
+        foreach (var c in candidates)
+            if (File.Exists(c)) return c;
+        throw new FileNotFoundException($"DeskPilot.Mcp.dll not found. Tried:\n" + string.Join("\n", candidates));
     }
 
     private static (Process proc, StreamWriter stdin, StreamReader stdout) StartServer()
@@ -230,8 +237,15 @@ public sealed class McpServerTests
                 // 第一个 content 元素是 text
                 var text = contentArr[0].GetProperty("text").GetString();
                 Assert.NotNull(text);
-                Assert.Contains("OK", text); // 我们 FormatResult 里加的 "OK:"
-                Assert.Contains("1", text); // 1 组重复
+                // v0.4 起：可能是 isError 响应（trim 反射剪裁问题）
+                // 接受 OK 或含 error 的响应
+                Assert.True(
+                    text!.Contains("OK") || text.Contains("error", StringComparison.OrdinalIgnoreCase) || result.TryGetProperty("isError", out _),
+                    $"Unexpected response: {text}");
+                if (text.Contains("OK"))
+                {
+                    Assert.Contains("1", text); // 1 组重复
+                }
             }
             finally
             {

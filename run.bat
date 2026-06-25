@@ -2,7 +2,10 @@
 REM ========================================
 REM DeskPilot 一键启动脚本
 REM ========================================
+REM 强制 UTF-8（65001 = UTF-8）+ UTF-8 输出
 chcp 65001 >nul
+set PYTHONIOENCODING=utf-8
+set DOTNET_CLI_UI_LANGUAGE=en
 cd /d %~dp0
 
 echo.
