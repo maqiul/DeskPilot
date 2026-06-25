@@ -1,0 +1,74 @@
+[
+  {
+    "Id": "organize-downloads",
+    "Name": "整理下载文件夹",
+    "Description": "按文件类型自动归类下载文件夹里的内容（PDF/图片/视频/压缩包/文档/其他）",
+    "Icon": "📁",
+    "PromptTemplate": "请帮我整理下载文件夹，把文件按类型分到子文件夹里（PDF、图片、视频、压缩包、文档、其他），不要移动子文件夹本身",
+    "Tools": ["MoveFiles"],
+    "Category": "文件整理"
+  },
+  {
+    "Id": "find-duplicate-photos",
+    "Name": "找出重复照片",
+    "Description": "扫描指定目录，列出内容哈希相同的重复图片（支持 SHA256）",
+    "Icon": "🔍",
+    "PromptTemplate": "请帮我找出下载文件夹里重复的照片（按内容哈希判断，不是文件名），列出重复组和每组文件路径",
+    "Tools": ["FindDuplicates", "HashFiles"],
+    "Category": "文件整理"
+  },
+  {
+    "Id": "batch-rename",
+    "Name": "批量重命名文件",
+    "Description": "按统一规则批量重命名（日期前缀 / 序号 / 正则替换）",
+    "Icon": "✏️",
+    "PromptTemplate": "请帮我把下载文件夹里的所有 jpg 图片批量重命名为 IMG_YYYYMMDD_NNN.jpg 格式（按修改日期排序）",
+    "Tools": ["RenameByPattern"],
+    "Category": "文件整理"
+  },
+  {
+    "Id": "batch-resize-images",
+    "Name": "批量压缩图片",
+    "Description": "把大图缩到指定宽度（如 1920px），保持宽高比，输出到新目录",
+    "Icon": "🖼",
+    "PromptTemplate": "请帮我把下载文件夹里宽度超过 1920px 的 jpg/png 图片批量缩到 1920px 宽，输出到 download-resized 子文件夹，保持原格式",
+    "Tools": ["BatchResizeImage"],
+    "Category": "图片处理"
+  },
+  {
+    "Id": "batch-extract-archives",
+    "Name": "批量解压压缩包",
+    "Description": "把下载文件夹里的所有 zip/7z/rar 批量解压到同名子目录",
+    "Icon": "📦",
+    "PromptTemplate": "请帮我把下载文件夹里所有 zip/7z/rar 压缩包批量解压到同名子文件夹（同名子目录已存在则跳过）",
+    "Tools": ["ExtractArchive"],
+    "Category": "文件整理"
+  },
+  {
+    "Id": "compute-file-hashes",
+    "Name": "计算文件哈希值",
+    "Description": "批量计算文件的 SHA256 / MD5，输出 CSV 报告",
+    "Icon": "🔐",
+    "PromptTemplate": "请帮我计算下载文件夹里所有文件的 SHA256 哈希值，按文件大小从大到小排序，输出表格",
+    "Tools": ["HashFiles"],
+    "Category": "文件整理"
+  },
+  {
+    "Id": "clean-large-files",
+    "Name": "清理大文件",
+    "Description": "找出指定目录里大于 X MB 的大文件，让用户确认是否删除",
+    "Icon": "📊",
+    "PromptTemplate": "请帮我找出下载文件夹里大于 100MB 的文件，列出文件名、大小、最后修改时间，问我哪些要删除",
+    "Tools": [],
+    "Category": "文件整理"
+  },
+  {
+    "Id": "archive-by-date",
+    "Name": "按日期归档文件",
+    "Description": "把文件按修改日期归档到 YYYY/MM 子目录（适合照片、视频）",
+    "Icon": "🗓",
+    "PromptTemplate": "请帮我把下载文件夹里的所有照片和视频按修改日期归档到 YYYY/MM 子目录（同名冲突自动加 _N 后缀）",
+    "Tools": ["ArchiveByDate"],
+    "Category": "文件整理"
+  }
+]

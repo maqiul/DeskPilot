@@ -66,9 +66,11 @@ public partial class App : Application
                 stServices.AddSingleton<ChatViewModel>();
                 stServices.AddTransient<ChatWindow>();
                 stServices.AddTransient<SettingsWindow>();
+                stServices.AddSingleton<ISkillService, SkillService>();
                 stServices.AddSingleton<SettingsViewModel>(sp => new SettingsViewModel(
                     sp.GetRequiredService<ISettingsService>(),
                     sp.GetRequiredService<IModelListerFactory>(),
+                    sp.GetRequiredService<ISkillService>(),
                     closeWindow: null));
                 Services = stServices.BuildServiceProvider();
 
@@ -164,7 +166,9 @@ public partial class App : Application
 
         services.AddSingleton<SettingsViewModel>(sp => new SettingsViewModel(
             sp.GetRequiredService<ISettingsService>(),
-            sp.GetRequiredService<IModelListerFactory>()));
+            sp.GetRequiredService<IModelListerFactory>(),
+            sp.GetService<ISkillService>(),
+            closeWindow: null));
 
         // v0.6: 权限服务（危险操作需确认）
         var permService = new ToolPermissionService();
@@ -172,6 +176,9 @@ public partial class App : Application
 
         // v0.7: 本地记忆存储
         services.AddSingleton<IMemoryStore>(new LocalJsonMemoryStore());
+
+        // v0.9: 技能服务
+        services.AddSingleton<ISkillService, SkillService>();
 
         // IChatService 用工厂模式，支持运行时重建
         services.AddSingleton<IChatService>(sp =>
@@ -253,7 +260,9 @@ public partial class App : Application
         tempServices.AddSingleton<IModelListerFactory, ModelListerFactory>();
         tempServices.AddSingleton<SettingsViewModel>(sp => new SettingsViewModel(
             sp.GetRequiredService<ISettingsService>(),
-            sp.GetRequiredService<IModelListerFactory>()));
+            sp.GetRequiredService<IModelListerFactory>(),
+            skillService: null,
+            closeWindow: null));
         tempServices.AddTransient<SettingsWindow>();
         var sp = tempServices.BuildServiceProvider();
 

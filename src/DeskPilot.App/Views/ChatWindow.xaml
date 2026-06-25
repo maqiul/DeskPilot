@@ -45,6 +45,12 @@
         <Border Grid.Row="0" Background="{StaticResource CardBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
                 Padding="20,14">
+            <!-- 快捷技能横条（标题栏下方折叠） -->
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -73,6 +79,39 @@
                 <Button Grid.Column="3" Content="⚙ 设置"
                         Style="{StaticResource SecondaryButton}"
                         Click="OpenSettings_Click"/>
+            </Grid>
+
+                <!-- v0.9: 快捷技能横条（标题栏下方，可滚动） -->
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled" Margin="0,12,0,0"
+                              Padding="0,4">
+                    <ItemsControl ItemsSource="{Binding EnabledSkills}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="10" Padding="12,8" Margin="0,0,8,0"
+                                        Background="{StaticResource CardBrush}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                        Style="{StaticResource CardShadow}"
+                                        Cursor="Hand" Tag="{Binding PromptTemplate}"
+                                        MouseLeftButtonUp="SkillCard_Click"
+                                        ToolTip="{Binding Description}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Icon}" FontSize="16"
+                                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Name}" FontSize="13"
+                                                   Foreground="{StaticResource TextBrush}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </Grid>
         </Border>
 

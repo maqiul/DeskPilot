@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DeskPilot.Core.Models;
 using DeskPilot.Core.Services;
 using System.Collections.ObjectModel;
 using System.Threading;
@@ -29,14 +30,29 @@ public partial class ChatMessage : ObservableObject
 public partial class ChatViewModel : ObservableObject
 {
     private IChatService _chatService;
+    private ISkillService? _skillService;
     private CancellationTokenSource? _cts;
 
-    public ChatViewModel(IChatService chatService)
+    public ChatViewModel(IChatService chatService, ISkillService? skillService = null)
     {
         _chatService = chatService;
+        _skillService = skillService;
         Messages = new ObservableCollection<ChatMessage>();
         Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
+        EnabledSkills = new ObservableCollection<Skill>();
+        RefreshSkills();
+        if (_skillService != null) _skillService.SkillsChanged += (_, _) => RefreshSkills();
         HookToolEvents(chatService);
+    }
+
+    /// <summary>v0.9: 启用的技能列表（顶部快捷横条数据源）</summary>
+    public ObservableCollection<Skill> EnabledSkills { get; }
+
+    private void RefreshSkills()
+    {
+        EnabledSkills.Clear();
+        if (_skillService == null) return;
+        foreach (var s in _skillService.Enabled) EnabledSkills.Add(s);
     }
 
     /// <summary>

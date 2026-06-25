@@ -66,4 +66,15 @@ public partial class ChatWindow : Window
                 _viewModel.SendCommand.Execute(null);
         }
     }
+
+    /// <summary>v0.9: 顶部快捷技能横条点击 — 填入输入框并自动发送。</summary>
+    private void SkillCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Border { Tag: string prompt } && !string.IsNullOrWhiteSpace(prompt))
+        {
+            _viewModel.UserInput = prompt;
+            if (_viewModel.SendCommand.CanExecute(null))
+                _viewModel.SendCommand.Execute(null);
+        }
+    }
 }

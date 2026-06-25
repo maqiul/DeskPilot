@@ -20,6 +20,7 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly ISettingsService _settingsService;
     private readonly IModelListerFactory _modelListerFactory;
+    private readonly ISkillService? _skillService;
     private readonly Action? _closeWindow;
 
     /// <summary>
@@ -32,13 +33,13 @@ public partial class SettingsViewModel : ObservableObject
     /// 生产构造：注入 IModelListerFactory（DI 容器提供）。
     /// </summary>
     public SettingsViewModel(ISettingsService settingsService, IModelListerFactory modelListerFactory)
-        : this(settingsService, modelListerFactory, CloseWindowViaDispatcher) { }
+        : this(settingsService, modelListerFactory, null, CloseWindowViaDispatcher) { }
 
     /// <summary>
     /// 测试友好的构造：允许注入自定义的"关闭窗口"回调。
     /// </summary>
     public SettingsViewModel(ISettingsService settingsService, Action? closeWindow)
-        : this(settingsService, new NullModelListerFactory(), closeWindow) { }
+        : this(settingsService, new NullModelListerFactory(), null, closeWindow) { }
 
     /// <summary>
     /// 完整构造（测试/生产都用这个）。
@@ -46,10 +47,12 @@ public partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(
         ISettingsService settingsService,
         IModelListerFactory modelListerFactory,
+        ISkillService? skillService,
         Action? closeWindow)
     {
         _settingsService = settingsService;
         _modelListerFactory = modelListerFactory;
+        _skillService = skillService;
         _closeWindow = closeWindow;
 
         // 加载现有设置（只调一次 Load，避免重复 IO）
@@ -68,6 +71,10 @@ public partial class SettingsViewModel : ObservableObject
 
         // 初始化可用模型列表（先静态兜底）
         LoadModelsForProvider(Provider);
+
+        // 初始化技能列表（v0.9）
+        LoadSkills();
+        if (_skillService != null) _skillService.SkillsChanged += (_, _) => LoadSkills();
     }
 
     private Dictionary<string, List<string>> _initialCachedModels = new();
@@ -127,6 +134,13 @@ public partial class SettingsViewModel : ObservableObject
         // 即时应用主题，不需重启
         ThemeManager.ApplyTheme(value);
     }
+
+    // ===== 技能（v0.9）=====
+    /// <summary>所有技能（设置窗口技能管理页数据源）。</summary>
+    public ObservableCollection<SkillRow> Skills { get; } = new();
+
+    /// <summary>是否启用技能管理（无 ISkillService 时隐藏整张卡片）。</summary>
+    public bool HasSkillService => _skillService != null;
 
     // ===== 保存状态 =====
     [ObservableProperty] private string _statusMessage = string.Empty;
@@ -310,6 +324,26 @@ public partial class SettingsViewModel : ObservableObject
         _closeWindow?.Invoke();
     }
 
+    // ===== 技能（v0.9）=====
+    /// <summary>从 SkillService 刷新技能列表到 UI 集合。</summary>
+    private void LoadSkills()
+    {
+        Skills.Clear();
+        if (_skillService == null) return;
+        foreach (var s in _skillService.All)
+        {
+            Skills.Add(new SkillRow(s, _skillService));
+        }
+    }
+
+    [RelayCommand]
+    private async Task ToggleSkillAsync(SkillRow? row)
+    {
+        if (row == null || _skillService == null) return;
+        await _skillService.ToggleAsync(row.Id);
+        // ToggleAsync 内部已触发 SkillsChanged → LoadSkills 自动刷新
+    }
+
     private async Task DelayedCloseAsync(int ms)
     {
         await Task.Delay(ms);
@@ -375,4 +409,42 @@ public sealed class NullModelListerFactory : IModelListerFactory
     public IModelLister GetLister(AiProvider provider)
         => throw new NotSupportedException(
             "未配置 IModelListerFactory，请通过 DI 注入真实实现（参见 App.xaml.cs）。");
+}
+
+/// <summary>
+/// v0.9: 技能行（设置窗口技能管理页用）。
+/// 把 Skill 模型包成可绑定的视图模型，IsEnabled 双向绑定 + 写回 SkillService。
+/// </summary>
+public partial class SkillRow : ObservableObject
+{
+    private readonly ISkillService _svc;
+
+    public SkillRow(Skill skill, ISkillService svc)
+    {
+        Id = skill.Id;
+        Name = skill.Name;
+        Description = skill.Description;
+        Icon = skill.Icon;
+        PromptTemplate = skill.PromptTemplate;
+        Category = skill.Category;
+        ToolsText = skill.Tools.Count == 0 ? "无依赖工具" : "工具: " + string.Join(", ", skill.Tools);
+        _isEnabled = skill.IsEnabled;
+        _svc = svc;
+    }
+
+    public string Id { get; }
+    public string Name { get; }
+    public string Description { get; }
+    public string Icon { get; }
+    public string PromptTemplate { get; }
+    public string Category { get; }
+    public string ToolsText { get; }
+
+    [ObservableProperty] private bool _isEnabled;
+
+    partial void OnIsEnabledChanged(bool value)
+    {
+        // 写回 SkillService（fire-and-forget，错误由内部日志兜底）
+        _ = _svc.ToggleAsync(Id, enable: value);
+    }
 }

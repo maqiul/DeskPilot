@@ -238,6 +238,54 @@
                     </StackPanel>
                 </Border>
 
+                <!-- 技能（v0.9）-->
+                <Border Style="{StaticResource SectionCard}"
+                        Visibility="{Binding HasSkillService, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                    <StackPanel>
+                        <TextBlock Text="🛠  技能" Style="{StaticResource SectionTitle}"/>
+                        <TextBlock Text="关闭后顶部快捷横条不再显示该技能" FontSize="12"
+                                   Foreground="{StaticResource SecondaryTextBrush}" Margin="0,0,0,12"/>
+
+                        <ItemsControl ItemsSource="{Binding Skills}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,8" Padding="12,10" CornerRadius="8"
+                                            Background="{StaticResource BackgroundBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="20"
+                                                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextBrush}"/>
+                                                    <Border CornerRadius="3" Padding="6,1" Margin="8,0,0,0"
+                                                            Background="{StaticResource CardBrush}"
+                                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                                        <TextBlock Text="{Binding Category}" FontSize="10"
+                                                                   Foreground="{StaticResource SecondaryTextBrush}"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Description}" FontSize="12"
+                                                           Foreground="{StaticResource SecondaryTextBrush}"
+                                                           TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                            <CheckBox Grid.Column="2" IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                      Style="{StaticResource OrangeCheckBox}"
+                                                      VerticalAlignment="Center" ToolTip="启用 / 禁用此技能"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
                 <!-- 外观 -->
                 <Border Style="{StaticResource SectionCard}">
                     <StackPanel>

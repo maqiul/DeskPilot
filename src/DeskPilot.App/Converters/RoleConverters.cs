@@ -91,8 +91,9 @@ public sealed class BoolToVisibilityConverter : IValueConverter
 
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is bool b && b) return Visibility.Visible;
-        return Visibility.Collapsed;
+        bool visible = value is bool b && b;
+        if (parameter is string p && p == "Invert") visible = !visible;
+        return visible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
