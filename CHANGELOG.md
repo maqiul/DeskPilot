@@ -2,6 +2,32 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.6.0] - 2026-06-25
+
+### 🛡️ 新增功能
+
+#### 权限控制：危险工具需用户确认
+- **工具风险分级**：`ITool` 新增 `RiskLevel`（`Safe` / `Destructive`）
+- **确认机制**：危险工具首次调用时拦截，AI 会自动询问用户"确认执行？"
+- **智能缓存**：用户确认后 30 秒内同一参数再次调用自动放行
+- **开关控制**：`AppSettings.RequireConfirmation`（设置窗口可开关，默认开）
+- **拦截层**：`ToolCallObserver`（SK `IFunctionInvocationFilter`）在工具执行前检查
+
+工具分级：
+| 工具 | 风险等级 | 原因 |
+|------|---------|------|
+| find_duplicates | Safe | 只读扫描 |
+| hash_files | Safe | 只读计算 |
+| archive_files_by_date | Destructive | 移动文件 |
+| move_files | Destructive | 移动文件 |
+| rename_by_pattern | Destructive | 重命名文件 |
+| batch_resize_image | Destructive | 覆盖图片 |
+| extract_archive | Destructive | 解压可能覆盖 |
+
+#### Release workflow 修复
+- `release` job 加 `actions/checkout`（之前缺 checkout 导致 CHANGELOG.md 不可读）
+- 指定 `ref: master` + `sparse-checkout`（只拉 release notes 文件，速度最快）
+
 ## [v0.5.1] - 2026-06-25
 
 ### 🎉 新增功能

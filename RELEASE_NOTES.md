@@ -1,34 +1,34 @@
-## 🎉 DeskPilot v0.5.1 — AI 流式输出 + CI 启动验证
+## 🛡️ DeskPilot v0.6.0 — 权限控制
 
-### ⚡ AI 流式输出（打字机效果）
+### 危险工具需用户确认
 
-AI 回复现在像 ChatGPT 一样逐字"蹦"出来，不再是一大段突然冒出。
+DeskPilot 现在有了真正的安全边界。AI 在调用危险工具（移动/重命名/解压/缩放图片）前，会先征求你的同意。
 
-- **IChatService** 新增 `ChatStreamAsync`（`IAsyncEnumerable<string>` 逐 token 返回）
-- **SemanticKernelChatService** 用 SK 的 `GetStreamingChatMessageContentsAsync` + `FunctionChoiceBehavior.Auto()` — Tool Calling 自动处理，工具先内部执行，后流式输出最终 LLM 回复
-- **ChatViewModel** 改为先插入空 assistant 气泡 → `await foreach` 逐片追加 → 打字机效果
-- **取消键优化**：取消后消息气泡保留已输出的内容 + `⏸️ 已取消`（而不是吞掉整条消息）
+**怎么工作：**
+1. 你让 AI 做一件事（比如"把桌面的 PDF 移到 D:\docs"）
+2. AI 决定调 `move_files` 工具
+3. 🛑 **拦截！** AI 回复："⚠️ 即将移动 15 个文件到 D:\docs。确认执行吗？"
+4. 你回复"确认" → AI 再次调用 → ✅ 执行
 
-### 🛡️ CI 启动 smoke test（防 XAML 崩溃回归）
+**工具风险分级：**
 
-防止 v0.0.3 → v0.5.0 期间存在的 `XamlParseException` 再次出现。
+| 风险等级 | 工具 |
+|---------|------|
+| ✅ Safe | find_duplicates, hash_files |
+| ⚠️ Destructive | archive_files_by_date, move_files, rename_by_pattern, batch_resize_image, extract_archive |
 
-- `DESKPILOT_SMOKE_TEST=1` 环境变量触发简化启动路径
-- `StubChatService`：不调 AI，直接走完 **XAML 解析 → DI 注入 → 窗口创建** 全链路
-- 自动 `Shutdown(0)` 退出：exit 0 = 通过，exit 2 = 崩溃
-- `ci.yml` 改用 `Start-Process -Wait` + exit code 检测（替代旧的手动 kill）
+**可配置：** 设置窗口里可以开关"危险操作需确认"（默认开启）。
 
 ### 🔧 其他改进
 
-- `IChatService` 继承 `IDisposable`（统一生命周期管理）
-- 修复 CI workflow 分支监听：`main` → `master`（之前 CI 从未触发过）
-- `StubChatService` 实现完整 `IChatService` 接口（含流式方法）
+- 修复 `release.yml` release job 缺少代码 checkout（导致 Release Notes 始终为空）
+- 修复 CI workflow 分支监听：`main` → `master`
 
 ### 📦 下载
 
 | 文件 | 说明 |
 |------|------|
-| `DeskPilot-App-v0.5.1-win-x64.zip` | DeskPilot App（需要 .NET 8 运行时） |
-| `DeskPilot-Mcp-v0.5.1-win-x64.zip` | MCP Server（自包含，无需运行时） |
+| `DeskPilot-App-v0.6.0-win-x64.zip` | DeskPilot App（需要 .NET 8 运行时） |
+| `DeskPilot-Mcp-v0.6.0-win-x64.zip` | MCP Server（自包含，无需运行时） |
 
 > 完整变更历史见 [CHANGELOG.md](https://github.com/maqiul/DeskPilot/blob/master/CHANGELOG.md)
