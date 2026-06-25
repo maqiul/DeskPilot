@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 蚂蚁金服橙色体系（沿用老马习惯的配色） -->
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#FF6A00"/>
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#FF8C3D"/>
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#FAFAFA"/>
+    <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="#FFE7D4"/>
+    <SolidColorBrush x:Key="TextBrush" Color="#222222"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#888888"/>
+    <SolidColorBrush x:Key="UserBubbleBrush" Color="#FFF5EB"/>
+    <SolidColorBrush x:Key="AssistantBubbleBrush" Color="#FFFFFF"/>
+
+</ResourceDictionary>

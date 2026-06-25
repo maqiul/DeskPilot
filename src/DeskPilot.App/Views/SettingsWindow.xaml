@@ -1,0 +1,250 @@
+<Window x:Class="DeskPilot.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:DeskPilot.App.ViewModels"
+        xmlns:models="clr-namespace:DeskPilot.App.Models"
+        xmlns:local="clr-namespace:DeskPilot.App"
+        mc:Ignorable="d"
+        Title="⚙ DeskPilot 设置" Height="620" Width="540"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{StaticResource BackgroundBrush}"
+        d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}">
+
+    <Window.Resources>
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="Margin" Value="0,12,0,6"/>
+        </Style>
+
+        <Style x:Key="FieldInput" TargetType="TextBox">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="SectionCard" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 标题 -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="⚙ AI 设置" FontSize="20" FontWeight="Bold"
+                       Foreground="{StaticResource PrimaryBrush}"/>
+            <TextBlock Text="配置你的 AI 提供商和 API Key（加密保存到本地）"
+                       FontSize="12" Foreground="{StaticResource SecondaryTextBrush}"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- 表单 -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- AI Provider -->
+                <Border Style="{StaticResource SectionCard}">
+                    <StackPanel>
+                        <TextBlock Text="AI 提供商" Style="{StaticResource FieldLabel}" Margin="0"/>
+                        <ComboBox FontSize="13" Padding="10,8"
+                                  ItemsSource="{Binding Source={x:Static local:ProviderOptions.ProviderList}}"
+                                  SelectedItem="{Binding Provider, Mode=TwoWay}"/>
+                        <TextBlock Text="OpenAI / DeepSeek 需要联网，Ollama 完全本地离线"
+                                   FontSize="11" Foreground="{StaticResource SecondaryTextBrush}"
+                                   Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- OpenAI 配置 -->
+                <Border Style="{StaticResource SectionCard}"
+                        Visibility="{Binding IsOpenAiSelected, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                    <StackPanel>
+                        <TextBlock Text="OpenAI 设置" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
+
+                        <TextBlock Text="API Key" Style="{StaticResource FieldLabel}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Style="{StaticResource FieldInput}"
+                                     Text="{Binding OpenAiApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button Grid.Column="1" Content="👁" Margin="6,0,0,0"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding ToggleApiKeyVisibilityCommand}"
+                                    ToolTip="显示/隐藏 API Key"/>
+                        </Grid>
+
+                        <!-- 模型选择 + 刷新按钮 -->
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="模型" Style="{StaticResource FieldLabel}"/>
+                            <Button Grid.Row="0" Grid.Column="1" Content="🔄" Margin="0,12,0,0"
+                                    Style="{StaticResource SecondaryButton}" Padding="8,4"
+                                    Command="{Binding RefreshModelsCommand}"
+                                    IsEnabled="{Binding IsRefreshEnabled}"
+                                    ToolTip="从 Provider 拉取最新模型列表"/>
+                            <ComboBox Grid.Row="1" Grid.ColumnSpan="2" FontSize="13" Padding="10,8"
+                                      IsEditable="True"
+                                      ItemsSource="{Binding CurrentModelList}"
+                                      DisplayMemberPath="DisplayName"
+                                      Text="{Binding OpenAiModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- DeepSeek 配置 -->
+                <Border Style="{StaticResource SectionCard}"
+                        Visibility="{Binding IsDeepSeekSelected, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                    <StackPanel>
+                        <TextBlock Text="DeepSeek 设置" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
+
+                        <TextBlock Text="API Key" Style="{StaticResource FieldLabel}"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Style="{StaticResource FieldInput}"
+                                     Text="{Binding DeepSeekApiKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            <Button Grid.Column="1" Content="👁" Margin="6,0,0,0"
+                                    Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding ToggleApiKeyVisibilityCommand}"/>
+                        </Grid>
+
+                        <!-- 模型选择 + 刷新按钮 -->
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="模型" Style="{StaticResource FieldLabel}"/>
+                            <Button Grid.Row="0" Grid.Column="1" Content="🔄" Margin="0,12,0,0"
+                                    Style="{StaticResource SecondaryButton}" Padding="8,4"
+                                    Command="{Binding RefreshModelsCommand}"
+                                    IsEnabled="{Binding IsRefreshEnabled}"/>
+                            <ComboBox Grid.Row="1" Grid.ColumnSpan="2" FontSize="13" Padding="10,8"
+                                      IsEditable="True"
+                                      ItemsSource="{Binding CurrentModelList}"
+                                      DisplayMemberPath="DisplayName"
+                                      Text="{Binding DeepSeekModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Ollama 配置 -->
+                <Border Style="{StaticResource SectionCard}"
+                        Visibility="{Binding IsOllamaSelected, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                    <StackPanel>
+                        <TextBlock Text="Ollama 设置" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{StaticResource PrimaryBrush}" Margin="0,0,0,8"/>
+
+                        <TextBlock Text="Endpoint" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Style="{StaticResource FieldInput}"
+                                 Text="{Binding OllamaEndpoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                        <!-- 模型选择 + 刷新按钮 -->
+                        <Grid Margin="0,12,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="模型" Style="{StaticResource FieldLabel}"/>
+                            <Button Grid.Row="0" Grid.Column="1" Content="🔄" Margin="0,12,0,0"
+                                    Style="{StaticResource SecondaryButton}" Padding="8,4"
+                                    Command="{Binding RefreshModelsCommand}"
+                                    IsEnabled="{Binding IsRefreshEnabled}"/>
+                            <ComboBox Grid.Row="1" Grid.ColumnSpan="2" FontSize="13" Padding="10,8"
+                                      IsEditable="True"
+                                      ItemsSource="{Binding CurrentModelList}"
+                                      DisplayMemberPath="DisplayName"
+                                      Text="{Binding OllamaModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        </Grid>
+
+                        <TextBlock Text="💡 Ollama 完全本地运行，无需 API Key。请确保 ollama serve 已启动。"
+                                   FontSize="11" Foreground="{StaticResource SecondaryTextBrush}"
+                                   Margin="0,8,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 刷新状态指示器 -->
+                <Border Style="{StaticResource SectionCard}"
+                        Visibility="{Binding IsRefreshing, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="⏳ 正在拉取模型列表..." FontSize="12"
+                                   Foreground="{StaticResource PrimaryBrush}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 底部按钮 + 状态 -->
+        <Grid Grid.Row="2" Margin="0,16,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 状态条 -->
+            <Border Grid.Row="0" CornerRadius="6" Padding="10,6" Margin="0,0,0,12"
+                    Background="{StaticResource CardBrush}"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    Visibility="{Binding HasStatus, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                <TextBlock Text="{Binding StatusMessage}" FontSize="12"
+                           HorizontalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#2E7D32"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsError}" Value="True">
+                                    <Setter Property="Foreground" Value="#C62828"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+
+            <!-- 按钮 -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="取消" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding CancelCommand}" MinWidth="80" Margin="0,0,8,0"/>
+                <Button Content="保存" Style="{StaticResource PrimaryButton}"
+                        Command="{Binding SaveCommand}" MinWidth="80"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
