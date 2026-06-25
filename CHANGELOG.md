@@ -9,17 +9,23 @@
 
 ### 🎉 新增
 
+- **v0.1 — 第一个 MCP 工具：按日期归档文件**
+  - `ITool` 接口 + `ToolResult`（统一工具抽象，未来可暴露为 MCP Server）
+  - `ArchiveByDateTool`：按修改时间/创建时间 + 年/月/日粒度归档
+  - **功能特性**：
+    - 支持修改时间 / 创建时间切换
+    - 支持年 / 月 / 日三种粒度
+    - 支持自定义目标目录（默认 `{source}/archive/`）
+    - 支持文件 glob 过滤（`*.pdf`）
+    - 支持 **DryRun 模式**（只预览不实际移动）
+    - 智能 collision 处理（同名 + `_2`/`_3`/`_4` 后缀）
+    - 标准 `ToolResult` 输出（Success / Summary / Data / ErrorMessage）
+  - **新增 13 个单元测试**（月粒度 / 年粒度 / 日粒度 / Created时间 / DryRun / 自定义目标 / 模式过滤 / 重名冲突 / 错误处理 / 空目录 / 不存在目录 / 无效 JSON / 报告统计）
+  - **测试统计**：46 → **59 测试**
+
+### 🛠️ v0.1 之前的版本
+
 - **v0.0.3 — 动态模型列表（UI 闭环）**
-  - `IModelLister` 接口 + 3 个实现：`OpenAIModelLister` / `DeepSeekModelLister` / `OllamaModelLister`
-  - `HttpModelListerBase` 通用基类（鉴权 + 错误吞咽）
-  - `AiModelCatalog` 静态兜底（OpenAI 6 个 / DeepSeek 3 个 / Ollama 动态）
-  - `ModelListerFactory` 路由 AiProvider → 具体 Lister
-  - `AppSettings.CachedModels` 字段：拉到的列表加密缓存到 `%APPDATA%\DeskPilot\settings.dat`
-  - `SettingsViewModel.RefreshModelsCommand` + `CurrentModelList` ObservableCollection
-  - **设置窗口每个 Provider 卡片新增 🔄 刷新按钮**（含 loading 状态）
-  - **模型下拉框改为 `IsEditable` ComboBox**：可下拉选，也可手动输入
-  - `Microsoft.Extensions.Http 8.0.0` 引入（HttpClient 注入）
-  - **新增 22 个单元测试**（ModelLister 16 + Refresh Command 6）
 
 ### 🐛 修复
 
