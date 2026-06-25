@@ -1,8 +1,16 @@
-# DeskPilot v0.4.0 Release Notes
+# DeskPilot v0.4.1 Release Notes
 
 发布于 2026-06-25
 
-## 🎯 核心亮点
+## 🐛 修复
+
+- **release.yml notes 输出修复**：v0.4.0 的 Release notes 显示 "See CHANGELOG.md" 而不是完整内容，已修复 heredoc 输出格式。重新打 tag 即生效。
+
+## 🎯 v0.4.0 完整 Release Notes（适用此版本）
+
+发布于 2026-06-25
+
+### 核心亮点
 
 **DeskPilot.Mcp 现在支持预编译单文件分发**——任何 AI 客户端都能"零依赖"接入。
 

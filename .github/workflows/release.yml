@@ -166,10 +166,11 @@ jobs:
           fi
           if [ -f "$NOTES_FILE" ]; then
             echo "Using release notes from $NOTES_FILE"
-            cat "$NOTES_FILE" >> "$GITHUB_OUTPUT"
-            echo "notes<<EOF" >> "$GITHUB_OUTPUT"
-            cat "$NOTES_FILE" >> "$GITHUB_OUTPUT"
-            echo "EOF" >> "$GITHUB_OUTPUT"
+            {
+              echo "notes<<NOTES_EOF"
+              cat "$NOTES_FILE"
+              echo "NOTES_EOF"
+            } >> "$GITHUB_OUTPUT"
           else
             echo "No release notes file found, using default"
             echo "notes<<EOF" >> "$GITHUB_OUTPUT"
