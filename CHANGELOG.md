@@ -2,6 +2,18 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.9.1] - 2026-06-25
+
+### 🐛 Bug 修复
+
+#### App zip 在没装 .NET 8 Desktop Runtime 的机器上启动无界面
+- **症状**：用户下载 v0.9.0 zip 双击 `DeskPilot.App.exe`，进程闪退，看不到任何窗口、无错误提示
+- **根因**：`release.yml` 的 `Publish App` 步骤用了 `--self-contained false`，zip 里只包含 `DeskPilot.App.exe` + 一堆 dll，**不包含 .NET 运行时**。在没装 .NET 8 Desktop Runtime 的机器上，Win32 app host 找不到运行时直接 exit -1
+- **修复**：改成 `--self-contained true` + `PublishSingleFile=true`，zip 里包含完整运行时（约 73 MB），下载即用
+- **新增参数**：
+  - `PublishTrimmed=false`（WPF 不能 trim，会破坏资源引用）
+  - `IncludeAllContentForSelfExtract=true`（保证 `default-skills.json` 等 EmbeddedResource 能被加载）
+
 ## [v0.9.0] - 2026-06-25
 
 ### 🛠 新增功能

@@ -96,14 +96,19 @@ jobs:
         run: |
           call clean.bat
 
-      - name: Publish App (win-x64, framework-dependent)
+      - name: Publish App (win-x64, self-contained, single-file)
         shell: cmd
         run: |
           dotnet publish src/DeskPilot.App/DeskPilot.App.csproj ^
             -c Release ^
             -r win-x64 ^
-            --self-contained false ^
-            -p:PublishSingleFile=false ^
+            --self-contained true ^
+            -p:PublishSingleFile=true ^
+            -p:PublishTrimmed=false ^
+            -p:EnableCompressionInSingleFile=true ^
+            -p:IncludeNativeLibrariesForSelfExtract=true ^
+            -p:IncludeAllContentForSelfExtract=true ^
+            -p:DebugType=embedded ^
             -o publish/App
 
       - name: Zip App
