@@ -18,4 +18,9 @@
     <EmbeddedResource Include="Resources\default-skills.json" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- v0.10: 让测试项目访问 internal 帮助函数（如 MarketSkill） -->
+    <InternalsVisibleTo Include="DeskPilot.Tests" />
+  </ItemGroup>
+
 </Project>

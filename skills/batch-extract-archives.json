@@ -1,0 +1,12 @@
+{
+  "Id": "batch-extract-archives",
+  "Name": "批量解压压缩包",
+  "Description": "把下载文件夹里的所有 zip/7z/rar 批量解压到同名子目录",
+  "Icon": "📦",
+  "PromptTemplate": "请帮我把下载文件夹里所有 zip/7z/rar 压缩包批量解压到同名子文件夹（同名子目录已存在则跳过）",
+  "Tools": ["ExtractArchive"],
+  "Category": "文件整理",
+  "IsBuiltIn": true,
+  "Source": "builtin",
+  "Version": "1.0.0"
+}

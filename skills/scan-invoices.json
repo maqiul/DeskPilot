@@ -1,0 +1,12 @@
+{
+  "Id": "scan-invoices",
+  "Name": "扫描发票并归档",
+  "Description": "扫描 Documents/发票/ 下的 PDF/图片，按月份归档到 Documents/发票归档/YYYY/MM/",
+  "Icon": "🧾",
+  "PromptTemplate": "请帮我扫描 Documents/发票/ 目录下的所有 PDF 和图片发票文件，按发票上的日期（或文件修改日期）归档到 Documents/发票归档/YYYY/MM/ 子目录。如果找不到日期信息则放入 未知日期/ 子目录。",
+  "Tools": ["ArchiveByDate", "MoveFiles"],
+  "Category": "财务办公",
+  "IsBuiltIn": false,
+  "Source": "market:community",
+  "Version": "1.0.0"
+}

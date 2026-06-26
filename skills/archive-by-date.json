@@ -1,0 +1,12 @@
+{
+  "Id": "archive-by-date",
+  "Name": "按日期归档文件",
+  "Description": "把文件按修改日期归档到 YYYY/MM 子目录（适合照片、视频）",
+  "Icon": "🗓",
+  "PromptTemplate": "请帮我把下载文件夹里的所有照片和视频按修改日期归档到 YYYY/MM 子目录（同名冲突自动加 _N 后缀）",
+  "Tools": ["ArchiveByDate"],
+  "Category": "文件整理",
+  "IsBuiltIn": true,
+  "Source": "builtin",
+  "Version": "1.0.0"
+}

@@ -101,6 +101,21 @@ public sealed class BoolToVisibilityConverter : IValueConverter
 }
 
 /// <summary>
+/// v0.10: bool 取反（用于按钮 IsEnabled 等反向绑定）。
+/// true → false, false → true。
+/// </summary>
+public sealed class BoolToNegationConverter : IValueConverter
+{
+    public static readonly BoolToNegationConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is bool b && !b;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is bool b && !b;
+}
+
+/// <summary>
 /// 非空字符串转 Visible，空字符串/Null 转 Collapsed。
 /// ConverterParameter=Invert 时反转（用于空状态显示欢迎卡片）。
 /// </summary>

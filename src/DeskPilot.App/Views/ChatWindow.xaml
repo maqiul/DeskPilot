@@ -81,36 +81,61 @@
                         Click="OpenSettings_Click"/>
             </Grid>
 
-                <!-- v0.9: 快捷技能横条（标题栏下方，可滚动） -->
+                <!-- v0.9 + v0.10: 快捷技能横条（内置+已安装合并，有更新显示 🔄 角标） -->
                 <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Disabled" Margin="0,12,0,0"
                               Padding="0,4">
-                    <ItemsControl ItemsSource="{Binding EnabledSkills}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border CornerRadius="10" Padding="12,8" Margin="0,0,8,0"
-                                        Background="{StaticResource CardBrush}"
-                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
-                                        Style="{StaticResource CardShadow}"
-                                        Cursor="Hand" Tag="{Binding PromptTemplate}"
-                                        MouseLeftButtonUp="SkillCard_Click"
-                                        ToolTip="{Binding Description}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Icon}" FontSize="16"
-                                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock Text="{Binding Name}" FontSize="13"
-                                                   Foreground="{StaticResource TextBrush}"
-                                                   VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <ItemsControl Grid.Column="0" ItemsSource="{Binding EnabledSkills}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="10" Padding="12,8" Margin="0,0,8,0"
+                                            Background="{StaticResource CardBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                            Style="{StaticResource CardShadow}"
+                                            Cursor="Hand" Tag="{Binding PromptTemplate}"
+                                            MouseLeftButtonUp="SkillCard_Click"
+                                            ToolTip="{Binding Description}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Icon}" FontSize="16"
+                                                       VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding Name}" FontSize="13"
+                                                       Foreground="{StaticResource TextBrush}"
+                                                       VerticalAlignment="Center"/>
+                                            <!-- v0.10: 有更新角标（🔄）—— 绑定 HasUpdate 属性 -->
+                                            <TextBlock Text="🔄" FontSize="11"
+                                                       VerticalAlignment="Center" Margin="6,0,0,0"
+                                                       Foreground="#E65100"
+                                                       ToolTip="该技能有可用更新"
+                                                       Visibility="{Binding HasUpdate, Converter={x:Static local:BoolToVisibilityConverter.Instance}}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- v0.10: 已安装数量标签（横条右侧） -->
+                        <Border Grid.Column="1" CornerRadius="8" Padding="8,4"
+                                Background="{StaticResource CardBrush}"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                                VerticalAlignment="Center" Margin="8,0,0,0"
+                                ToolTip="从技能市场安装的技能数量">
+                            <TextBlock FontSize="11" Foreground="{StaticResource SecondaryTextBrush}">
+                                <Run Text="📦 已安装 "/>
+                                <Run Text="{Binding InstalledSkillCount, Mode=OneWay}" FontWeight="SemiBold"/>
+                            </TextBlock>
+                        </Border>
+                    </Grid>
                 </ScrollViewer>
             </Grid>
         </Border>

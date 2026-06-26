@@ -1,0 +1,12 @@
+{
+  "Id": "batch-rename",
+  "Name": "批量重命名文件",
+  "Description": "按统一规则批量重命名（日期前缀 / 序号 / 正则替换）",
+  "Icon": "✏️",
+  "PromptTemplate": "请帮我把下载文件夹里的所有 jpg 图片批量重命名为 IMG_YYYYMMDD_NNN.jpg 格式（按修改日期排序）",
+  "Tools": ["RenameByPattern"],
+  "Category": "文件整理",
+  "IsBuiltIn": true,
+  "Source": "builtin",
+  "Version": "1.0.0"
+}

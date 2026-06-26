@@ -1,0 +1,12 @@
+{
+  "Id": "compute-file-hashes",
+  "Name": "计算文件哈希值",
+  "Description": "批量计算文件的 SHA256 / MD5，输出 CSV 报告",
+  "Icon": "🔐",
+  "PromptTemplate": "请帮我计算下载文件夹里所有文件的 SHA256 哈希值，按文件大小从大到小排序，输出表格",
+  "Tools": ["HashFiles"],
+  "Category": "文件整理",
+  "IsBuiltIn": true,
+  "Source": "builtin",
+  "Version": "1.0.0"
+}

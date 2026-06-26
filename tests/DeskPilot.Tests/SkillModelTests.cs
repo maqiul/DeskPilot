@@ -125,6 +125,77 @@ public class SkillModelTests
         }
     }
 
+    // ---- v0.10: 技能市场相关断言 ----
+
+    [Fact]
+    public void DefaultSkillsJson_AllSkillsAreBuiltIn()
+    {
+        // v0.10: 默认 8 个技能全部为 IsBuiltIn=true
+        var skills = LoadDefaultSkills();
+        Assert.Equal(8, skills.Count);
+        Assert.All(skills, s => Assert.True(s.IsBuiltIn, $"默认技能应 IsBuiltIn=true: {s.Id}"));
+    }
+
+    [Fact]
+    public void DefaultSkillsJson_AllSkillsHaveBuiltinSource()
+    {
+        var skills = LoadDefaultSkills();
+        Assert.All(skills, s => Assert.Equal("builtin", s.Source));
+    }
+
+    [Fact]
+    public void Skill_RecordWithMarketFields_Roundtrips()
+    {
+        // v0.10 新字段（IsBuiltIn/Source/Version）应参与序列化往返
+        var original = new Skill(
+            Id: "market-skill",
+            Name: "市场技能",
+            Description: "从市场安装",
+            Icon: "🧩",
+            PromptTemplate: "请帮我",
+            Tools: new[] { "ToolX" },
+            Category: "通用",
+            IsEnabled: true,
+            IsBuiltIn: false,
+            Source: "market:community",
+            Version: "1.2.3");
+
+        var json = JsonSerializer.Serialize(original);
+        var back = JsonSerializer.Deserialize<Skill>(json,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        Assert.NotNull(back);
+        Assert.False(back!.IsBuiltIn);
+        Assert.Equal("market:community", back.Source);
+        Assert.Equal("1.2.3", back.Version);
+    }
+
+    [Fact]
+    public void SkillSet_BuiltInAndCustom_DoesNotOverlap()
+    {
+        // v0.10: BuiltIn 和 Custom 是 SkillSet 的两个 LINQ 视图，应互斥
+        var set = new SkillSet
+        {
+            Skills = new()
+            {
+                new Skill("a", "A", "", "🅰", "", Array.Empty<string>(), "通用", true, IsBuiltIn: true),
+                new Skill("b", "B", "", "🅱", "", Array.Empty<string>(), "通用", true, IsBuiltIn: false),
+                new Skill("c", "C", "", "🅲", "", Array.Empty<string>(), "通用", false, IsBuiltIn: true),
+            }
+        };
+
+        var builtin = set.BuiltIn.Select(s => s.Id).ToList();
+        var custom = set.Custom.Select(s => s.Id).ToList();
+
+        Assert.Equal(2, builtin.Count);
+        Assert.Contains("a", builtin);
+        Assert.Contains("c", builtin);
+        Assert.Single(custom);
+        Assert.Contains("b", custom);
+        // 互斥
+        Assert.Empty(builtin.Intersect(custom));
+    }
+
     // ---- helpers ----
 
     private static List<Skill> LoadDefaultSkills()

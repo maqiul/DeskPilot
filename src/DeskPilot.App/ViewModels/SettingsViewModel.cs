@@ -21,6 +21,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ISettingsService _settingsService;
     private readonly IModelListerFactory _modelListerFactory;
     private readonly ISkillService? _skillService;
+    private readonly ISkillMarket? _skillMarket;
     private readonly Action? _closeWindow;
 
     /// <summary>
@@ -33,26 +34,28 @@ public partial class SettingsViewModel : ObservableObject
     /// 生产构造：注入 IModelListerFactory（DI 容器提供）。
     /// </summary>
     public SettingsViewModel(ISettingsService settingsService, IModelListerFactory modelListerFactory)
-        : this(settingsService, modelListerFactory, null, CloseWindowViaDispatcher) { }
+        : this(settingsService, modelListerFactory, null, null, CloseWindowViaDispatcher) { }
 
     /// <summary>
     /// 测试友好的构造：允许注入自定义的"关闭窗口"回调。
     /// </summary>
     public SettingsViewModel(ISettingsService settingsService, Action? closeWindow)
-        : this(settingsService, new NullModelListerFactory(), null, closeWindow) { }
+        : this(settingsService, new NullModelListerFactory(), null, null, closeWindow) { }
 
     /// <summary>
-    /// 完整构造（测试/生产都用这个）。
+    /// 完整构造（测试/生产都用这个）。v0.10: 加 ISkillMarket 注入（可空，向后兼容）。
     /// </summary>
     public SettingsViewModel(
         ISettingsService settingsService,
         IModelListerFactory modelListerFactory,
         ISkillService? skillService,
+        ISkillMarket? skillMarket,
         Action? closeWindow)
     {
         _settingsService = settingsService;
         _modelListerFactory = modelListerFactory;
         _skillService = skillService;
+        _skillMarket = skillMarket;
         _closeWindow = closeWindow;
 
         // 加载现有设置（只调一次 Load，避免重复 IO）
@@ -141,6 +144,158 @@ public partial class SettingsViewModel : ObservableObject
 
     /// <summary>是否启用技能管理（无 ISkillService 时隐藏整张卡片）。</summary>
     public bool HasSkillService => _skillService != null;
+
+    // ===== v0.10: 技能市场 =====
+    /// <summary>市场索引（拉取后的全量市场技能，用于浏览 + 安装）。</summary>
+    public ObservableCollection<MarketSkillRow> MarketSkills { get; } = new();
+
+    /// <summary>分类下拉选项（"全部" + 市场实际分类去重）。</summary>
+    public ObservableCollection<string> MarketCategories { get; } = new();
+
+    /// <summary>是否启用技能市场（无 ISkillMarket 时隐藏整张卡片）。</summary>
+    public bool HasSkillMarket => _skillMarket != null;
+
+    [ObservableProperty] private string _marketCategory = "全部";
+    [ObservableProperty] private string _marketSearch = string.Empty;
+    [ObservableProperty] private string _marketStatus = "点击右侧 🔄 按钮拉取市场最新技能";
+    [ObservableProperty] private bool _isMarketLoading;
+    [ObservableProperty] private bool _isMarketError;
+
+    partial void OnMarketCategoryChanged(string value) => ApplyMarketFilter();
+    partial void OnMarketSearchChanged(string value) => ApplyMarketFilter();
+
+    private List<MarketSkillRow> _allMarketSkills = new();
+
+    /// <summary>应用筛选（分类 + 搜索）。</summary>
+    private void ApplyMarketFilter()
+    {
+        MarketSkills.Clear();
+        IEnumerable<MarketSkillRow> q = _allMarketSkills;
+        if (!string.IsNullOrWhiteSpace(MarketCategory) && MarketCategory != "全部")
+            q = q.Where(s => string.Equals(s.Category, MarketCategory, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(MarketSearch))
+        {
+            var kw = MarketSearch.Trim();
+            q = q.Where(s =>
+                s.Id.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+                s.Name.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+                s.Description.Contains(kw, StringComparison.OrdinalIgnoreCase) ||
+                s.Author.Contains(kw, StringComparison.OrdinalIgnoreCase));
+        }
+        foreach (var s in q) MarketSkills.Add(s);
+    }
+
+    [RelayCommand]
+    private async Task BrowseMarketAsync()
+    {
+        if (_skillMarket == null) return;
+        if (IsMarketLoading) return;
+
+        IsMarketLoading = true;
+        IsMarketError = false;
+        MarketStatus = "🔄 正在拉取市场索引...";
+        try
+        {
+            var index = await _skillMarket.FetchIndexAsync().ConfigureAwait(true);
+            _allMarketSkills = index.Skills
+                .Select(m => MarketSkillRow.FromManifest(m, _skillService))
+                .ToList();
+
+            // 刷新分类
+            MarketCategories.Clear();
+            MarketCategories.Add("全部");
+            foreach (var c in _allMarketSkills.Select(s => s.Category).Distinct().OrderBy(c => c))
+                MarketCategories.Add(c);
+            MarketCategory = "全部";
+
+            ApplyMarketFilter();
+            MarketStatus = $"✅ 已加载 {_allMarketSkills.Count} 个市场技能";
+        }
+        catch (Exception ex)
+        {
+            IsMarketError = true;
+            MarketStatus = $"❌ 拉取失败：{ex.Message}";
+        }
+        finally
+        {
+            IsMarketLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task InstallMarketSkillAsync(MarketSkillRow? row)
+    {
+        if (row == null || _skillMarket == null || _skillService == null) return;
+
+        try
+        {
+            var skill = await _skillMarket.FetchSkillAsync(row.Id).ConfigureAwait(true);
+            await _skillService.InstallAsync(skill).ConfigureAwait(true);
+
+            // 更新 row 状态
+            row.IsInstalled = true;
+            row.InstalledVersion = skill.Version;
+            row.HasUpdate = false;
+
+            MarketStatus = $"✅ 已安装技能：{row.Name} v{skill.Version}";
+        }
+        catch (Exception ex)
+        {
+            MarketStatus = $"❌ 安装失败：{ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task UninstallMarketSkillAsync(MarketSkillRow? row)
+    {
+        if (row == null || _skillService == null) return;
+
+        try
+        {
+            await _skillService.UninstallAsync(row.Id).ConfigureAwait(true);
+
+            // 如果是市场里的技能，恢复为"未安装"
+            var orig = _allMarketSkills.FirstOrDefault(s => s.Id == row.Id);
+            if (orig != null) orig.IsInstalled = false;
+
+            // 同步刷新 Skill 列表
+            LoadSkills();
+            MarketStatus = $"✅ 已卸载技能：{row.Name}";
+        }
+        catch (Exception ex)
+        {
+            MarketStatus = $"❌ 卸载失败：{ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task CheckMarketUpdatesAsync()
+    {
+        if (_skillService == null) return;
+
+        try
+        {
+            MarketStatus = "🔄 正在检查更新...";
+            var updates = await _skillService.CheckUpdatesAsync().ConfigureAwait(true);
+            int count = 0;
+            foreach (var row in _allMarketSkills)
+            {
+                if (updates.TryGetValue(row.Id, out var info))
+                {
+                    row.HasUpdate = info.HasUpdate;
+                    row.InstalledVersion = info.InstalledVersion;
+                    row.LatestVersion = info.LatestVersion;
+                    if (info.HasUpdate) count++;
+                }
+            }
+            ApplyMarketFilter();
+            MarketStatus = count > 0 ? $"🔄 发现 {count} 个技能有可用更新" : "✅ 全部已是最新";
+        }
+        catch (Exception ex)
+        {
+            MarketStatus = $"❌ 检查更新失败：{ex.Message}";
+        }
+    }
 
     // ===== 保存状态 =====
     [ObservableProperty] private string _statusMessage = string.Empty;
@@ -428,7 +583,10 @@ public partial class SkillRow : ObservableObject
         PromptTemplate = skill.PromptTemplate;
         Category = skill.Category;
         ToolsText = skill.Tools.Count == 0 ? "无依赖工具" : "工具: " + string.Join(", ", skill.Tools);
+        Source = skill.IsBuiltIn ? "内置" : $"市场 · {skill.Source}";
+        Version = string.IsNullOrWhiteSpace(skill.Version) ? "—" : skill.Version;
         _isEnabled = skill.IsEnabled;
+        _isBuiltIn = skill.IsBuiltIn;
         _svc = svc;
     }
 
@@ -439,8 +597,11 @@ public partial class SkillRow : ObservableObject
     public string PromptTemplate { get; }
     public string Category { get; }
     public string ToolsText { get; }
+    public string Source { get; }
+    public string Version { get; }
 
     [ObservableProperty] private bool _isEnabled;
+    [ObservableProperty] private bool _isBuiltIn;
 
     partial void OnIsEnabledChanged(bool value)
     {

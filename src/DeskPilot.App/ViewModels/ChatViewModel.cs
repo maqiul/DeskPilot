@@ -40,19 +40,56 @@ public partial class ChatViewModel : ObservableObject
         Messages = new ObservableCollection<ChatMessage>();
         Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
         EnabledSkills = new ObservableCollection<Skill>();
+        UpdateBadgeMap();
         RefreshSkills();
         if (_skillService != null) _skillService.SkillsChanged += (_, _) => RefreshSkills();
         HookToolEvents(chatService);
     }
 
-    /// <summary>v0.9: 启用的技能列表（顶部快捷横条数据源）</summary>
+    /// <summary>v0.9: 启用的技能列表（顶部快捷横条数据源）。v0.10: 内置+已安装合并去重。</summary>
     public ObservableCollection<Skill> EnabledSkills { get; }
+
+    /// <summary>v0.10: 有可用更新的技能 ID 集合（XAML 用 HasUpdate 触发 🔄 角标）。</summary>
+    public System.Collections.Generic.HashSet<string> UpdatedSkillIds { get; } = new();
+
+    /// <summary>v0.10: 是否显示"📦 已安装 N"小标签（横条标题旁）。</summary>
+    public bool HasInstalledSkills => _skillService != null && _skillService.Custom.Count > 0;
+    public int InstalledSkillCount => _skillService?.Custom.Count ?? 0;
+
+    private async void UpdateBadgeMap()
+    {
+        // fire-and-forget：异步拉取更新状态，写入 UpdatedSkillIds
+        if (_skillService == null) return;
+        try
+        {
+            var updates = await _skillService.CheckUpdatesAsync().ConfigureAwait(true);
+            UpdatedSkillIds.Clear();
+            foreach (var kv in updates)
+                if (kv.Value.HasUpdate) UpdatedSkillIds.Add(kv.Key);
+            OnPropertyChanged(nameof(UpdatedSkillIds));
+            // 强制刷新横条（让 HasUpdate 触发重新绑定）
+            RefreshSkills();
+        }
+        catch
+        {
+            // 静默失败：拉取更新失败不影响横条显示
+        }
+    }
 
     private void RefreshSkills()
     {
         EnabledSkills.Clear();
         if (_skillService == null) return;
-        foreach (var s in _skillService.Enabled) EnabledSkills.Add(s);
+        // v0.10: 内置 + 已安装技能合并（同 ID 跳过） + 写入 HasUpdate 角标
+        var seen = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        foreach (var s in _skillService.Enabled)
+        {
+            if (!seen.Add(s.Id)) continue;
+            var withBadge = s with { HasUpdate = UpdatedSkillIds.Contains(s.Id) };
+            EnabledSkills.Add(withBadge);
+        }
+        OnPropertyChanged(nameof(HasInstalledSkills));
+        OnPropertyChanged(nameof(InstalledSkillCount));
     }
 
     /// <summary>

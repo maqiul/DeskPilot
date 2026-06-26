@@ -1,0 +1,12 @@
+{
+  "Id": "batch-resize-images",
+  "Name": "批量压缩图片",
+  "Description": "把大图缩到指定宽度（如 1920px），保持宽高比，输出到新目录",
+  "Icon": "🖼",
+  "PromptTemplate": "请帮我把下载文件夹里宽度超过 1920px 的 jpg/png 图片批量缩到 1920px 宽，输出到 download-resized 子文件夹，保持原格式",
+  "Tools": ["BatchResizeImage"],
+  "Category": "图片处理",
+  "IsBuiltIn": true,
+  "Source": "builtin",
+  "Version": "1.0.0"
+}

@@ -1,0 +1,12 @@
+{
+  "Id": "organize-downloads",
+  "Name": "整理下载文件夹",
+  "Description": "按文件类型自动归类下载文件夹里的内容（PDF/图片/视频/压缩包/文档/其他）",
+  "Icon": "📁",
+  "PromptTemplate": "请帮我整理下载文件夹，把文件按类型分到子文件夹里（PDF、图片、视频、压缩包、文档、其他），不要移动子文件夹本身",
+  "Tools": ["MoveFiles"],
+  "Category": "文件整理",
+  "IsBuiltIn": true,
+  "Source": "builtin",
+  "Version": "1.0.0"
+}

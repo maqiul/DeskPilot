@@ -1,0 +1,12 @@
+{
+  "Id": "clean-large-files",
+  "Name": "清理大文件",
+  "Description": "找出指定目录里大于 X MB 的大文件，让用户确认是否删除",
+  "Icon": "📊",
+  "PromptTemplate": "请帮我找出下载文件夹里大于 100MB 的文件，列出文件名、大小、最后修改时间，问我哪些要删除",
+  "Tools": [],
+  "Category": "文件整理",
+  "IsBuiltIn": true,
+  "Source": "builtin",
+  "Version": "1.0.0"
+}

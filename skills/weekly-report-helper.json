@@ -1,0 +1,12 @@
+{
+  "Id": "weekly-report-helper",
+  "Name": "周报助手",
+  "Description": "根据本周工作记录生成结构化周报（按项目/优先级/完成度/下周计划）",
+  "Icon": "📝",
+  "PromptTemplate": "请根据我提供的本周工作记录，生成一份结构化周报：1) 本周完成 2) 进行中 3) 遇到的问题 4) 下周计划。每节用 - 列表呈现，每条不超过一行。最后给一句 30 字以内的本周总结。",
+  "Tools": [],
+  "Category": "文档处理",
+  "IsBuiltIn": false,
+  "Source": "market:community",
+  "Version": "0.9.0"
+}

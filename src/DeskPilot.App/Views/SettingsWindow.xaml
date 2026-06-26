@@ -286,6 +286,129 @@
                     </StackPanel>
                 </Border>
 
+                <!-- v0.10: 技能市场 -->
+                <Border Style="{StaticResource SectionCard}"
+                        Visibility="{Binding HasSkillMarket, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="🌐  技能市场" Style="{StaticResource SectionTitle}"/>
+                                <TextBlock Text="浏览 GitHub 上的社区技能，一键安装 / 卸载 / 检查更新"
+                                           FontSize="12" Foreground="{StaticResource SecondaryTextBrush}" Margin="0,0,0,8"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="🔄" Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding BrowseMarketCommand}"
+                                    IsEnabled="{Binding IsMarketLoading, Converter={x:Static local:BoolToNegationConverter.Instance}}"
+                                    ToolTip="拉取市场最新技能" VerticalAlignment="Top"/>
+                        </Grid>
+
+                        <!-- 筛选 + 搜索 -->
+                        <Grid Margin="0,4,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ComboBox Grid.Column="0" MinWidth="120" Padding="10,6" Margin="0,0,8,0"
+                                      ItemsSource="{Binding MarketCategories}"
+                                      SelectedItem="{Binding MarketCategory, Mode=TwoWay}"
+                                      ToolTip="按分类筛选"/>
+                            <TextBox Grid.Column="1" Style="{StaticResource FieldInput}"
+                                     Text="{Binding MarketSearch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="搜索：名称 / 描述 / 作者"/>
+                        </Grid>
+
+                        <!-- 市场技能列表 -->
+                        <ItemsControl ItemsSource="{Binding MarketSkills}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,8" Padding="12,10" CornerRadius="8"
+                                            Background="{StaticResource BackgroundBrush}"
+                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="22"
+                                                       VerticalAlignment="Top" Margin="0,2,12,0"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Top">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextBrush}"/>
+                                                    <Border CornerRadius="3" Padding="6,1" Margin="8,0,0,0"
+                                                            Background="{StaticResource CardBrush}"
+                                                            BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                                        <TextBlock Text="{Binding Category}" FontSize="10"
+                                                                   Foreground="{StaticResource SecondaryTextBrush}"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Version}" FontSize="11"
+                                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                                               Margin="8,2,0,0"/>
+                                                    <Border CornerRadius="3" Padding="6,1" Margin="6,0,0,0"
+                                                            Background="#FFF3E0" BorderBrush="#FF9800" BorderThickness="1"
+                                                            Visibility="{Binding HasUpdate, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                                                        <TextBlock Text="🔄 有更新" FontSize="10" Foreground="#E65100"/>
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Description}" FontSize="12"
+                                                           Foreground="{StaticResource SecondaryTextBrush}"
+                                                           TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                                <TextBlock FontSize="11" Foreground="{StaticResource SecondaryTextBrush}"
+                                                           Margin="0,2,0,0">
+                                                    <Run Text="作者: "/>
+                                                    <Run Text="{Binding Author}" FontWeight="SemiBold"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal">
+                                                <Button Content="📥 安装" Style="{StaticResource PrimaryButton}"
+                                                        Margin="0,0,6,0" Padding="10,5" FontSize="12"
+                                                        Command="{Binding DataContext.InstallMarketSkillCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        Visibility="{Binding IsInstalled, Converter={x:Static local:BoolToNegationConverter.Instance}}"/>
+                                                <Button Content="🗑 卸载" Style="{StaticResource SecondaryButton}"
+                                                        Padding="10,5" FontSize="12"
+                                                        Command="{Binding DataContext.UninstallMarketSkillCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                        CommandParameter="{Binding}"
+                                                        Visibility="{Binding IsInstalled, Converter={x:Static local:BoolToVisibilityConverter.Instance}}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- 检查更新 + 状态 -->
+                        <Grid Margin="0,8,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding MarketStatus}" FontSize="12"
+                                       VerticalAlignment="Center" TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsMarketError}" Value="True">
+                                                <Setter Property="Foreground" Value="#C62828"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Button Grid.Column="1" Content="🔍 检查更新" Style="{StaticResource SecondaryButton}"
+                                    Padding="10,5" FontSize="12"
+                                    Command="{Binding CheckMarketUpdatesCommand}"
+                                    IsEnabled="{Binding IsMarketLoading, Converter={x:Static local:BoolToNegationConverter.Instance}}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <!-- 外观 -->
                 <Border Style="{StaticResource SectionCard}">
                     <StackPanel>

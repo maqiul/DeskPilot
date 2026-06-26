@@ -6,7 +6,9 @@
     "Icon": "📁",
     "PromptTemplate": "请帮我整理下载文件夹，把文件按类型分到子文件夹里（PDF、图片、视频、压缩包、文档、其他），不要移动子文件夹本身",
     "Tools": ["MoveFiles"],
-    "Category": "文件整理"
+    "Category": "文件整理",
+    "IsBuiltIn": true,
+    "Source": "builtin"
   },
   {
     "Id": "find-duplicate-photos",
@@ -15,7 +17,9 @@
     "Icon": "🔍",
     "PromptTemplate": "请帮我找出下载文件夹里重复的照片（按内容哈希判断，不是文件名），列出重复组和每组文件路径",
     "Tools": ["FindDuplicates", "HashFiles"],
-    "Category": "文件整理"
+    "Category": "文件整理",
+    "IsBuiltIn": true,
+    "Source": "builtin"
   },
   {
     "Id": "batch-rename",
@@ -24,7 +28,9 @@
     "Icon": "✏️",
     "PromptTemplate": "请帮我把下载文件夹里的所有 jpg 图片批量重命名为 IMG_YYYYMMDD_NNN.jpg 格式（按修改日期排序）",
     "Tools": ["RenameByPattern"],
-    "Category": "文件整理"
+    "Category": "文件整理",
+    "IsBuiltIn": true,
+    "Source": "builtin"
   },
   {
     "Id": "batch-resize-images",
@@ -33,7 +39,9 @@
     "Icon": "🖼",
     "PromptTemplate": "请帮我把下载文件夹里宽度超过 1920px 的 jpg/png 图片批量缩到 1920px 宽，输出到 download-resized 子文件夹，保持原格式",
     "Tools": ["BatchResizeImage"],
-    "Category": "图片处理"
+    "Category": "图片处理",
+    "IsBuiltIn": true,
+    "Source": "builtin"
   },
   {
     "Id": "batch-extract-archives",
@@ -42,7 +50,9 @@
     "Icon": "📦",
     "PromptTemplate": "请帮我把下载文件夹里所有 zip/7z/rar 压缩包批量解压到同名子文件夹（同名子目录已存在则跳过）",
     "Tools": ["ExtractArchive"],
-    "Category": "文件整理"
+    "Category": "文件整理",
+    "IsBuiltIn": true,
+    "Source": "builtin"
   },
   {
     "Id": "compute-file-hashes",
@@ -51,7 +61,9 @@
     "Icon": "🔐",
     "PromptTemplate": "请帮我计算下载文件夹里所有文件的 SHA256 哈希值，按文件大小从大到小排序，输出表格",
     "Tools": ["HashFiles"],
-    "Category": "文件整理"
+    "Category": "文件整理",
+    "IsBuiltIn": true,
+    "Source": "builtin"
   },
   {
     "Id": "clean-large-files",
@@ -60,7 +72,9 @@
     "Icon": "📊",
     "PromptTemplate": "请帮我找出下载文件夹里大于 100MB 的文件，列出文件名、大小、最后修改时间，问我哪些要删除",
     "Tools": [],
-    "Category": "文件整理"
+    "Category": "文件整理",
+    "IsBuiltIn": true,
+    "Source": "builtin"
   },
   {
     "Id": "archive-by-date",
@@ -69,6 +83,8 @@
     "Icon": "🗓",
     "PromptTemplate": "请帮我把下载文件夹里的所有照片和视频按修改日期归档到 YYYY/MM 子目录（同名冲突自动加 _N 后缀）",
     "Tools": ["ArchiveByDate"],
-    "Category": "文件整理"
+    "Category": "文件整理",
+    "IsBuiltIn": true,
+    "Source": "builtin"
   }
 ]

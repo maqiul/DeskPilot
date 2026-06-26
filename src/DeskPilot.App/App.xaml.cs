@@ -67,10 +67,12 @@ public partial class App : Application
                 stServices.AddTransient<ChatWindow>();
                 stServices.AddTransient<SettingsWindow>();
                 stServices.AddSingleton<ISkillService, SkillService>();
+                stServices.AddHttpClient<ISkillMarket, SkillMarketService>(http => http.Timeout = TimeSpan.FromSeconds(10));
                 stServices.AddSingleton<SettingsViewModel>(sp => new SettingsViewModel(
                     sp.GetRequiredService<ISettingsService>(),
                     sp.GetRequiredService<IModelListerFactory>(),
                     sp.GetRequiredService<ISkillService>(),
+                    sp.GetService<ISkillMarket>(),
                     closeWindow: null));
                 Services = stServices.BuildServiceProvider();
 
@@ -168,6 +170,7 @@ public partial class App : Application
             sp.GetRequiredService<ISettingsService>(),
             sp.GetRequiredService<IModelListerFactory>(),
             sp.GetService<ISkillService>(),
+            sp.GetService<ISkillMarket>(),
             closeWindow: null));
 
         // v0.6: 权限服务（危险操作需确认）
@@ -179,6 +182,12 @@ public partial class App : Application
 
         // v0.9: 技能服务
         services.AddSingleton<ISkillService, SkillService>();
+
+        // v0.10: 技能市场（HttpClient 注入，GitHub raw URL 由 SkillMarketService 内部默认）
+        services.AddHttpClient<ISkillMarket, SkillMarketService>(http =>
+        {
+            http.Timeout = TimeSpan.FromSeconds(10);
+        });
 
         // IChatService 用工厂模式，支持运行时重建
         services.AddSingleton<IChatService>(sp =>
@@ -262,6 +271,7 @@ public partial class App : Application
             sp.GetRequiredService<ISettingsService>(),
             sp.GetRequiredService<IModelListerFactory>(),
             skillService: null,
+            skillMarket: null,
             closeWindow: null));
         tempServices.AddTransient<SettingsWindow>();
         var sp = tempServices.BuildServiceProvider();
