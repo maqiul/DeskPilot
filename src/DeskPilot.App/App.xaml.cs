@@ -73,6 +73,7 @@ public partial class App : Application
                     sp.GetRequiredService<IModelListerFactory>(),
                     sp.GetRequiredService<ISkillService>(),
                     sp.GetService<ISkillMarket>(),
+                    sp.GetService<IMarketplaceSourceService>(),
                     closeWindow: null));
                 Services = stServices.BuildServiceProvider();
 
@@ -171,6 +172,7 @@ public partial class App : Application
             sp.GetRequiredService<IModelListerFactory>(),
             sp.GetService<ISkillService>(),
             sp.GetService<ISkillMarket>(),
+            sp.GetService<IMarketplaceSourceService>(),
             closeWindow: null));
 
         // v0.6: 权限服务（危险操作需确认）
@@ -188,6 +190,10 @@ public partial class App : Application
         {
             http.Timeout = TimeSpan.FromSeconds(10);
         });
+
+        // v0.11: 多市场源服务（QwenPaw / ClawHub / ModelScope）
+        services.AddHttpClient("skill-market", http => http.Timeout = TimeSpan.FromSeconds(10));
+        services.AddSingleton<IMarketplaceSourceService, MarketplaceSourceService>();
 
         // IChatService 用工厂模式，支持运行时重建
         services.AddSingleton<IChatService>(sp =>
@@ -272,6 +278,7 @@ public partial class App : Application
             sp.GetRequiredService<IModelListerFactory>(),
             skillService: null,
             skillMarket: null,
+            marketSources: null,
             closeWindow: null));
         tempServices.AddTransient<SettingsWindow>();
         var sp = tempServices.BuildServiceProvider();

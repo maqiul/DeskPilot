@@ -7,14 +7,16 @@ namespace DeskPilot.Core.Services;
 
 /// <summary>
 /// v0.10: 技能市场服务。
-/// 数据源：GitHub 仓库根的 skills/ 目录（公开仓库，零成本）。
-/// - 索引：skills/README.md（YAML 头 + Markdown 表格）
-/// - 技能：skills/{id}.json
+/// v0.11: 多源支持 — QwenPaw / ClawHub / ModelScope 三个市场源共享同一 ISkillMarket 接口。
+/// 数据源：各市场各自的 README.md 索引 + 单个 JSON 技能文件。
 /// </summary>
 public interface ISkillMarket
 {
     /// <summary>市场源 URL（如 raw.githubusercontent.com/maqiul/DeskPilot/main/skills）。</summary>
     string BaseUrl { get; }
+
+    /// <summary>v0.11: 市场源显示名（"QwenPaw" / "ClawHub" / "ModelScope"），用于卡片右上徽章。</summary>
+    string SourceName { get; }
 
     /// <summary>拉取技能索引（解析 README.md）。失败抛 MarketFetchException。</summary>
     Task<SkillIndex> FetchIndexAsync(CancellationToken ct = default);

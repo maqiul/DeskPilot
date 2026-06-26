@@ -2,6 +2,51 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.11.0] - 2026-06-26
+
+### 🆕 技能市场重做（QwenPaw 风格）
+
+#### 🎨 视觉升级
+- **从列表式重做为卡片网格**（3 列 WrapPanel，卡片宽 280 px）
+- **卡片极简化**：Icon 圆形背景大块 + 名称 + 描述 3 行截断 + 右上来源徽章
+- **顶部多市场源 Tab**：QwenPaw / ClawHub / ModelScope（chip + 对勾样式对齐 QwenPaw 截图）
+- **二级分类 Tab**：全部 / 财务 / 文件 / 开发 / 图片 / 文档（横排 chips）
+- **搜索框常驻右上角**
+- **浅蓝色提示条**「选择分类或输入关键词以浏览 {源名} 中的技能」
+
+#### 🔍 详情弹窗（点卡片弹出）
+- 新建 `SkillDetailWindow`：Icon 大块 + 名称 / 版本 / 作者 / 分类 + ★ 评分 + 📥 下载数
+- 完整 Description + Prompt 模板预览（只读 TextBox + 📋 复制按钮）
+- Tools 列表（chips 横排）
+- 安装 / 卸载 / 关闭按钮（根据 IsInstalled 切换）
+- `SettingsWindow` 卡片 `MouseLeftButtonUp` → 弹窗
+
+#### 🛠 多市场源架构
+- **新增 `IMarketplaceSourceService` / `MarketplaceSourceService`**
+  - 持 `QwenPaw`（GitHub 真源）+ `ClawHub` / `ModelScope`（`StubMarketService` 占位，v0.12 接真后端）
+  - `MarketSourceNames` / `DefaultMarket` / `GetMarket(name)`
+- **`ISkillMarket` 加 `SourceName` 属性**（卡片右上徽章用）
+- **`SkillMarketService` 加 `sourceName` 构造函数参数**（默认 `"QwenPaw"`）
+- **`App.xaml.cs` DI 注册**：`AddHttpClient("skill-market")` + `AddSingleton<IMarketplaceSourceService>`
+- **`SettingsViewModel` 加 `MarketSourceNames` / `SelectedMarketSource` / `CurrentMarket`** + `OnSelectedMarketSourceChanged` 自动重新拉取
+
+#### 📊 数据模型扩展
+- **`SkillManifest` 加 5 字段**：`ScreenshotUrl` / `Rating` / `Downloads` / `AuthorUrl` / `AuthorName`（默认值兼容旧数据）
+- **`ParseIndexFromMarkdown` 升级**：支持 7 / 8 / 9 / 10 列解析（向后兼容）
+- **`skills/README.md` 加 3 列**（screenshotUrl / rating / downloads）+ 11 个技能填数据
+- **`MarketSkillRow` 加 6 字段**：SourceName / ScreenshotUrl / Rating / Downloads / AuthorName / AuthorUrl
+- **`MarketSkillRow.FromManifest`** 读取所有新字段
+
+#### 🔧 Converter 扩展
+- **`SourceMatchConverter`**（字符串相等比较，用于市场源 Tab 高亮）
+- **`CategoryMatchConverter`**（同上，用于分类 Tab 高亮）
+
+### 📈 测试覆盖
+- 新增 13 测试：`MarketplaceSourceTests`（8 个，多源 / SourceName / 默认 / Stub / 异常 / Markdown 10 列 / 7 列兼容）+ `MarketSkillRowTests`（5 个，字段映射 / v0.11 字段 / 兜底逻辑）
+- 总计 **189 测试全过**（原 176 + 13 新增）
+
+---
+
 ## [v0.10.0] - 2026-06-26
 
 ### 🛠 新增功能

@@ -22,6 +22,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IModelListerFactory _modelListerFactory;
     private readonly ISkillService? _skillService;
     private readonly ISkillMarket? _skillMarket;
+    private readonly IMarketplaceSourceService? _marketSources;
     private readonly Action? _closeWindow;
 
     /// <summary>
@@ -34,13 +35,13 @@ public partial class SettingsViewModel : ObservableObject
     /// 生产构造：注入 IModelListerFactory（DI 容器提供）。
     /// </summary>
     public SettingsViewModel(ISettingsService settingsService, IModelListerFactory modelListerFactory)
-        : this(settingsService, modelListerFactory, null, null, CloseWindowViaDispatcher) { }
+        : this(settingsService, modelListerFactory, null, null, null, CloseWindowViaDispatcher) { }
 
     /// <summary>
     /// 测试友好的构造：允许注入自定义的"关闭窗口"回调。
     /// </summary>
     public SettingsViewModel(ISettingsService settingsService, Action? closeWindow)
-        : this(settingsService, new NullModelListerFactory(), null, null, closeWindow) { }
+        : this(settingsService, new NullModelListerFactory(), null, null, null, closeWindow) { }
 
     /// <summary>
     /// 完整构造（测试/生产都用这个）。v0.10: 加 ISkillMarket 注入（可空，向后兼容）。
@@ -50,12 +51,14 @@ public partial class SettingsViewModel : ObservableObject
         IModelListerFactory modelListerFactory,
         ISkillService? skillService,
         ISkillMarket? skillMarket,
+        IMarketplaceSourceService? marketSources,
         Action? closeWindow)
     {
         _settingsService = settingsService;
         _modelListerFactory = modelListerFactory;
         _skillService = skillService;
         _skillMarket = skillMarket;
+        _marketSources = marketSources;
         _closeWindow = closeWindow;
 
         // 加载现有设置（只调一次 Load，避免重复 IO）
@@ -161,8 +164,22 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _isMarketLoading;
     [ObservableProperty] private bool _isMarketError;
 
+    // ===== v0.11: 多市场源 Tab =====
+    /// <summary>所有可用市场源名（QwenPaw / ClawHub / ModelScope）。</summary>
+    public IReadOnlyList<string> MarketSourceNames => _marketSources?.SourceNames ?? new[] { "QwenPaw" };
+
+    /// <summary>v0.11: 当前选中的市场源名。</summary>
+    [ObservableProperty] private string _selectedMarketSource = "QwenPaw";
+
+    /// <summary>v0.11: 当前市场源实例（切换 Tab 时更新）。</summary>
+    public ISkillMarket? CurrentMarket =>
+        _marketSources != null && _marketSources.SourceNames.Contains(SelectedMarketSource)
+            ? _marketSources.GetMarket(SelectedMarketSource)
+            : _skillMarket;
+
     partial void OnMarketCategoryChanged(string value) => ApplyMarketFilter();
     partial void OnMarketSearchChanged(string value) => ApplyMarketFilter();
+    partial void OnSelectedMarketSourceChanged(string value) => _ = BrowseMarketAsync();
 
     private List<MarketSkillRow> _allMarketSkills = new();
 
@@ -188,15 +205,16 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task BrowseMarketAsync()
     {
-        if (_skillMarket == null) return;
+        var market = CurrentMarket;
+        if (market == null) return;
         if (IsMarketLoading) return;
 
         IsMarketLoading = true;
         IsMarketError = false;
-        MarketStatus = "🔄 正在拉取市场索引...";
+        MarketStatus = $"🔄 正在拉取 {SelectedMarketSource} 索引...";
         try
         {
-            var index = await _skillMarket.FetchIndexAsync().ConfigureAwait(true);
+            var index = await market.FetchIndexAsync().ConfigureAwait(true);
             _allMarketSkills = index.Skills
                 .Select(m => MarketSkillRow.FromManifest(m, _skillService))
                 .ToList();
@@ -209,7 +227,7 @@ public partial class SettingsViewModel : ObservableObject
             MarketCategory = "全部";
 
             ApplyMarketFilter();
-            MarketStatus = $"✅ 已加载 {_allMarketSkills.Count} 个市场技能";
+            MarketStatus = $"✅ 已从 {SelectedMarketSource} 加载 {_allMarketSkills.Count} 个技能";
         }
         catch (Exception ex)
         {

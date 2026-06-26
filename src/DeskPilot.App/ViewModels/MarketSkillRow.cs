@@ -5,8 +5,9 @@ using DeskPilot.Core.Services;
 namespace DeskPilot.App.ViewModels;
 
 /// <summary>
-/// v0.10: 市场技能卡片行（用于 SettingsWindow 技能市场页 ListView 数据源）。
-/// 包含图标/名称/作者/描述/分类/版本，以及 IsInstalled/HasUpdate 状态。
+/// v0.11: 市场技能卡片行（用于 SettingsWindow 技能市场页 WrapPanel 卡片网格）。
+/// 卡片显示：Icon + Name + Description(3 行截断) + SourceName 徽章。
+/// 详情弹窗显示：Author + Version + Rating + Downloads + ScreenshotUrl + Prompt + Tools。
 /// </summary>
 public partial class MarketSkillRow : ObservableObject
 {
@@ -16,7 +17,15 @@ public partial class MarketSkillRow : ObservableObject
     public string Icon { get; init; } = "🧩";
     public string Category { get; init; } = string.Empty;
     public string Author { get; init; } = string.Empty;
+    public string AuthorName { get; init; } = string.Empty;
+    public string AuthorUrl { get; init; } = string.Empty;
     public string Version { get; init; } = string.Empty;
+
+    // v0.11: 来源徽章（卡片右上角）+ 详情弹窗用字段
+    public string SourceName { get; init; } = string.Empty;
+    public string ScreenshotUrl { get; init; } = string.Empty;
+    public double Rating { get; init; }
+    public int Downloads { get; init; }
 
     [ObservableProperty] private bool _isInstalled;
     [ObservableProperty] private bool _hasUpdate;
@@ -25,8 +34,9 @@ public partial class MarketSkillRow : ObservableObject
 
     public static MarketSkillRow FromManifest(SkillManifest m, ISkillService? svc)
     {
-        var isInstalled = svc?.FindById(m.Id) != null;
-        var localVersion = svc?.FindById(m.Id)?.Version ?? string.Empty;
+        var local = svc?.FindById(m.Id);
+        var isInstalled = local != null;
+        var localVersion = local?.Version ?? string.Empty;
         var hasUpdate = isInstalled && !string.IsNullOrWhiteSpace(localVersion)
             && SkillMarketService.CompareVersions(localVersion, m.Version) < 0;
         return new MarketSkillRow
@@ -37,7 +47,13 @@ public partial class MarketSkillRow : ObservableObject
             Icon = string.IsNullOrEmpty(m.Icon) ? "🧩" : m.Icon,
             Category = m.Category,
             Author = m.Author,
+            AuthorName = string.IsNullOrEmpty(m.AuthorName) ? m.Author : m.AuthorName,
+            AuthorUrl = m.AuthorUrl,
             Version = m.Version,
+            SourceName = string.IsNullOrEmpty(m.Author) ? "QwenPaw" : m.Author,
+            ScreenshotUrl = m.ScreenshotUrl,
+            Rating = m.Rating,
+            Downloads = m.Downloads,
             IsInstalled = isInstalled,
             InstalledVersion = localVersion,
             LatestVersion = m.Version,

@@ -170,3 +170,33 @@ public sealed class RoleToAvatarBrushConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
+
+/// <summary>v0.11: 字符串相等比较（ConverterParameter 为目标值，匹配返回 true）。用于市场源 Tab 高亮。</summary>
+public sealed class SourceMatchConverter : IValueConverter
+{
+    public static readonly SourceMatchConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value == null || parameter == null) return false;
+        return string.Equals(value.ToString(), parameter.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>v0.11: 分类 Tab 高亮（ConverterParameter=当前选中分类，匹配返回 true）。</summary>
+public sealed class CategoryMatchConverter : IValueConverter
+{
+    public static readonly CategoryMatchConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value == null || parameter == null) return false;
+        return string.Equals(value.ToString(), parameter.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

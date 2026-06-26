@@ -20,14 +20,16 @@ namespace DeskPilot.Core.Services;
 public sealed class SkillMarketService : ISkillMarket
 {
     public string BaseUrl { get; }
+    public string SourceName { get; }
 
     private readonly HttpClient _http;
 
     public SkillMarketService(HttpClient http, string baseUrl =
-        "https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills")
+        "https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills", string sourceName = "QwenPaw")
     {
         _http = http;
         BaseUrl = baseUrl.TrimEnd('/');
+        SourceName = sourceName;
         if (_http.Timeout == System.Threading.Timeout.InfiniteTimeSpan)
             _http.Timeout = TimeSpan.FromSeconds(10);
     }
@@ -143,11 +145,16 @@ public sealed class SkillMarketService : ISkillMarket
                 .Select(c => c.Trim())
                 .Where(c => c.Length > 0)
                 .ToList();
-            // 期望 7 列：id name description icon category author version
+            // v0.11: 至少 7 列（id name description icon category author version），
+            // 可选 8 列=screenshotUrl，9 列=rating，10 列=downloads
             if (cells.Count < 7) continue;
 
             try
             {
+                var screenshotUrl = cells.Count > 7 ? cells[7] : "";
+                var rating = cells.Count > 8 && double.TryParse(cells[8], out var r) ? r : 0;
+                var downloads = cells.Count > 9 && int.TryParse(cells[9], out var d) ? d : 0;
+
                 var manifest = new SkillManifest(
                     Id: cells[0],
                     Name: cells[1],
@@ -156,7 +163,10 @@ public sealed class SkillMarketService : ISkillMarket
                     Category: cells[4],
                     Author: cells[5],
                     Version: cells[6],
-                    Tags: Array.Empty<string>());
+                    Tags: Array.Empty<string>(),
+                    ScreenshotUrl: screenshotUrl,
+                    Rating: rating,
+                    Downloads: downloads);
                 if (string.IsNullOrWhiteSpace(manifest.Id)) continue;
                 index.Skills.Add(manifest);
             }
