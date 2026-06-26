@@ -37,13 +37,16 @@ public sealed class LocalJsonMemoryStore : IMemoryStore
 
     public async Task<List<MemoryEntry>> LoadAsync(CancellationToken ct = default)
     {
-        await _lock.WaitAsync(ct);
+        // ConfigureAwait(false) 避免在 WPF UI 线程构造函数里被 sync-over-async 死锁
+        // （await File.ReadAllTextAsync 默认会捕获当前 SyncContext，导致回调
+        //  回到 UI 线程，而 UI 线程在调用方 .Wait()/.GetResult() 里死等）
+        await _lock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             if (!File.Exists(StorePath))
                 return new List<MemoryEntry>();
 
-            var json = await File.ReadAllTextAsync(StorePath, ct);
+            var json = await File.ReadAllTextAsync(StorePath, ct).ConfigureAwait(false);
             var entries = JsonSerializer.Deserialize<List<MemoryEntry>>(json, JsonOptions)
                           ?? new List<MemoryEntry>();
             return entries;
@@ -64,7 +67,7 @@ public sealed class LocalJsonMemoryStore : IMemoryStore
 
     public async Task SaveAsync(List<MemoryEntry> entries, CancellationToken ct = default)
     {
-        await _lock.WaitAsync(ct);
+        await _lock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             // 裁剪：只保留最近 MaxEntries 条
@@ -73,7 +76,7 @@ public sealed class LocalJsonMemoryStore : IMemoryStore
 
             Directory.CreateDirectory(StoreDir);
             var json = JsonSerializer.Serialize(entries, JsonOptions);
-            await File.WriteAllTextAsync(StorePath, json, ct);
+            await File.WriteAllTextAsync(StorePath, json, ct).ConfigureAwait(false);
         }
         finally
         {

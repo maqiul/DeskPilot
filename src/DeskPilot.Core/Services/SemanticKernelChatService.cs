@@ -133,9 +133,10 @@ public sealed class SemanticKernelChatService : IChatService
 
         try
         {
-            var task = _memoryStore.LoadAsync();
-            task.Wait();
-            var entries = task.Result;
+            // 推到线程池执行，避免在 WPF UI 线程构造函数里被 sync-over-async 死锁
+            // （UI 线程的 SyncContext 会等待 I/O 完成后回到 UI 线程继续，
+            //  而 .Wait()/.GetResult() 阻塞 UI 线程 → 死锁）
+            var entries = Task.Run(() => _memoryStore.LoadAsync()).GetAwaiter().GetResult();
             foreach (var e in entries)
             {
                 var role = e.Role switch
