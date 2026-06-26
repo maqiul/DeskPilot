@@ -338,7 +338,13 @@
                                                             </Setter.Value>
                                                         </Setter>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}, Converter={x:Static local:SourceMatchConverter.Instance}, ConverterParameter={Binding SelectedMarketSource, RelativeSource={RelativeSource AncestorType=Window}}}" Value="True">
+                                                            <DataTrigger Value="True">
+                                                                <DataTrigger.Binding>
+                                                                    <MultiBinding Converter="{x:Static local:SourceMatchConverter.Instance}">
+                                                                        <Binding Path="Tag" RelativeSource="{RelativeSource Self}"/>
+                                                                        <Binding Path="SelectedMarketSource" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                                    </MultiBinding>
+                                                                </DataTrigger.Binding>
                                                                 <Setter Property="IsChecked" Value="True"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
@@ -435,7 +441,13 @@
                                                     </Setter.Value>
                                                 </Setter>
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Content, RelativeSource={RelativeSource Self}, Converter={x:Static local:CategoryMatchConverter.Instance}, ConverterParameter={Binding MarketCategory, RelativeSource={RelativeSource AncestorType=Window}}}" Value="True">
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{x:Static local:CategoryMatchConverter.Instance}">
+                                                                <Binding Path="Content" RelativeSource="{RelativeSource Self}"/>
+                                                                <Binding Path="MarketCategory" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
                                                         <Setter Property="IsChecked" Value="True"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>

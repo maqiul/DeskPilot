@@ -171,32 +171,36 @@ public sealed class RoleToAvatarBrushConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
-/// <summary>v0.11: 字符串相等比较（ConverterParameter 为目标值，匹配返回 true）。用于市场源 Tab 高亮。</summary>
-public sealed class SourceMatchConverter : IValueConverter
+/// <summary>v0.11+v0.14.1: 字符串相等比较（MultiBinding：values[0] 是 Tab 的值，values[1] 是当前选中项）。用于市场源 Tab 高亮。
+/// 改 IValueConverter → IMultiValueConverter，因为 ConverterParameter 不是依赖属性，不能接收 Binding。
+/// </summary>
+public sealed class SourceMatchConverter : IMultiValueConverter
 {
     public static readonly SourceMatchConverter Instance = new();
 
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value == null || parameter == null) return false;
-        return string.Equals(value.ToString(), parameter.ToString(), StringComparison.OrdinalIgnoreCase);
+        if (values == null || values.Length < 2 || values[0] == null || values[1] == null) return false;
+        return string.Equals(values[0].ToString(), values[1].ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
 
-/// <summary>v0.11: 分类 Tab 高亮（ConverterParameter=当前选中分类，匹配返回 true）。</summary>
-public sealed class CategoryMatchConverter : IValueConverter
+/// <summary>v0.11+v0.14.1: 分类 Tab 高亮（MultiBinding：values[0] 是 Tab 的值，values[1] 是当前选中分类）。
+/// 改 IValueConverter → IMultiValueConverter，因为 ConverterParameter 不是依赖属性，不能接收 Binding。
+/// </summary>
+public sealed class CategoryMatchConverter : IMultiValueConverter
 {
     public static readonly CategoryMatchConverter Instance = new();
 
-    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value == null || parameter == null) return false;
-        return string.Equals(value.ToString(), parameter.ToString(), StringComparison.OrdinalIgnoreCase);
+        if (values == null || values.Length < 2 || values[0] == null || values[1] == null) return false;
+        return string.Equals(values[0].ToString(), values[1].ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
