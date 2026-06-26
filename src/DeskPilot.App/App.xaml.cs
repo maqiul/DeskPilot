@@ -65,6 +65,12 @@ public partial class App : Application
                     registry.Register(new TextStatsTool());
                     // v0.13: 文件内容搜索（正则 + 目录递归 + 文件过滤）
                     registry.Register(new SearchContentTool());
+                    // v0.14: PDF 合并（多个 PDF → 一个新 PDF，纯托管 PdfSharpCore）
+                    registry.Register(new MergePdfTool());
+                    // v0.14: 图片格式转换（png/jpg/bmp/webp/gif 互转，System.Drawing）
+                    registry.Register(new ConvertImageTool());
+                    // v0.14: Excel 批处理（list_sheets / extract_data / write_summary，ClosedXML）
+                    registry.Register(new BatchExcelTool());
                     return registry;
                 });
                 stServices.AddSingleton<ChatViewModel>();
@@ -171,6 +177,12 @@ public partial class App : Application
             registry.Register(new TextStatsTool());
             // v0.13: 文件内容搜索（正则 + 目录递归 + 文件过滤）
             registry.Register(new SearchContentTool());
+            // v0.14: PDF 合并
+            registry.Register(new MergePdfTool());
+            // v0.14: 图片格式转换
+            registry.Register(new ConvertImageTool());
+            // v0.14: Excel 批处理
+            registry.Register(new BatchExcelTool());
             return registry;
         });
 

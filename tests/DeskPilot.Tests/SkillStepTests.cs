@@ -372,4 +372,72 @@ public class SkillStepTests
             Assert.NotEmpty(skill.SafeSteps);
         }
     }
+
+    // ========== v0.14 多步技能加载测试 ==========
+
+    [Fact]
+    public void InvoiceMerge_LoadsMultiStep()
+    {
+        var json = LoadSkillJson("invoice-merge");
+        var skill = System.Text.Json.JsonSerializer.Deserialize<Skill>(json, new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+        Assert.NotNull(skill);
+        Assert.Equal("invoice-merge", skill!.Id);
+        Assert.Equal("发票合并", skill.Name);
+        Assert.True(skill.IsMultiStep);
+        Assert.Equal(2, skill.Steps.Count);
+    }
+
+    [Fact]
+    public void InvoiceMerge_ArgsContainExpectedKeys()
+    {
+        var json = LoadSkillJson("invoice-merge");
+        var skill = System.Text.Json.JsonSerializer.Deserialize<Skill>(json, new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+        // 第 1 步 search_content 应有 directory + pattern
+        Assert.Equal("search_content", skill!.Steps[0].ToolName);
+        Assert.True(skill.Steps[0].Args.ContainsKey("directory"));
+        Assert.True(skill.Steps[0].Args.ContainsKey("pattern"));
+        // 第 2 步 merge_pdfs 应有 inputFiles + outputPath
+        Assert.Equal("merge_pdfs", skill.Steps[1].ToolName);
+        Assert.True(skill.Steps[1].Args.ContainsKey("inputFiles"));
+        Assert.True(skill.Steps[1].Args.ContainsKey("outputPath"));
+    }
+
+    [Fact]
+    public void ExcelRollup_LoadsMultiStep()
+    {
+        var json = LoadSkillJson("excel-rollup");
+        var skill = System.Text.Json.JsonSerializer.Deserialize<Skill>(json, new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+        Assert.NotNull(skill);
+        Assert.Equal("excel-rollup", skill!.Id);
+        Assert.Equal("Excel 周报汇总", skill.Name);
+        Assert.True(skill.IsMultiStep);
+        Assert.Equal(3, skill.Steps.Count);
+    }
+
+    [Fact]
+    public void AllHaveIsMultiStepTrue_V0_14()
+    {
+        // 验证 v0.14 的 2 个新 community 技能全部 IsMultiStep=true 且 SafeSteps 非空
+        var ids = new[] { "invoice-merge", "excel-rollup" };
+        foreach (var id in ids)
+        {
+            var json = LoadSkillJson(id);
+            var skill = System.Text.Json.JsonSerializer.Deserialize<Skill>(json, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            Assert.NotNull(skill);
+            Assert.True(skill!.IsMultiStep, $"{id} 应该 IsMultiStep=true");
+            Assert.NotEmpty(skill.SafeSteps);
+        }
+    }
 }

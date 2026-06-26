@@ -1,3 +1,59 @@
+## [v0.14.0] - 2026-06-26
+
+### 🆕 新增 3 个零依赖工具
+
+工具矩阵从 9 个扩展到 **12 个**，新增 2 个外部 NuGet 依赖：`PdfSharpCore 1.3.65`（纯托管 PDF 库，零 GhostScript）+ `ClosedXML 0.102.3`（纯 .NET Excel 库）。self-contained 单文件体积保持 ~73 MB。
+
+#### 📄 MergePdfTool — PDF 合并
+- 输入 `inputFiles`（PDF 绝对路径数组）+ `outputPath`（合并后的新 PDF 路径）
+- 输出 `outputPath` + `inputCount` + `pageCount` + `outputSizeBytes` + `elapsedMs`
+- 适用：「把多张发票 PDF 合成一份」「合并多份报告」
+
+#### 🖼 ConvertImageTool — 图片格式转换
+- 输入 `inputPath` + `outputPath` + `targetFormat`（png / jpg / bmp / webp / gif）+ 可选 `quality`（1-100，jpg 生效）
+- webp 输出自动回退为 png（保持透明通道）
+- 适用：「PNG 太大转 JPG 缩体积」「扫描件转 BMP 嵌入文档」
+
+#### 📊 BatchExcelTool — Excel 批处理
+- 输入 `inputDirectory` + 可选 `fileFilter`（默认 *.xlsx）+ `operation` + 可选 `outputPath`
+- 三种 operation：
+  - `list_sheets`：列出每个 xlsx 的 sheet 名 + 行列数 + 文件大小
+  - `extract_data`：汇总所有 xlsx 第一张表数据到 JSON 数组（自动跳过表头行）
+  - `write_summary`：把每文件的「文件名 + sheet 名 + 行数 + 列数 + 文件大小」汇总到新 xlsx
+
+### 🆕 2 个多步技能示例
+
+技能总数从 13 个扩展到 **15 个**（8 builtin + 7 community）。
+
+#### 📄 invoice-merge
+- 2 步：`search_content` 搜 Downloads/ 含「发票|invoice|fapiao」PDF → `merge_pdfs` 合并为 Documents/发票汇总_YYYYMMDD.pdf
+- Category：文档处理
+
+#### 📊 excel-rollup
+- 3 步：`search_content` 找本周 *.xlsx → `batch_excel` write_summary 汇总 → `text_stats` 统计行数（optional）
+- Category：办公自动化
+
+### 📈 测试覆盖
+- **259 测试**全过（v0.13 baseline 239 + v0.14 新增 20 = 259）
+  - C1 MergePdfToolTests：5（空数组 / 单文件 / 多文件保序 / 不存在 / 损坏 PDF）
+  - C2 ConvertImageToolTests：5（PNG→JPG / JPG→PNG / quality 95>10 / 不存在 / tiff 不支持）
+  - C3 BatchExcelToolTests：6（空目录 / list_sheets / extract_data / write_summary / 不存在目录 / 不支持 operation）
+  - C4 SkillStepTests v0.14 section：4（InvoiceMerge / ExcelRollup 加载与 IsMultiStep 校验）
+- smoke test stdout/stderr 0 字节 = 无 XamlParseException
+
+### 🔧 关键修复
+- **PdfSharpCore 库命名空间是 `PdfSharpCore` 不是 `PdfSharp`**（using + catch 里的 PdfReaderException 都已修）
+- **RiskLevel 枚举无 `ReadOnly` 值** → `batch_excel` 改用 `Destructive`（write_summary 写新 xlsx 视为写文件）
+- **ClosedXML `LastRowUsed().RowNumber()` 包含表头** → WriteSummary 测试断言从 2 改 3（1 表头 + 2 数据行）
+- **ClosedXML `RowsUsed()` 默认含表头** → `extract_data` 加 `Skip(1)` 跳过表头，行为符合「数据行」语义
+
+### 📥 下载
+
+- **DeskPilot-Setup-v0.14.0-win-x64.exe**（自包含安装包，单文件 ~73 MB）
+- **DeskPilot-v0.14.0-win-x64.zip**（自包含 ZIP，单文件 ~73 MB）
+- 解压即用，无需安装 .NET 8 Desktop Runtime
+- GitHub Release：https://github.com/maqiul/DeskPilot/releases/tag/v0.14.0
+
 ## [v0.13.0] - 2026-06-26
 
 ### 🆕 新增 2 个零依赖工具

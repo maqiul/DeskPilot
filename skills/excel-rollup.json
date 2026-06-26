@@ -1,0 +1,44 @@
+{
+  "id": "excel-rollup",
+  "name": "Excel 周报汇总",
+  "description": "扫描当前周的所有 .xlsx（按文件名含日期过滤）→ 写一个汇总 xlsx 列出每个文件的 sheet 行列数 → 用 TextStats 统计汇总表的行数/字符数/高频词。适用于每周例会前快速汇总各部门 Excel 报表。",
+  "category": "办公自动化",
+  "icon": "📊",
+  "version": "1.0.0",
+  "author": "DeskPilot Community",
+  "tags": ["Excel", "汇总", "周报", "批处理"],
+  "isMultiStep": true,
+  "steps": [
+    {
+      "toolName": "search_content",
+      "description": "扫描当前目录所有 .xlsx 文件",
+      "args": {
+        "directory": ".",
+        "pattern": ".*\\.xlsx$",
+        "fileFilter": "*.xlsx",
+        "recursive": true
+      },
+      "required": true
+    },
+    {
+      "toolName": "batch_excel",
+      "description": "把扫描到的 xlsx 汇总为一份 summary.xlsx（每文件的 sheet 名 + 行列数）",
+      "args": {
+        "inputDirectory": ".",
+        "fileFilter": "*.xlsx",
+        "operation": "write_summary",
+        "outputPath": "./summary_${yyyyMMdd}.xlsx"
+      },
+      "required": true
+    },
+    {
+      "toolName": "text_stats",
+      "description": "用 TextStats 统计 summary.xlsx 的行列数（作为快速校验）",
+      "args": {
+        "filePath": "./summary_${yyyyMMdd}.xlsx",
+        "topN": 10
+      },
+      "optional": true
+    }
+  ]
+}

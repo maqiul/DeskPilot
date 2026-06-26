@@ -1,0 +1,33 @@
+{
+  "id": "invoice-merge",
+  "name": "发票合并",
+  "description": "扫描 Downloads/ 目录下所有含「发票」关键词的 PDF，按文件名排序后合并为一份「发票汇总_YYYYMMDD.pdf」存入 Documents/ 目录。适用于月底批量整理电子发票。",
+  "category": "文档处理",
+  "icon": "📄",
+  "version": "1.0.0",
+  "author": "DeskPilot Community",
+  "tags": ["PDF", "发票", "合并", "归档"],
+  "isMultiStep": true,
+  "steps": [
+    {
+      "toolName": "search_content",
+      "description": "扫描 Downloads/ 下所有 PDF，匹配文件名含「发票」「invoice」「fapiao」",
+      "args": {
+        "directory": "C:\\Users\\%USERNAME%\\Downloads",
+        "pattern": ".*(发票|invoice|fapiao).*\\.pdf$",
+        "fileFilter": "*.pdf",
+        "recursive": false
+      },
+      "required": true
+    },
+    {
+      "toolName": "merge_pdfs",
+      "description": "把扫描到的所有 PDF 合并为一份「发票汇总_YYYYMMDD.pdf」存入 Documents/",
+      "args": {
+        "inputFiles": "${steps.0.matches[0..].FilePath}",
+        "outputPath": "C:\\Users\\%USERNAME%\\Documents\\发票汇总_${yyyyMMdd}.pdf"
+      },
+      "required": true
+    }
+  ]
+}

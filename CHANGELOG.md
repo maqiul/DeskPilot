@@ -2,6 +2,37 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.14.0] - 2026-06-26
+
+### 🆕 新增 3 个零依赖工具（C1+C2+C3）
+- **merge_pdfs** (MergePdfTool) — 多个 PDF 合并为一个新文件（纯托管 PdfSharpCore，零 GhostScript）
+- **convert_image** (ConvertImageTool) — png / jpg / bmp / webp / gif 互转（System.Drawing.Common，quality 1-100 jpg 生效）
+- **batch_excel** (BatchExcelTool) — 目录批量处理 xlsx，三种 operation：
+  - `list_sheets`：列出每个 xlsx 的 sheet 名 + 行列数 + 文件大小
+  - `extract_data`：汇总所有 xlsx 第一张表数据到 JSON 数组（自动跳过表头行）
+  - `write_summary`：把每文件的「文件名 + sheet 名 + 行数 + 列数 + 文件大小」汇总到新 xlsx
+
+### 🆕 新增 2 个多步技能示例
+- **invoice-merge** (2 步) — `search_content` 搜 Downloads/ 含「发票|invoice|fapiao」PDF → `merge_pdfs` 合并为 Documents/发票汇总_YYYYMMDD.pdf
+- **excel-rollup** (3 步) — `search_content` 找本周 *.xlsx → `batch_excel` write_summary 汇总 → `text_stats` 统计行数（optional）
+- skills/README.md 加 2 行 v0.14 多步索引
+
+### 📊 测试
+- 全量测试 **259/259 全过**（v0.13 baseline 239 + v0.14 新增 20 = 259）
+  - C1 MergePdfToolTests：5（空数组 / 单文件 / 多文件保序 / 不存在 / 损坏 PDF）
+  - C2 ConvertImageToolTests：5（PNG→JPG / JPG→PNG / quality 95>10 / 不存在 / tiff 不支持）
+  - C3 BatchExcelToolTests：6（空目录 / list_sheets 多文件 / extract_data 跳表头 / write_summary / 不存在目录 / 不支持 operation）
+  - C4 SkillStepTests v0.14 section：4（InvoiceMerge_LoadsMultiStep / InvoiceMerge_ArgsContainExpectedKeys / ExcelRollup_LoadsMultiStep / AllHaveIsMultiStepTrue_V0_14）
+- smoke test stdout/stderr 0 字节 = 无 XamlParseException
+
+### 🔧 关键修复与决策
+- **PdfSharpCore 库命名空间是 `PdfSharpCore` 不是 `PdfSharp`**：using + catch 里的 PdfReaderException 都已修
+- **RiskLevel 枚举无 `ReadOnly` 值** → BatchExcelTool 改用 `Destructive`（write_summary 写新 xlsx 视为写文件）
+- **ClosedXML `LastRowUsed().RowNumber()` 包含表头** → WriteSummary 测试断言从 2 改 3（1 表头 + 2 数据行）
+- **ClosedXML `RowsUsed()` 默认含表头** → `extract_data` 加 `Skip(1)` 跳过表头，行为符合「数据行」语义
+- **NuGet 依赖**：`PdfSharpCore 1.3.65`（含 SharpZipLib 1.4.2）+ `ClosedXML 0.102.3`，其余工具用现有 System.Drawing.Common
+- self-contained 单文件体积保持 ~73 MB
+
 ## [v0.13.0] - 2026-06-26
 
 ### 🆕 新增 2 个零依赖工具（B1+B2）
