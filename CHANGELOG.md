@@ -2,6 +2,86 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.10.0] - 2026-06-26
+
+### 🛠 新增功能
+
+#### 🌐 技能市场（Skill Market）
+- **从「只读内置 + 启用切换」升级为「市场 + 本地安装」模型**
+- **GitHub 仓库根 `skills/` 目录**作为市场源：
+  - `skills/README.md`（YAML 头 + Markdown 表格）—— 技能索引
+  - `skills/{id}.json` —— 每个技能单独 JSON（按需拉取，节省流量）
+- **`ISkillMarket` 接口 + `SkillMarketService` 实现**：
+  - `FetchIndexAsync()` —— 拉 README.md 解析为 `SkillIndex`
+  - `FetchSkillAsync(id)` —— 拉单个技能 JSON 反序列化为 `Skill`
+  - `CheckUpdatesAsync(installed)` —— 对比本地 vs 市场版本，返回 `id → (本地, 市场, HasUpdate)` Map
+  - `HttpClient` 注入（测试用 `DelegatingHandler` mock）
+  - 默认 URL：`https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills`
+  - 自定义异常：`MarketFetchException` / `SkillNotFoundException`
+
+#### 📦 技能安装 / 卸载 / 更新
+- **`ISkillService` 扩展**：`InstallAsync` / `UninstallAsync` / `CheckUpdatesAsync` / `BuiltIn` / `Custom` / `Categories`
+- **`SkillService` 重写**：
+  - 加载逻辑适配市场模型（默认 JSON + 已安装技能合并）
+  - 内置技能不可安装 / 卸载（防御性 throw `InvalidOperationException`）
+  - `SetMarket(ISkillMarket?)` 注入，启用更新检查
+
+#### 🖼️ SettingsWindow 技能市场页
+- **新增 🌐 技能市场 SectionCard**：
+  - 🔄 拉取市场按钮（拉 README.md 索引）
+  - 分类下拉筛选（"全部" + 市场实际分类去重）
+  - 搜索框（匹配 ID / Name / Description / Author）
+  - 技能卡片列表：图标 + 名称 + 分类标签 + 版本 + 作者 + 描述
+  - 「📥 安装」/「🗑 卸载」按钮（按 `IsInstalled` 自动切换）
+  - 「🔍 检查更新」按钮
+  - 「🔄 有更新」橙色角标（按 `HasUpdate` 显示）
+  - 状态条：拉取/安装/卸载/检查更新反馈
+
+#### 🛠 ChatWindow 横条升级
+- **内置 + 已安装技能合并**（同 ID 去重，避免重复显示）
+- **「📦 已安装 N」标签**：横条右侧显示从市场安装的技能数量
+- **「🔄」更新角标**：每个技能卡片右上角根据 `HasUpdate` 状态显示橙色更新提示
+- **`Skill` 模型加 `HasUpdate` 属性**（`[JsonIgnore]` 不参与序列化，运行时由 ChatViewModel 写入）
+
+#### 📝 数据模型扩展
+- `Skill` 加 `IsBuiltIn`（默认 false，内置 = true）/ `Source`（默认 ""）/ `Version`（默认 ""）
+- `SkillSet` 加 `BuiltIn` / `Custom` 视图属性
+- `default-skills.json` 给 8 个内置技能显式标 `IsBuiltIn=true` + `Source="builtin"`
+- 新建 `SkillManifest.cs`（市场索引用：Id/Name/Description/Icon/Category/Author/Version/Tags）
+
+#### 🧪 测试覆盖
+- **176/176 测试全过**（原 155 + 21 新增）
+- **新增 21 个测试**：
+  - 4 个 `SkillModelTests`（v0.10）：DefaultSkillsJson_AllSkillsAreBuiltIn / DefaultSkillsJson_AllSkillsHaveBuiltinSource / Skill_RecordWithMarketFields_Roundtrips / SkillSet_BuiltInAndCustom_DoesNotOverlap
+  - 11 个 `SkillServiceTests`（v0.10）：BuiltIn_ReturnsOnlyBuiltinSkills / Custom_EmptyBeforeInstall / InstallAsync_AddsNewSkill_AndFiresChanged / InstallAsync_UpgradeExisting_ReplacesVersion / InstallAsync_RejectsBuiltInSkill / InstallAsync_RejectsNullOrEmptyId / InstallAsync_PersistsToFile / UninstallAsync_RemovesCustomSkill_AndFiresChanged / UninstallAsync_RejectsBuiltInSkill / UninstallAsync_UnknownId_NoOp / UninstallAsync_PersistsToFile / CheckUpdatesAsync_NoMarket_ReturnsEmpty
+  - 5 个 `SkillMarketServiceTests`（新类）：ParseIndexFromMarkdown_ParsesValidTable / ParseIndexFromMarkdown_SkipsHeaderAndSeparator / ParseIndexFromMarkdown_IgnoresEmptyAndInvalidLines / CompareVersions_ReturnsCorrectOrder / FetchSkillAsync_MockHttp_ReturnsParsedSkill / FetchSkillAsync_404_ThrowsNotFound / FetchSkillAsync_NetworkError_ThrowsMarketFetch / FetchIndexAsync_ParsesReadmeTable / CheckUpdatesAsync_DetectsNewerVersion
+
+### 🔧 关键文件
+- **新建**：`src/DeskPilot.Core/Services/ISkillMarket.cs` / `SkillMarketService.cs` / `Models/SkillManifest.cs` / `src/DeskPilot.App/ViewModels/MarketSkillRow.cs` / `skills/README.md` + 11 个 `skills/*.json`
+- **重构**：`src/DeskPilot.Core/Services/SkillService.cs`（市场模型加载 + Install/Uninstall/CheckUpdates）
+- **改造**：`SettingsViewModel.cs`（+MarketSkills + 4 个 RelayCommand）/ `ChatViewModel.cs`（+UpdateBadgeMap + 合并去重）/ `App.xaml.cs`（+ISkillMarket DI）/ `SettingsWindow.xaml`（+🌐 市场 SectionCard）/ `ChatWindow.xaml`（+🔄 角标 + 📦 标签）
+
+## [v0.9.2] - 2026-06-26
+
+### 🐛 Bug 修复
+
+#### IDE 启动 / `dotnet run` 时无界面（与 v0.9.1 release 闪退无关）
+- **症状**：在 Visual Studio 按 F5 或 `dotnet run --project src/DeskPilot.App` 启动，进程存在但窗口不显示
+- **根因**：WPF UI 线程构造函数里 sync-over-async 死锁
+  1. `App.OnStartup`（UI 线程）→ `GetRequiredService<ChatWindow>()` → DI 解析链 → `SemanticKernelChatService..ctor`
+  2. `..ctor` 调 `LoadHistoryAsync()` → `_memoryStore.LoadAsync().Wait()`
+  3. `LoadAsync()` 内 `await File.ReadAllTextAsync(StorePath, ct)`（默认 `ConfigureAwait(true)`）
+  4. 异步 I/O 完成后回调想回 SyncContext（UI 线程），但 UI 线程在 `.Wait()` 里死等
+  5. **死锁**
+- **定位方法**：
+  - 在 `App.xaml.cs` 加全局异常 handler + Trace 探针（写 `startup-trace.log`）
+  - `dotnet-dump collect -p <pid>` 抓 dump
+  - `clrstack` 看主线程：`Monitor.Wait` → `SynchronizationContext.WaitHelper` → `WaitForMultipleObjects` 死等
+- **修复（2 文件 / 6 行变更）**：
+  - `DeskPilot.Core/Services/LocalJsonMemoryStore.cs`：`LoadAsync` / `SaveAsync` 的 4 个 `await` 全部加 `.ConfigureAwait(false)` —— 不让异步 I/O 回调回 UI 线程
+  - `DeskPilot.Core/Services/SemanticKernelChatService.cs`：`LoadHistoryAsync` 把 `_memoryStore.LoadAsync()` 包进 `Task.Run()` —— 把整个 I/O 推线程池
+- **新测试**：`MemoryStoreTests`（4 个）—— 用 `FakeSyncContext` 模拟 UI 线程，断言 `LoadAsync` 不死锁
+
 ## [v0.9.1] - 2026-06-25
 
 ### 🐛 Bug 修复
