@@ -37,6 +37,8 @@ description: 公开技能清单，按 ID 索引，对应 skills/{id}.json
 | scan-invoices | 扫描发票并归档 | **v0.12 多步**：校验哈希 → 按月归档 → 查重 | 🧾 | 财务办公 | community | 1.1.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/scan-invoices.png | 4.9 | 180 |
 | weekly-report-helper | 周报助手 | **v0.12 多步**：校验笔记 → 压缩配图 | 📝 | 文档处理 | community | 1.0.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/weekly-report-helper.png | 4.1 | 95 |
 | git-commit-message | Git 提交信息生成 | **v0.12 多步**：校验变更 → dry-run 备份 CHANGELOG | 🔧 | 开发工具 | community | 1.1.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/git-commit-message.png | 4.7 | 220 |
+| code-review-helper | 代码评审助手 | **v0.13 多步**：搜 TODO/FIXME → 统计代码量 | 🔍 | 开发工具 | community | 1.0.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/code-review-helper.png | 4.3 | 65 |
+| file-organizer | 文件智能分类归档 | **v0.13 多步**：按关键词分类 → 按日期归档 | 📂 | 文档处理 | community | 1.0.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/file-organizer.png | 4.5 | 110 |
 
 ## 如何贡献新技能
 

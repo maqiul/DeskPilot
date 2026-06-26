@@ -294,4 +294,82 @@ public class SkillStepTests
                 $"Step {step.ToolName} 必须有非空 Description（UI 进度条用）");
         }
     }
+
+    // ============ v0.13 community 多步技能 JSON 反序列化测试 ============
+
+    [Fact]
+    public void CommunitySkill_CodeReviewHelper_LoadsMultiStep()
+    {
+        var json = LoadSkillJson("code-review-helper");
+        var skill = System.Text.Json.JsonSerializer.Deserialize<Skill>(json, new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+        Assert.NotNull(skill);
+        Assert.Equal("code-review-helper", skill!.Id);
+        Assert.True(skill.IsMultiStep);
+        Assert.Equal(2, skill.SafeSteps.Count);
+        // Step1: SearchContent (required) - 搜 TODO/FIXME/HACK/XXX
+        Assert.Equal("SearchContent", skill.SafeSteps[0].ToolName);
+        Assert.False(skill.SafeSteps[0].Optional);
+        // Step2: TextStats (optional) - 统计代码行数
+        Assert.Equal("TextStats", skill.SafeSteps[1].ToolName);
+        Assert.True(skill.SafeSteps[1].Optional);
+    }
+
+    [Fact]
+    public void CommunitySkill_CodeReviewHelper_SearchContentArgsContainExpectedKeys()
+    {
+        var json = LoadSkillJson("code-review-helper");
+        var skill = System.Text.Json.JsonSerializer.Deserialize<Skill>(json, new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+        Assert.NotNull(skill);
+        var args = skill!.SafeSteps[0].Args;
+        Assert.True(args.ContainsKey("directory"));
+        Assert.True(args.ContainsKey("pattern"));
+        Assert.True(args.ContainsKey("fileFilter"));
+        // pattern 字段反序列化为 JsonElement，需 GetString() 取值
+        var pattern = args["pattern"];
+        Assert.Equal("TODO|FIXME|HACK|XXX", pattern is System.Text.Json.JsonElement je ? je.GetString() : pattern);
+    }
+
+    [Fact]
+    public void CommunitySkill_FileOrganizer_LoadsMultiStep()
+    {
+        var json = LoadSkillJson("file-organizer");
+        var skill = System.Text.Json.JsonSerializer.Deserialize<Skill>(json, new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+        Assert.NotNull(skill);
+        Assert.Equal("file-organizer", skill!.Id);
+        Assert.True(skill.IsMultiStep);
+        Assert.Equal(2, skill.SafeSteps.Count);
+        // Step1: SearchContent (required) - 按关键词分类
+        Assert.Equal("SearchContent", skill.SafeSteps[0].ToolName);
+        Assert.False(skill.SafeSteps[0].Optional);
+        // Step2: ArchiveByDate (optional) - 按日期归档
+        Assert.Equal("ArchiveByDate", skill.SafeSteps[1].ToolName);
+        Assert.True(skill.SafeSteps[1].Optional);
+    }
+
+    [Fact]
+    public void CommunitySkill_AllHaveIsMultiStepTrue_V0_13()
+    {
+        // 验证 v0.13 的 2 个新 community 技能全部 IsMultiStep=true 且 SafeSteps 非空
+        var ids = new[] { "code-review-helper", "file-organizer" };
+        foreach (var id in ids)
+        {
+            var json = LoadSkillJson(id);
+            var skill = System.Text.Json.JsonSerializer.Deserialize<Skill>(json, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            Assert.NotNull(skill);
+            Assert.True(skill!.IsMultiStep, $"{id} 应该 IsMultiStep=true");
+            Assert.NotEmpty(skill.SafeSteps);
+        }
+    }
 }

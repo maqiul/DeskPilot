@@ -1,0 +1,38 @@
+{
+  "Id": "file-organizer",
+  "Name": "文件智能分类归档",
+  "Description": "v0.13 多步工作流：搜索关键词分类 → 按日期归档。先扫描 Downloads/ 下含特定关键词的文件（如「发票」「合同」「照片」），再按文件修改日期归档到 Documents/分类归档/YYYY/MM/。",
+  "Icon": "📂",
+  "PromptTemplate": "",
+  "Tools": ["SearchContent", "ArchiveByDate"],
+  "Category": "文档处理",
+  "IsBuiltIn": false,
+  "Source": "market:community",
+  "Version": "1.0.0",
+  "Steps": [
+    {
+      "ToolName": "SearchContent",
+      "Args": {
+        "directory": "Downloads/",
+        "pattern": "发票|合同|收据",
+        "fileFilter": "*",
+        "recursive": true,
+        "maxResults": 500
+      },
+      "Description": "扫描 Downloads/ 下文件名/内容含「发票/合同/收据」关键词的文件",
+      "Optional": false
+    },
+    {
+      "ToolName": "ArchiveByDate",
+      "Args": {
+        "sourceDirectory": "Downloads/",
+        "targetRoot": "Documents/分类归档/",
+        "datePattern": "yyyy/MM",
+        "fallbackSubdir": "未知日期",
+        "recursive": true
+      },
+      "Description": "按文件修改日期归档到 Documents/分类归档/YYYY/MM/ 子目录",
+      "Optional": true
+    }
+  ]
+}

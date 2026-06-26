@@ -1,3 +1,48 @@
+## [v0.13.0] - 2026-06-26
+
+### 🆕 新增 2 个零依赖工具
+
+工具矩阵从 7 个扩展到 **9 个**，零外部依赖（不引入任何 NuGet 包，self-contained 单文件体积保持 ~73 MB）。
+
+#### 📄 TextStatsTool — 文本文件统计
+- 输入 `filePath` + 可选 `topN`
+- 输出：BOM 自动检测编码（UTF-8 / UTF-16 / UTF-32 / 默认 UTF-8 无 BOM）
+- 行数（按 `\n` 计数）+ 字符数 + 词数（中英混合：英文按连续字母数字分词，中文按每个汉字 1 词）
+- 字节数 + 最后修改时间
+- topN 高频词（跳过停用词 + 单字符 + 纯数字）
+- 适用：「这个文件多大」「哪些词出现最多」
+
+#### 🔍 SearchContentTool — 文件内容搜索
+- 输入 `directory` + `pattern`（正则）+ 可选 `fileFilter` + 可选 `maxResults` + `recursive`
+- 输出每个匹配的文件路径、行号、匹配行内容
+- IsBinaryFile 按扩展名快速跳过（图片/视频/音频/Office/PDF 等）
+- RegexOptions.Compiled + 2 秒超时防 ReDoS
+- 适用：「帮我找所有 TODO」「哪些文件包含这个关键词」
+
+### 🆕 2 个多步技能示例
+
+技能总数从 11 个扩展到 **13 个**（8 builtin + 5 community）。
+
+#### 🔍 code-review-helper
+- 2 步：SearchContent 搜 src/*.cs 的 `TODO|FIXME|HACK|XXX` → TextStats 统计代码行数
+- Category：开发工具
+
+#### 📂 file-organizer
+- 2 步：SearchContent 按「发票|合同|收据」关键词扫描 Downloads/ → ArchiveByDate 按 yyyy/MM 归档
+- Category：文档处理
+
+### 📈 测试覆盖
+- **239 测试**全过（v0.12 baseline 229 + 16 新 = 239）
+- smoke test stdout 0 字节 = 无 XamlParseException
+- 零外部依赖
+
+### 📥 下载
+
+- **DeskPilot-Setup-v0.13.0-win-x64.exe**（自包含安装包，单文件 ~73 MB）
+- **DeskPilot-v0.13.0-win-x64.zip**（自包含 ZIP，单文件 ~73 MB）
+- 解压即用，无需安装 .NET 8 Desktop Runtime
+- GitHub Release：https://github.com/maqiul/DeskPilot/releases/tag/v0.13.0
+
 ## [v0.12.0] - 2026-06-26
 
 ### 🆕 技能多步工作流（A2）

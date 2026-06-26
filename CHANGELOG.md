@@ -2,6 +2,59 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.13.0] - 2026-06-26
+
+### 🆕 新增 2 个零依赖工具（B1+B2）
+
+#### 📄 TextStatsTool — 文本文件统计
+- 输入 filePath + 可选 topN
+- 输出 BOM 自动检测编码（UTF-8 / UTF-16 / UTF-32 / 默认 UTF-8 无 BOM）
+- 行数（按 `\n` 计数）+ 字符数 + 词数（中英混合：英文按连续字母数字分词，中文按每个汉字 1 词）
+- 字节数 + 最后修改时间
+- topN 高频词（跳过停用词 + 单字符 + 纯数字，按频率降序 + 字典序升序 tiebreak）
+- 纯只读工具，不会修改任何文件
+- 适用：「这个文件多大」「哪些词出现最多」
+
+#### 🔍 SearchContentTool — 文件内容搜索
+- 输入 directory + pattern（正则）+ 可选 fileFilter + 可选 maxResults + recursive
+- 输出每个匹配的文件路径、行号、匹配行内容、命中的正则片段
+- IsBinaryFile 按扩展名快速跳过（图片/视频/音频/Office/PDF 等）
+- RegexOptions.Compiled + 2 秒超时防 ReDoS
+- File.ReadAllLinesAsync + CancellationToken
+- 适用：「帮我找所有 TODO」「哪些文件包含这个关键词」
+
+#### 🛠 ToolRegistry 注册
+- App.xaml.cs line 63 main 工厂 + line 165 smoke test 工厂各加 2 处
+- 工具总数：7 → **9**（HashFiles / ArchiveByDate / FindDuplicates / BatchResizeImage / RenameByPattern / MoveFiles / ExtractArchive / **TextStats** / **SearchContent**）
+
+### 🆕 2 个多步技能示例（B3）
+
+#### 🔍 code-review-helper
+- 2 步：SearchContent 搜 src/*.cs 的 `TODO|FIXME|HACK|XXX` → TextStats 统计 DeskPilot.Core.csproj 元数据
+- SearchContent required + TextStats optional（统计可跳过）
+- Category：开发工具
+
+#### 📂 file-organizer
+- 2 步：SearchContent 按「发票|合同|收据」关键词扫描 Downloads/ → ArchiveByDate 按 yyyy/MM 归档到 Documents/分类归档/
+- SearchContent required + ArchiveByDate optional
+- Category：文档处理
+
+#### 📝 skills/README.md 更新
+- 加 2 行 v0.13 多步索引（code-review-helper + file-organizer）
+- 技能总数：11 → **13**（8 builtin + **5 community**）
+
+### 🧪 测试覆盖（+16 个新测试）
+- **TextStatsToolTests** 6 个：FileNotExists / EmptyFile / AsciiContent / ChineseContent / TopN_Limits / TopNZero_NoWordStats
+- **SearchContentToolTests** 6 个：DirectoryNotExists / EmptyDirectory / MultipleFiles / InvalidRegex / MaxResults / RecursiveOff
+- **SkillStepTests** +4 个 v0.13 community：CodeReviewHelper_LoadsMultiStep / CodeReviewHelper_SearchContentArgs / FileOrganizer_LoadsMultiStep / AllHaveIsMultiStepTrue_V0_13
+- **总计 239/239 全过**（v0.12 baseline 229 + 16 新 = 239）
+- smoke test stdout 0 字节 = 无 XamlParseException
+
+### 🔧 关键决策
+- **零外部依赖**：2 个工具都是纯 C# .NET 8 BCL API（System.IO / System.Text / System.Text.RegularExpressions），不引入任何 NuGet 包，self-contained 单文件体积保持 ~73 MB
+- **测试用反射提取匿名 data.matches**：避免嵌套 public record SearchMatch 强类型依赖（之前 v0.12 SkillStepTests 已用 `pattern is JsonElement je ? je.GetString() : pattern` 同款模式处理 JsonElement 装箱）
+- **正则防 ReDoS**：`RegexOptions.Compiled + TimeSpan.FromSeconds(2)` 防止恶意 pattern 触发灾难性回溯
+
 ## [v0.12.0] - 2026-06-26
 
 ### 🆕 技能多步工作流（A2）

@@ -1,0 +1,35 @@
+{
+  "Id": "code-review-helper",
+  "Name": "代码评审助手",
+  "Description": "v0.13 多步工作流：搜索 TODO/FIXME → 统计代码量。扫描 src/ 下的代码文件，先列出所有 TODO/FIXME/HACK 标记位置，再统计总代码行数 / 字符数 / 高频词。",
+  "Icon": "🔍",
+  "PromptTemplate": "",
+  "Tools": ["SearchContent", "TextStats"],
+  "Category": "开发工具",
+  "IsBuiltIn": false,
+  "Source": "market:community",
+  "Version": "1.0.0",
+  "Steps": [
+    {
+      "ToolName": "SearchContent",
+      "Args": {
+        "directory": "src/",
+        "pattern": "TODO|FIXME|HACK|XXX",
+        "fileFilter": "*.cs",
+        "recursive": true,
+        "maxResults": 200
+      },
+      "Description": "搜索 src/ 下所有 .cs 文件的 TODO/FIXME/HACK/XXX 标记，列出文件路径 + 行号",
+      "Optional": false
+    },
+    {
+      "ToolName": "TextStats",
+      "Args": {
+        "filePath": "src/DeskPilot.Core/DeskPilot.Core.csproj",
+        "topN": 10
+      },
+      "Description": "统计核心项目文件元数据 + top10 高频词（辅助评估代码质量）",
+      "Optional": true
+    }
+  ]
+}

@@ -61,6 +61,10 @@ public partial class App : Application
                     registry.Register(new BatchResizeImageTool());
                     registry.Register(new ExtractArchiveTool());
                     registry.Register(new HashFilesTool());
+                    // v0.13: 文本文件统计（行数/字符/高频词）
+                    registry.Register(new TextStatsTool());
+                    // v0.13: 文件内容搜索（正则 + 目录递归 + 文件过滤）
+                    registry.Register(new SearchContentTool());
                     return registry;
                 });
                 stServices.AddSingleton<ChatViewModel>();
@@ -163,6 +167,10 @@ public partial class App : Application
             registry.Register(new ExtractArchiveTool());
             // v0.5: 计算文件哈希
             registry.Register(new HashFilesTool());
+            // v0.13: 文本文件统计（行数/字符/高频词）
+            registry.Register(new TextStatsTool());
+            // v0.13: 文件内容搜索（正则 + 目录递归 + 文件过滤）
+            registry.Register(new SearchContentTool());
             return registry;
         });
 
