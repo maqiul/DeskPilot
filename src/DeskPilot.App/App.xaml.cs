@@ -67,6 +67,9 @@ public partial class App : Application
                 stServices.AddTransient<ChatWindow>();
                 stServices.AddTransient<SettingsWindow>();
                 stServices.AddSingleton<ISkillService, SkillService>();
+
+                // v0.12: 多步技能执行器（smoke test 路径）
+                stServices.AddSingleton<ISkillExecutor>(sp => new SkillExecutor(sp.GetRequiredService<IToolRegistry>()));
                 stServices.AddHttpClient<ISkillMarket, SkillMarketService>(http => http.Timeout = TimeSpan.FromSeconds(10));
                 stServices.AddSingleton<SettingsViewModel>(sp => new SettingsViewModel(
                     sp.GetRequiredService<ISettingsService>(),
@@ -184,6 +187,9 @@ public partial class App : Application
 
         // v0.9: 技能服务
         services.AddSingleton<ISkillService, SkillService>();
+
+        // v0.12: 多步技能执行器（依赖 IToolRegistry）
+        services.AddSingleton<ISkillExecutor>(sp => new SkillExecutor(sp.GetRequiredService<IToolRegistry>()));
 
         // v0.10: 技能市场（HttpClient 注入，GitHub raw URL 由 SkillMarketService 内部默认）
         services.AddHttpClient<ISkillMarket, SkillMarketService>(http =>

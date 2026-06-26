@@ -33,4 +33,16 @@ public partial class SettingsWindow : Window
         // 关闭弹窗后刷新卡片状态（IsInstalled/HasUpdate 可能变了）
         row.IsInstalled = skillService?.FindById(row.Id) != null;
     }
+
+    /// <summary>v0.12 A1.2: 点击「+ 自定义」按钮 → 显示输入弹窗。</summary>
+    private void AddCustomSource_Click(object sender, RoutedEventArgs e)
+    {
+        AddCustomSourcePanel.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>v0.12 A1.2: 点击「取消」按钮 → 隐藏输入弹窗。</summary>
+    private void CancelAddCustomSource_Click(object sender, RoutedEventArgs e)
+    {
+        AddCustomSourcePanel.Visibility = Visibility.Collapsed;
+    }
 }

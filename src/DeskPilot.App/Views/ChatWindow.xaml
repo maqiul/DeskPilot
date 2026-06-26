@@ -103,7 +103,7 @@
                                             Background="{StaticResource CardBrush}"
                                             BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
                                             Style="{StaticResource CardShadow}"
-                                            Cursor="Hand" Tag="{Binding PromptTemplate}"
+                                            Cursor="Hand" Tag="{Binding}"
                                             MouseLeftButtonUp="SkillCard_Click"
                                             ToolTip="{Binding Description}">
                                         <StackPanel Orientation="Horizontal">
@@ -142,6 +142,47 @@
 
         <!-- 消息区 -->
         <Grid Grid.Row="1">
+            <!-- v0.12: 多步执行进度卡片（仅在 StepProgresses 非空时显示） -->
+            <Border Margin="20,12,20,0" Padding="14,10" CornerRadius="10"
+                    Background="#FFF7E6" BorderBrush="#FFB74D" BorderThickness="1"
+                    Visibility="{Binding HasStepProgress, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                <StackPanel>
+                    <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#E65100" Margin="0,0,0,6">
+                        <Run Text="⚙ 正在执行技能步骤"/>
+                        <Run Text="…（" FontWeight="Regular"/>
+                        <Run Text="{Binding StepProgresses.Count, Mode=OneWay}" FontWeight="SemiBold"/>
+                        <Run Text=" 步）" FontWeight="Regular"/>
+                    </TextBlock>
+                    <ItemsControl ItemsSource="{Binding StepProgresses}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="28"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding StatusIcon}" FontSize="13"
+                                               VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock FontSize="12" Foreground="{StaticResource TextBrush}">
+                                            <Run Text="第 "/>
+                                            <Run Text="{Binding Index}" FontWeight="SemiBold"/>
+                                            <Run Text=" 步："/>
+                                            <Run Text="{Binding ToolName}" FontFamily="Consolas" Foreground="{StaticResource PrimaryBrush}"/>
+                                            <Run Text=" — "/>
+                                            <Run Text="{Binding Description}"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Summary}" FontSize="11"
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   TextWrapping="Wrap" Margin="0,2,0,0"
+                                                   Visibility="{Binding Summary, Converter={x:Static local:StringToVisibilityConverter.Instance}}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
             <!-- 消息列表（无消息时隐藏） -->
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           Padding="20,16" x:Name="MessagesScrollViewer"

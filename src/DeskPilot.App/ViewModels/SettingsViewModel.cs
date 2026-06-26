@@ -59,6 +59,13 @@ public partial class SettingsViewModel : ObservableObject
         _skillService = skillService;
         _skillMarket = skillMarket;
         _marketSources = marketSources;
+        // v0.12 A1.2: 监听自定义源变化，触发 Tab 刷新
+        if (_marketSources != null)
+            _marketSources.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(IMarketplaceSourceService.SourceNames))
+                    OnPropertyChanged(nameof(MarketSourceNames));
+            };
         _closeWindow = closeWindow;
 
         // 加载现有设置（只调一次 Load，避免重复 IO）
@@ -165,8 +172,24 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private bool _isMarketError;
 
     // ===== v0.11: 多市场源 Tab =====
-    /// <summary>所有可用市场源名（QwenPaw / ClawHub / ModelScope）。</summary>
+    /// <summary>所有可用市场源名（QwenPaw / ClawHub / ModelScope + 用户自定义）。</summary>
     public IReadOnlyList<string> MarketSourceNames => _marketSources?.SourceNames ?? new[] { "QwenPaw" };
+
+    /// <summary>v0.12 A1.2: 当 MarketplaceSourceService 动态新增源时，UI 通知刷新用。</summary>
+    public MarketplaceSourceService? MarketSourcesImpl => _marketSources as MarketplaceSourceService;
+
+    // 注意：MarketSourceNames 是 get-only 计算属性（依赖 _marketSources.SourceNames），
+    // 不能用 [ObservableProperty] 生成的 partial 方法 OnXxxChanged，
+    // 改用订阅 IMarketplaceSourceService.PropertyChanged + 手动 OnPropertyChanged 通知。
+
+    /// <summary>v0.12 A1.2: 用户输入的自定义源名（默认 "Custom"）。</summary>
+    [ObservableProperty] private string _customSourceName = "Custom";
+
+    /// <summary>v0.12 A1.2: 用户输入的自定义源 URL（GitHub raw URL）。</summary>
+    [ObservableProperty] private string _customSourceUrl = string.Empty;
+
+    /// <summary>v0.12 A1.2: 添加自定义源状态消息（"已添加"/"已存在"/"URL 无效"）。</summary>
+    [ObservableProperty] private string _addCustomStatus = string.Empty;
 
     /// <summary>v0.11: 当前选中的市场源名。</summary>
     [ObservableProperty] private string _selectedMarketSource = "QwenPaw";
@@ -200,6 +223,32 @@ public partial class SettingsViewModel : ObservableObject
                 s.Author.Contains(kw, StringComparison.OrdinalIgnoreCase));
         }
         foreach (var s in q) MarketSkills.Add(s);
+    }
+
+    [RelayCommand]
+    private void AddCustomSource()
+    {
+        if (_marketSources == null) { AddCustomStatus = "❌ MarketplaceSourceService 未注入"; return; }
+        var name = string.IsNullOrWhiteSpace(CustomSourceName) ? "Custom" : CustomSourceName.Trim();
+        var url = CustomSourceUrl?.Trim();
+        if (string.IsNullOrWhiteSpace(url) || (!url.StartsWith("http://") && !url.StartsWith("https://")))
+        {
+            AddCustomStatus = "❌ URL 必须以 http:// 或 https:// 开头";
+            return;
+        }
+        if (_marketSources.AddCustomSource(name, url!))
+        {
+            AddCustomStatus = $"✅ 已添加 {name}（{url}）";
+            SelectedMarketSource = name; // 自动切到新源
+            CustomSourceUrl = string.Empty;
+            // 触发 MarketSourceNames 通知（PropertyChanged 事件也会触发，但显式通知更稳）
+            OnPropertyChanged(nameof(MarketSourceNames));
+            _ = BrowseMarketAsync();
+        }
+        else
+        {
+            AddCustomStatus = $"⚠️ 源名「{name}」已存在";
+        }
     }
 
     [RelayCommand]

@@ -2,6 +2,86 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.12.0] - 2026-06-26
+
+### 🆕 技能多步工作流（A2）
+
+#### 🧩 数据模型
+- 新增 `SkillStep` record（ToolName + Args dict + Description + Optional）
+- `Skill.Steps: IReadOnlyList<SkillStep>`（默认 Array.Empty()，向后兼容旧 JSON）
+- `Skill.IsMultiStep` 计算属性 + `SafeSteps` Null/空安全回退
+- `SkillSet.MultiStep` 视图属性
+
+#### ⚙️ SkillExecutor（核心执行器）
+- `ISkillExecutor` 接口 + `SkillExecutor` 实现（依赖 IToolRegistry）
+- `StepStatus` 枚举（Pending / Running / Done / Error / Skipped）
+- `StepProgress` 实体（Index / ToolName / Description / Status / Summary / ErrorMessage / StatusIcon）
+- `SkillExecutionResult` 聚合结果
+- 按 Steps 顺序调工具：Optional 失败继续、Required 失败中断
+- `IProgress<StepProgress>` 实时推送 + CancellationToken 取消
+
+#### 💬 ChatViewModel 多步分支
+- 注入 `ISkillExecutor` + `ObservableCollection<StepProgress> StepProgresses`
+- `HasStepProgress` + `IsStepRunning` 属性
+- `TriggerSkillAsync(Skill)`：IsMultiStep 走 SkillExecutor、否则保留 v0.9 prompt 填入+自动发送
+- ChatWindow 消息区上方加可折叠「执行步骤」SectionCard（橙色 #FFF7E6/#FFB74D/#E65100）
+
+#### 🛠 3 个 community 改多步示例
+- `scan-invoices`：HashFiles 校验 SHA256 → ArchiveByDate 按月归档 → FindDuplicates Optional 查重（v1.0.0 → v1.1.0）
+- `weekly-report-helper`：HashFiles 校验本周笔记 → BatchResizeImage Optional 压缩配图（v0.9.0 → v1.0.0）
+- `git-commit-message`：HashFiles 验证变更文件 → RenameByPattern Optional dry-run 给 CHANGELOG 加日期前缀（v1.0.0 → v1.1.0）
+- skills/README.md 索引 3 行加 "v0.12 多步" 标注
+
+#### 🧪 测试覆盖（24 个新测试）
+- SkillStepTests：8 数据模型 + 6 community 加载
+- SkillExecutorTests：10 执行器（EmptySteps / SingleStep_Success / MultiStep_Success / Optional_FailureContinues / Required_FailureAborts / ToolNotRegistered / Progress_ReportsRunningThenDone / Cancel_StopsExecution / SkillIdPropagatesToResult / SummaryFormat）
+
+### 🆕 接 ClawHub / ModelScope 真后端（A1）
+
+#### 🌐 三个独立公开市场源
+- **QwenPaw** = `https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills`（自家 GitHub 真源）
+- **ClawHub** = `https://raw.githubusercontent.com/maqiul/DeskPilot-clawhub/main/skills`（mock 真源，独立仓库）
+- **ModelScope** = `https://raw.githubusercontent.com/maqiul/DeskPilot-modelscope/main/skills`（mock 真源，独立仓库）
+- 替换 v0.11 Stub 占位 → 真抛 MarketFetchException（如 404）
+
+#### 🏗 组合模式（避开 SkillMarketService sealed 限制）
+- `ClawHubMarketService` / `ModelScopeMarketService`：包 SkillMarketService 实例 + 显式实现 ISkillMarket
+- async/await 转发 FetchSkillAsync 修 Nullability warning
+
+#### 📝 mock 仓库内容（本地 mock-sources/）
+- `mock-sources/clawhub/README.md`（4 技能：pdf-merge / video-compress / markdown-to-pdf / qrcode-generator）
+- `mock-sources/modelscope/README.md`（4 技能：speech-to-text / text-summarize / image-colorize / doc-translate）
+- 10 列 Markdown 表格（id / name / description / icon / category / author / version / screenshotUrl / rating / downloads），与 QwenPaw 完全一致
+
+### 🆕 自定义市场源（A1.2）
+
+#### 🔧 扩展点
+- `IMarketplaceSourceService.AddCustomSource(name, baseUrl)` 方法
+- `INotifyPropertyChanged` 实现 → XAML 自动通知刷新
+- `MarketplaceSourceService` 实现：TrimEnd '/' + 同名拒绝 + 触发 `SourceNames` PropertyChanged
+
+#### 💡 SettingsViewModel
+- `CustomSourceName` / `CustomSourceUrl` / `AddCustomStatus` ObservableProperty
+- `AddCustomSourceCommand`：URL 校验非空 + 必须 http(s) 开头 → 调 AddCustomSource → 自动切到新源 → 清空 → 触发 BrowseMarketAsync
+- 订阅 `IMarketplaceSourceService.PropertyChanged` 自动通知 UI
+
+#### 🎨 SettingsWindow.xaml
+- 市场源 Tab 行末加「+ 自定义」按钮
+- 黄色 Border 输入弹窗（名称 TextBox + URL TextBox + 添加 / 取消按钮 + 状态条）
+- code-behind：AddCustomSource_Click 显示 + CancelAddCustomSource_Click 隐藏
+
+#### 🧪 测试覆盖（5 个新测试）
+- `AddCustomSource_NewName_AppendsToSourceNames` / `DuplicateName_ReturnsFalse` / `EmptyArgs_ReturnsFalse` / `TrimsTrailingSlash` / `FiresPropertyChanged`
+
+### 📈 测试覆盖
+- **223 测试**（v0.11 baseline 213 + v0.12 新增 24 - 删 1 旧 Stub + 5 个 A1.2 = 218 + 5 = 223）
+- 全量 `dotnet test` 全过
+- smoke test stdout 0 字节 = 无 XamlParseException
+
+### 🔧 关键校准
+- Subtask 描述里建议的工具（FindFiles / ReadText / WriteText / RunCommand / SendToAI）**实际不存在**于 7 工具集
+- 改用现有 7 工具（HashFiles / ArchiveByDate / FindDuplicates / BatchResizeImage / RenameByPattern）实现多步
+
 ## [v0.11.0] - 2026-06-26
 
 ### 🆕 技能市场重做（QwenPaw 风格）

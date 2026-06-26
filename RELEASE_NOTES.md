@@ -1,4 +1,65 @@
-## [v0.11.0]
+## [v0.12.0] - 2026-06-26
+
+### 🆕 技能多步工作流（A2）
+
+技能不再只是「prompt + 工具声明」模板，而是真正的多步流水线：按顺序自动调用多个工具，失败可中断 / 可跳过，结果实时显示在聊天区上方的「执行步骤」卡片里。
+
+#### 🧩 数据模型
+- 新增 `SkillStep` record（ToolName + Args + Description + Optional）
+- `Skill.Steps` + `IsMultiStep` 计算属性 + `SafeSteps` Null 安全回退
+
+#### ⚙️ SkillExecutor
+- `ISkillExecutor` + `StepStatus` 枚举（Pending / Running / Done / Error / Skipped）+ `StepProgress` 实时进度实体
+- Optional 失败继续，Required 失败中断整体流程
+- `IProgress<StepProgress>` 实时推送 + CancellationToken 取消支持
+
+#### 💬 ChatViewModel 多步分支
+- 触发逻辑：IsMultiStep 走 SkillExecutor；否则保留 v0.9 prompt 填入 + 自动发送
+- 聊天区上方加橙色「执行步骤」SectionCard（步骤编号 + StatusIcon + ToolName + Description + Summary）
+
+#### 🛠 3 个 community 改多步示例
+- `scan-invoices`：HashFiles 校验 → ArchiveByDate 按月归档 → FindDuplicates 查重
+- `weekly-report-helper`：HashFiles 校验 → BatchResizeImage 压缩配图
+- `git-commit-message`：HashFiles 验证 → RenameByPattern dry-run 给 CHANGELOG 加日期前缀
+
+> ⚠️ **关键校准**：Subtask 描述里建议的工具（FindFiles / ReadText / WriteText / RunCommand / SendToAI）实际不存在于当前 7 工具集，已用现有 7 工具（HashFiles / ArchiveByDate / FindDuplicates / BatchResizeImage / RenameByPattern）组合实现多步。
+
+### 🆕 接 ClawHub / ModelScope 真后端（A1）
+
+替换 v0.11 的 Stub 占位，三个独立公开市场源全部接真后端（独立 GitHub 仓库 mock，避免依赖外网复杂 OAuth）：
+
+| 源 | BaseUrl | 实现 |
+|----|---------|------|
+| QwenPaw | `maqiul/DeskPilot/main/skills` | `SkillMarketService` 直连 |
+| ClawHub | `maqiul/DeskPilot-clawhub/main/skills` | `ClawHubMarketService`（组合模式）|
+| ModelScope | `maqiul/DeskPilot-modelscope/main/skills` | `ModelScopeMarketService`（组合模式）|
+
+- mock 仓库：4 + 4 = 8 个演示技能（pdf-merge / video-compress / markdown-to-pdf / qrcode-generator / speech-to-text / text-summarize / image-colorize / doc-translate）
+- README 10 列 Markdown 表格，与 QwenPaw 完全一致
+- 真源 404 行为：抛 `MarketFetchException`（取代 v0.11 Stub 演示数据）
+
+### 🆕 自定义市场源（A1.2）
+
+SettingsWindow 市场源 Tab 行末新增「+ 自定义」按钮：
+
+- 弹黄色输入条，输入名称（例：`MyHub`）+ GitHub raw URL（例：`https://raw.githubusercontent.com/owner/repo/main/skills`）
+- 添加后自动切到新源并刷新市场列表
+- 状态条提示「✅ 已添加」「⚠️ 已存在」「❌ URL 无效」
+- 同名拒绝 + URL 必须以 `http(s)://` 开头 + 末尾 `/` 自动 Trim
+
+### 📈 测试覆盖
+- **223 测试**（v0.11 baseline 213 + v0.12 新增 24 - 删 1 旧 Stub + 5 个 A1.2 = 223）
+- 全量 `dotnet test` 全过
+- smoke test stdout 0 字节 = 无 XamlParseException
+
+### 📥 下载
+
+- **DeskPilot-Setup-v0.12.0-win-x64.exe**（自包含安装包，单文件 ~73 MB）
+- **DeskPilot-v0.12.0-win-x64.zip**（自包含 ZIP，单文件 ~73 MB）
+- 解压即用，无需安装 .NET 8 Desktop Runtime
+- GitHub Release：https://github.com/maqiul/DeskPilot/releases/tag/v0.12.0
+
+## [v0.11.0] - 2026-06-26
 
 ### 🆕 技能市场重做（QwenPaw 风格）
 

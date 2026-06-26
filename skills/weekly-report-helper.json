@@ -1,12 +1,37 @@
 {
   "Id": "weekly-report-helper",
   "Name": "周报助手",
-  "Description": "根据本周工作记录生成结构化周报（按项目/优先级/完成度/下周计划）",
+  "Description": "v0.12 多步工作流：校验笔记 → 压缩配图。生成结构化周报前先验证本周笔记完整性，再压缩报告里要用的配图。",
   "Icon": "📝",
-  "PromptTemplate": "请根据我提供的本周工作记录，生成一份结构化周报：1) 本周完成 2) 进行中 3) 遇到的问题 4) 下周计划。每节用 - 列表呈现，每条不超过一行。最后给一句 30 字以内的本周总结。",
-  "Tools": [],
+  "PromptTemplate": "",
+  "Tools": ["HashFiles", "BatchResizeImage"],
   "Category": "文档处理",
   "IsBuiltIn": false,
   "Source": "market:community",
-  "Version": "0.9.0"
+  "Version": "1.0.0",
+  "Steps": [
+    {
+      "ToolName": "HashFiles",
+      "Args": {
+        "directory": "Documents/工作记录/",
+        "algorithm": "SHA256",
+        "outputCsv": "Documents/工作记录/_本周哈希.csv"
+      },
+      "Description": "校验本周工作记录文件完整性，输出 SHA256 清单",
+      "Optional": false
+    },
+    {
+      "ToolName": "BatchResizeImage",
+      "Args": {
+        "directory": "Documents/工作记录/_本周配图/",
+        "outputDirectory": "Documents/工作记录/_本周配图_压缩/",
+        "maxWidth": 1920,
+        "maxHeight": 1080,
+        "format": "jpeg",
+        "quality": 85
+      },
+      "Description": "压缩本周报告要用的配图（可选用，没有配图目录则跳过）",
+      "Optional": true
+    }
+  ]
 }

@@ -31,15 +31,18 @@ public partial class ChatViewModel : ObservableObject
 {
     private IChatService _chatService;
     private ISkillService? _skillService;
+    private ISkillExecutor? _skillExecutor;
     private CancellationTokenSource? _cts;
 
-    public ChatViewModel(IChatService chatService, ISkillService? skillService = null)
+    public ChatViewModel(IChatService chatService, ISkillService? skillService = null, ISkillExecutor? skillExecutor = null)
     {
         _chatService = chatService;
         _skillService = skillService;
+        _skillExecutor = skillExecutor;
         Messages = new ObservableCollection<ChatMessage>();
         Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
         EnabledSkills = new ObservableCollection<Skill>();
+        StepProgresses = new ObservableCollection<StepProgress>();
         UpdateBadgeMap();
         RefreshSkills();
         if (_skillService != null) _skillService.SkillsChanged += (_, _) => RefreshSkills();
@@ -140,6 +143,62 @@ public partial class ChatViewModel : ObservableObject
     }
 
     public ObservableCollection<ChatMessage> Messages { get; }
+
+    /// <summary>v0.12: 多步执行进度（聊天窗口内嵌的 SectionCard 数据源）。</summary>
+    public ObservableCollection<StepProgress> StepProgresses { get; }
+
+    /// <summary>v0.12: 是否有正在展示的步骤进度（用于切换 SectionCard 可见性）。</summary>
+    public bool HasStepProgress => StepProgresses.Count > 0;
+    public bool IsStepRunning { get; set; }
+
+    /// <summary>v0.12: 触发技能 — 多步走 SkillExecutor，单步保留 v0.9 行为（填入 PromptTemplate 后自动发送）。</summary>
+    public async Task TriggerSkillAsync(Skill skill, CancellationToken ct = default)
+    {
+        if (skill == null) return;
+
+        // v0.12: 多步技能 → 执行器路径
+        if (skill.IsMultiStep && _skillExecutor != null)
+        {
+            StepProgresses.Clear();
+            OnPropertyChanged(nameof(HasStepProgress));
+            IsStepRunning = true;
+
+            var progress = new Progress<StepProgress>(p =>
+            {
+                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    int idx = StepProgresses.IndexOf(StepProgresses.FirstOrDefault(x => x.Index == p.Index));
+                    if (idx >= 0) StepProgresses[idx] = p;
+                    else StepProgresses.Add(p);
+                    OnPropertyChanged(nameof(HasStepProgress));
+                });
+            });
+
+            try
+            {
+                var result = await _skillExecutor.ExecuteAsync(skill, progress, ct).ConfigureAwait(true);
+                Messages.Add(new ChatMessage("assistant", result.Summary));
+            }
+            catch (System.Exception ex)
+            {
+                Messages.Add(new ChatMessage("assistant", $"❌ 技能 {skill.Name} 执行失败：{ex.Message}"));
+            }
+            finally
+            {
+                IsStepRunning = false;
+                OnPropertyChanged(nameof(IsStepRunning));
+            }
+            return;
+        }
+
+        // v0.9 单步（PromptTemplate）路径：填入输入框 + 自动 send
+        if (!string.IsNullOrWhiteSpace(skill.PromptTemplate))
+        {
+            UserInput = skill.PromptTemplate;
+            if (SendCommand.CanExecute(null))
+                await SendAsync();
+        }
+    }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendCommand))]

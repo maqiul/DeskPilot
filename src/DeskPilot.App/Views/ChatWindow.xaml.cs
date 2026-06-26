@@ -1,4 +1,5 @@
 using DeskPilot.App.ViewModels;
+using DeskPilot.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 using System.Windows.Controls;
@@ -67,14 +68,12 @@ public partial class ChatWindow : Window
         }
     }
 
-    /// <summary>v0.9: 顶部快捷技能横条点击 — 填入输入框并自动发送。</summary>
-    private void SkillCard_Click(object sender, MouseButtonEventArgs e)
+    /// <summary>v0.9: 顶部快捷技能横条点击 — 填入输入框并自动发送。v0.12: 改走 TriggerSkillAsync，多步走 SkillExecutor，单步保留原行为。</summary>
+    private async void SkillCard_Click(object sender, MouseButtonEventArgs e)
     {
-        if (sender is Border { Tag: string prompt } && !string.IsNullOrWhiteSpace(prompt))
+        if (sender is Border { Tag: Skill skill })
         {
-            _viewModel.UserInput = prompt;
-            if (_viewModel.SendCommand.CanExecute(null))
-                _viewModel.SendCommand.Execute(null);
+            await _viewModel.TriggerSkillAsync(skill);
         }
     }
 }

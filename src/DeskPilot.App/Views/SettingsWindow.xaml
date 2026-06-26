@@ -353,7 +353,40 @@
                                     Command="{Binding BrowseMarketCommand}"
                                     IsEnabled="{Binding IsMarketLoading, Converter={x:Static local:BoolToNegationConverter.Instance}}"
                                     ToolTip="拉取市场最新技能" VerticalAlignment="Top"/>
+                            <Button Grid.Column="2" Content="+ 自定义" Style="{StaticResource SecondaryButton}"
+                                    Click="AddCustomSource_Click" Margin="6,0,0,0"
+                                    ToolTip="添加自定义市场源（GitHub raw URL）" VerticalAlignment="Top"/>
                         </Grid>
+
+                        <!-- v0.12 A1.2: 自定义源输入弹窗（默认隐藏，点击「+ 自定义」按钮显示） -->
+                        <Border x:Name="AddCustomSourcePanel" Background="#FFF8E1" CornerRadius="6"
+                                Padding="10,8" Margin="0,2,0,8" BorderBrush="#FFD54F" BorderThickness="1"
+                                Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="#E65100" Margin="0,0,0,4">
+                                    <Run Text="➕ 添加自定义市场源（GitHub raw URL）"/>
+                                </TextBlock>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Text="{Binding CustomSourceName, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="显示名（例：MyHub）" Padding="6,4" Margin="0,0,6,0"/>
+                                    <TextBox Grid.Column="1" Text="{Binding CustomSourceUrl, UpdateSourceTrigger=PropertyChanged}"
+                                             ToolTip="https://raw.githubusercontent.com/owner/repo/main/skills" Padding="6,4"/>
+                                    <Button Grid.Column="2" Content="添加" Margin="6,0,0,0" Padding="10,4"
+                                            Command="{Binding AddCustomSourceCommand}" Cursor="Hand"/>
+                                    <Button Grid.Column="3" Content="取消" Margin="4,0,0,0" Padding="8,4"
+                                            Click="CancelAddCustomSource_Click" Cursor="Hand"/>
+                                </Grid>
+                                <TextBlock Text="{Binding AddCustomStatus}" FontSize="11" Margin="0,4,0,0"
+                                           Foreground="{StaticResource SecondaryTextBrush}"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
 
                         <!-- ④ 浅蓝色提示条 -->
                         <Border Background="#E3F2FD" CornerRadius="6" Padding="12,8" Margin="0,4,0,8"

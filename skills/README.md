@@ -34,9 +34,9 @@ description: 公开技能清单，按 ID 索引，对应 skills/{id}.json
 | compute-file-hashes | 计算文件哈希值 | 批量计算文件的 SHA256 / MD5，输出 CSV 报告 | 🔐 | 文件整理 | maqiul | 1.0.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/compute-file-hashes.png | 4.2 | 320 |
 | clean-large-files | 清理大文件 | 找出指定目录里大于 X MB 的大文件，让用户确认是否删除 | 📊 | 文件整理 | maqiul | 1.0.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/clean-large-files.png | 4.3 | 410 |
 | archive-by-date | 按日期归档文件 | 把文件按修改日期归档到 YYYY/MM 子目录（适合照片、视频） | 🗓 | 文件整理 | maqiul | 1.0.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/archive-by-date.png | 4.5 | 290 |
-| scan-invoices | 扫描发票并归档 | 扫描 Documents/发票/ 下的 PDF/图片，按月份归档 | 🧾 | 财务办公 | community | 1.0.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/scan-invoices.png | 4.9 | 180 |
-| weekly-report-helper | 周报助手 | 根据本周工作记录生成结构化周报 | 📝 | 文档处理 | community | 0.9.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/weekly-report-helper.png | 4.1 | 95 |
-| git-commit-message | Git 提交信息生成 | 按 diff 内容生成符合 Conventional Commits 规范的提交信息 | 🔧 | 开发工具 | community | 1.0.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/git-commit-message.png | 4.7 | 220 |
+| scan-invoices | 扫描发票并归档 | **v0.12 多步**：校验哈希 → 按月归档 → 查重 | 🧾 | 财务办公 | community | 1.1.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/scan-invoices.png | 4.9 | 180 |
+| weekly-report-helper | 周报助手 | **v0.12 多步**：校验笔记 → 压缩配图 | 📝 | 文档处理 | community | 1.0.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/weekly-report-helper.png | 4.1 | 95 |
+| git-commit-message | Git 提交信息生成 | **v0.12 多步**：校验变更 → dry-run 备份 CHANGELOG | 🔧 | 开发工具 | community | 1.1.0 | https://raw.githubusercontent.com/maqiul/DeskPilot/main/skills/screenshots/git-commit-message.png | 4.7 | 220 |
 
 ## 如何贡献新技能
 

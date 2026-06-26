@@ -1,12 +1,46 @@
 {
   "Id": "scan-invoices",
   "Name": "扫描发票并归档",
-  "Description": "扫描 Documents/发票/ 下的 PDF/图片，按月份归档到 Documents/发票归档/YYYY/MM/",
+  "Description": "v0.12 多步工作流：校验 → 按月归档 → 查重。扫描 Documents/发票/ 下的 PDF/图片，自动按月份归档。",
   "Icon": "🧾",
-  "PromptTemplate": "请帮我扫描 Documents/发票/ 目录下的所有 PDF 和图片发票文件，按发票上的日期（或文件修改日期）归档到 Documents/发票归档/YYYY/MM/ 子目录。如果找不到日期信息则放入 未知日期/ 子目录。",
-  "Tools": ["ArchiveByDate", "MoveFiles"],
+  "PromptTemplate": "",
+  "Tools": ["HashFiles", "ArchiveByDate", "FindDuplicates"],
   "Category": "财务办公",
   "IsBuiltIn": false,
   "Source": "market:community",
-  "Version": "1.0.0"
+  "Version": "1.1.0",
+  "Steps": [
+    {
+      "ToolName": "HashFiles",
+      "Args": {
+        "directory": "Documents/发票/",
+        "algorithm": "SHA256",
+        "outputCsv": "Documents/发票/_hashes.csv"
+      },
+      "Description": "扫描所有发票文件，计算 SHA256 哈希存为 CSV（用于审计追溯）",
+      "Optional": false
+    },
+    {
+      "ToolName": "ArchiveByDate",
+      "Args": {
+        "sourceDirectory": "Documents/发票/",
+        "targetRoot": "Documents/发票归档/",
+        "datePattern": "yyyy/MM",
+        "fallbackSubdir": "未知日期",
+        "recursive": true
+      },
+      "Description": "按文件修改日期把发票归档到 Documents/发票归档/YYYY/MM/ 子目录",
+      "Optional": false
+    },
+    {
+      "ToolName": "FindDuplicates",
+      "Args": {
+        "directory": "Documents/发票归档/",
+        "algorithm": "SHA256",
+        "outputCsv": "Documents/发票归档/_duplicates.csv"
+      },
+      "Description": "归档后查重，输出重复文件列表 CSV（可选用，失败不中断）",
+      "Optional": true
+    }
+  ]
 }

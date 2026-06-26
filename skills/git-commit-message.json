@@ -1,12 +1,35 @@
 {
   "Id": "git-commit-message",
   "Name": "Git 提交信息生成",
-  "Description": "按 diff 内容生成符合 Conventional Commits 规范的提交信息（type(scope): subject）",
+  "Description": "v0.12 多步工作流：校验变更 → 备份 CHANGELOG。按 diff 内容生成符合 Conventional Commits 规范的提交信息前，先验证本次变更文件 + 自动备份 CHANGELOG。",
   "Icon": "🔧",
-  "PromptTemplate": "我会粘贴一段 git diff，请帮我生成一条符合 Conventional Commits 规范的 commit message。格式：type(scope): subject\\n\\nbody（不超过 3 行，说明改动动机）\\n\\ntype 必须是 feat/fix/refactor/perf/docs/test/build/ci/chore 之一。scope 从改动文件推断。subject 中文不超过 30 字，祈使句。",
-  "Tools": [],
+  "PromptTemplate": "",
+  "Tools": ["HashFiles", "RenameByPattern"],
   "Category": "开发工具",
   "IsBuiltIn": false,
   "Source": "market:community",
-  "Version": "1.0.0"
+  "Version": "1.1.0",
+  "Steps": [
+    {
+      "ToolName": "HashFiles",
+      "Args": {
+        "directory": ".",
+        "algorithm": "SHA256",
+        "outputCsv": ".git/_staged-hashes.csv"
+      },
+      "Description": "校验当前变更文件完整性，输出 SHA256 清单到 .git/_staged-hashes.csv",
+      "Optional": false
+    },
+    {
+      "ToolName": "RenameByPattern",
+      "Args": {
+        "directory": ".",
+        "pattern": "^CHANGELOG\\.md$",
+        "replacement": "CHANGELOG_$DATE$.md",
+        "dryRun": true
+      },
+      "Description": "dry-run 预览：给 CHANGELOG.md 加日期前缀重命名（不实际改）",
+      "Optional": true
+    }
+  ]
 }
