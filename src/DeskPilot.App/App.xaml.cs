@@ -100,6 +100,13 @@ public partial class App : Application
 
                 var stWindow = Services.GetRequiredService<ChatWindow>();
                 stWindow.Show();
+
+                // v0.16 F: smoke test 触发 SkillCenterWindow Show + Close，让 WPF 真实解析 SkillCenterWindow.xaml
+                // 防 v0.15.1 同类 XamlParseException bug 静默存活（v0.15 之前 smoke test 只验证 ChatWindow 加载）
+                var stSkillCenter = Services.GetRequiredService<SkillCenterWindow>();
+                stSkillCenter.Show();
+                stSkillCenter.Close();
+
                 Shutdown(0);
             }
             catch (Exception ex)
