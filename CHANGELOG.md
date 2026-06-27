@@ -2,6 +2,91 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.15.0] - 2026-06-27
+
+### 🆕 独立技能中心窗口（D1+D2+D3+D4）
+
+#### 🪟 SkillCenterWindow（900x640 主窗口）
+- 新建 `src/DeskPilot.App/Views/SkillCenterWindow.xaml`（22582 bytes）— 居中可调大小 + Melon 风格（HeaderTitle/HeaderSubtitle/SkillCenterTabItem 选中态橙底白字 + 底部 StatusBarCard 卡片）
+- 3 个 TabItem：🌐 技能市场 + 📦 已安装 + 🔄 有更新
+- 标题栏：🛠 技能中心 + 「浏览 / 安装 / 管理 DeskPilot 的所有技能（内置 + 市场）」
+- 底部状态栏：实时 StatusMessage + 当前选中市场源徽章
+
+#### 🛒 技能市场 Tab（D3 完整 UI）
+- 源 Tab 横排（RadioButton + SourceTabButton 样式 + StackPanel Horizontal ItemsPanel）：绑定 `MarketplaceSourceNames`（QwenPaw / ClawHub / ModelScope + 用户自定义）
+- 分类 chips（RadioButton + CategoryChipButton 样式 + WrapPanel ItemsPanel）：预设 8 个（全部 / 财务办公 / 文件整理 / 开发工具 / 图片处理 / 文档处理 / 办公自动化 / 示例），绑定 `MarketCategories`
+- 搜索框（TextBox x:Name=MarketSearchBox）实时双向绑定 `MarketSearchText` + Delay=300 防抖
+- 刷新按钮（🔄 刷新市场）Command 绑定 `LoadMarketCommand`
+- 3 列 WrapPanel 卡片网格：每张卡片 280px 圆角 10（Icon 圆形 40px PrimaryBrush 背景 + Name/Author/SourceName 徽章 + Description TextWrapping Wrap MaxHeight 48 TextTrimming CharacterEllipsis + ⭐ 评分 + 📥 下载数 + 版本 + 分类 chip + 已安装标识）
+
+#### 📦 已安装 Tab（D4 ListView）
+- ListView 6 列：图标 + 技能名 + 版本 + 分类 + 作者 + 操作（🗑 卸载按钮 CommandParameter 绑定 Id + UninstallCommand）
+- 顶部操作栏：🔄 刷新列表（绑定 `LoadInstalledCommand`）+ 💡「内置技能不可卸载」提示
+- 数据源：`InstalledSkills` ObservableCollection 订阅 `ISkillService.SkillsChanged` 自动 RefreshInstalled
+
+#### 🔄 有更新 Tab（D4 ListView）
+- ListView 4 列：技能 ID + 本地版本 + 最新版本 + 操作（⬆ 一键更新按钮 绑定 UpdateSkillCommand + CommandParameter SkillUpdateInfo）
+- 顶部操作栏：🔄 检查更新（绑定 `LoadUpdatesCommand`）+ 💡「仅显示有更新的技能」提示
+- 数据源：`UpdateAvailableSkills` ObservableCollection（ISkillService.CheckUpdatesAsync → 过滤 HasUpdate=true）
+
+#### 🧠 SkillCenterViewModel（7 个 RelayCommand 业务）
+- 新建 `src/DeskPilot.App/ViewModels/SkillCenterViewModel.cs`（7857 bytes）— 注入 `IMarketplaceSourceService` + `ISkillService` 2 服务
+- 5 个 ObservableProperty：StatusMessage / SelectedMarketSource / MarketCategory / MarketSearchText / IsLoadingMarket
+- 3 个 ObservableCollection：MarketSkillRows / InstalledSkills / UpdateAvailableSkills
+- 8 个 MarketCategories 预设分类 + 7 个 RelayCommand（LoadMarket / LoadInstalled / LoadUpdates / Install / Uninstall / UpdateSkill / RefreshStatus）
+- SkillsChanged 事件订阅 → 自动 RefreshInstalled（Install/Uninstall 后实时同步）
+
+#### 🍱 ChatWindow 顶部菜单（D4）
+- 新建 `<Menu Grid.Row="0">` 顶部菜单条：文件（设置 / 退出）+ 技能（打开技能中心 Ctrl+Shift+K / 刷新已安装技能）+ 帮助（关于 DeskPilot）
+- ChatWindow.xaml.cs 加 `ExitMenuItem_Click`（调 Application.Current.Shutdown）+ `AboutMenuItem_Click`（MessageBox 显示版本 + GitHub URL）
+- Window.InputBindings Ctrl+Shift+K 调 `ShowSkillCenterCommand`（用 SkillCenterWindow 工厂 delegate 避免 ViewModel 直接 new Window 违反 MVVM）
+- ChatViewModel.cs 加 `Func<SkillCenterWindow>? skillCenterFactory` 可选参数 + `[RelayCommand] ShowSkillCenter()` → 工厂().Show() + Activate()
+- App.xaml.cs 主分支（line 76）+ smoke test 分支（line 192）ChatViewModel DI 改成工厂注入：`sp => new ChatViewModel(chatService, skillService, executor, skillCenterFactory: () => sp.GetRequiredService<SkillCenterWindow>())`
+
+### 📊 测试覆盖（+21 个新测试，全量 280/280 全过）
+- **SkillCenterWindowTests** 3 个（D1）：Ctor_DoesNotThrow / HasThreeMarketplaceSources / HasThreeObservableCollections
+- **SkillCenterViewModelTests** 5 个（D2）：Ctor_DoesNotThrow_AndPopulatesSources / LoadMarket_PopulatesMarketSkillRows / Install_DelegatesToSkillService / Uninstall_DelegatesToSkillService / LoadUpdates_FiltersOnlyHasUpdateTrue（含 StubMarketplaceSourceService 缓存 + StubSkillMarket + StubSkillService）
+- **SkillCenterMarketTabTests** 7 个（D3）：Market_TabItem_Exists_With_Correct_Header / Contains_WrapPanel_Card_Grid_Binding_MarketSkillRows / SearchBox_Binds_MarketSearchText / SourceTabs_Bind_MarketplaceSourceNames / CategoriesChips_Bind_MarketCategories / Refresh_Button / Has_Three_Installed_Updates_TabItems（XAML 文本 + Regex 验证，避 STA 线程问题）
+- **SkillCenterIntegrationTests** 6 个（D4）：ChatWindow_HasTopMenu_With_Skills_MenuItem / Has_CtrlShiftK_InputBinding_For_SkillCenter / SkillsMenu_Has_OpenSkillCenter_Item_With_InputGestureText / SkillCenter_Has_Three_TabItems_Market_Installed_Updates / InstalledTab_ListView_Binds_InstalledSkills / UpdatesTab_ListView_Binds_UpdateAvailableSkills
+- 总计：**280/280 全过**（v0.14.1 baseline 259 + v0.15 新增 21 = 280）
+- smoke test stdout/stderr 0 字节 = 无 XamlParseException（SkillCenterWindow 22582 bytes 全量 XAML 解析成功）
+
+### 🔧 关键决策与修复
+- **MVVM 纯净**：`ChatViewModel.ShowSkillCenter` 用 `Func<SkillCenterWindow>?` 工厂 delegate 注入，避免 ViewModel 直接 new Window
+- **避 STA 线程问题**：XAML 验证测试改用 `File.ReadAllText` + `Regex.Match` + `Assert.Contains`，不用 `XamlReader.Parse`（xUnit 默认 MTA 线程触发「调用线程必须为 STA」异常）
+- **RelayCommand 生成名规则**：`async Task XxxAsync` → `IAsyncRelayCommand` 属性名 `XxxCommand`（去 Async 后缀），sync `void Xxx()` → `IRelayCommand` 属性名 `XxxCommand`
+- **Positional record 必须用构造语法**：`SkillManifest` / `Skill` 是 positional record（13/12 参），不能用对象初始化器 `{ Id = ... }`，必须 `new SkillManifest(Id: ..., Name: ..., ...)`
+- **StubMarketplaceSourceService.GetMarket 缓存**：避免 LoadMarket 时新实例 IndexSkills 为空（`_markets` 字典 + 同步最新引用）
+- **InstallAsync 不调 LoadMarketAsync**：`SkillsChanged` 事件订阅已自动 RefreshInstalled，再调 LoadMarket 会覆盖「✅ 已安装 ...」StatusMessage 为「拉到 0 个技能」
+
+### 📦 项目变更
+- 新增文件：`Views/SkillCenterWindow.xaml`（22582 bytes）+ `Views/SkillCenterWindow.xaml.cs` + `ViewModels/SkillCenterViewModel.cs`（7857 bytes）+ 4 个测试文件
+- 修改文件：`Views/ChatWindow.xaml`（+30 行 Menu + InputBindings）+ `Views/ChatWindow.xaml.cs`（+ ExitMenuItem_Click + AboutMenuItem_Click）+ `ViewModels/ChatViewModel.cs`（+ SkillCenterWindow 工厂 delegate + ShowSkillCenterCommand）+ `App.xaml.cs`（主分支 + smoke test 分支 ChatViewModel DI 工厂注入）
+
+---
+
+## [v0.14.1] - 2026-06-26
+
+### 🛠 XamlParseException 紧急修复
+
+#### 🐛 根因
+- `SettingsWindow.xaml` 2 处 `ConverterParameter={Binding ...}` 报错
+- WPF 的 `ConverterParameter` **不是** DependencyProperty，不能接收 `Binding` → 必须用 `IMultiValueConverter` + `MultiBinding`
+
+#### ✅ 修复
+- `Converters/RoleConverters.cs` 的 `SourceMatchConverter` + `CategoryMatchConverter` 从 `IValueConverter` 改 `IMultiValueConverter`
+  - `values[0]` = 当前选中 Tab（vm 属性）
+  - `values[1]` = 当前 ListBox 项（converter 参数）
+  - 边界保护：values 长度 < 2 返回 false + null 字符串转 string.Empty
+- `SettingsWindow.xaml` line 341 + 438 改用 `MultiBinding` 同时传「Tab 值」+「当前选中项」
+- App build 0 错 + smoke test 0 字节 + 全量测试 259/259 全过
+
+#### 📦 项目变更
+- 修改文件：`Converters/RoleConverters.cs` + `Views/SettingsWindow.xaml`
+- commit `786e8b6`（2 files +30/-14）→ tag `v0.14.1` → Release #25
+
+---
+
 ## [v0.14.0] - 2026-06-26
 
 ### 🆕 新增 3 个零依赖工具（C1+C2+C3）

@@ -33,6 +33,11 @@
         </Style>
     </Window.Resources>
 
+    <Window.InputBindings>
+        <!-- v0.15: Ctrl+Shift+K 打开技能中心 -->
+        <KeyBinding Key="K" Modifiers="Ctrl+Shift" Command="{Binding ShowSkillCenterCommand}"/>
+    </Window.InputBindings>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -41,8 +46,25 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- v0.15: 顶部菜单条（文件 / 技能 / 帮助） -->
+        <Menu Grid.Row="0" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="6,4">
+            <MenuItem Header="文件(_F)">
+                <MenuItem Header="设置(_S)..." Command="{Binding ShowSettingsCommand}"/>
+                <Separator/>
+                <MenuItem Header="退出(_X)" Click="ExitMenuItem_Click"/>
+            </MenuItem>
+            <MenuItem Header="技能(_K)">
+                <MenuItem Header="打开技能中心(_C)..." Command="{Binding ShowSkillCenterCommand}" InputGestureText="Ctrl+Shift+K"/>
+                <Separator/>
+                <MenuItem Header="刷新已安装技能(_R)" Command="{Binding RefreshSkillsCommand}"/>
+            </MenuItem>
+            <MenuItem Header="帮助(_H)">
+                <MenuItem Header="关于 DeskPilot(_A)..." Click="AboutMenuItem_Click"/>
+            </MenuItem>
+        </Menu>
+
         <!-- 顶部标题栏 -->
-        <Border Grid.Row="0" Background="{StaticResource CardBrush}"
+        <Border Grid.Row="1" Background="{StaticResource CardBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
                 Padding="20,14">
             <!-- 快捷技能横条（标题栏下方折叠） -->

@@ -1,3 +1,69 @@
+## [v0.15.0] - 2026-06-27
+
+### 🆕 独立技能中心窗口
+
+从 SettingsWindow 的技能市场 Tab 抽出来，做成独立的 SkillCenterWindow 窗口：标题 + 3 Tab（市场 / 已安装 / 有更新）+ 底部状态栏。ChatWindow 顶部加菜单条 + Ctrl+Shift+K 全局快捷键打开。
+
+#### 🪟 SkillCenterWindow（900x640 主窗口）
+- 3 个 TabItem：🌐 技能市场 + 📦 已安装 + 🔄 有更新
+- 标题栏：🛠 技能中心 + 「浏览 / 安装 / 管理 DeskPilot 的所有技能（内置 + 市场）」
+- 底部状态栏：实时 StatusMessage + 当前选中市场源徽章
+- Melon 风格（橙底白字选中态 TabItem + 圆角卡片）
+
+#### 🛒 技能市场 Tab
+- 源 Tab 横排：QwenPaw / ClawHub / ModelScope + 用户自定义（RadioButton + StackPanel Horizontal）
+- 分类 chips：预设 8 个（全部 / 财务办公 / 文件整理 / 开发工具 / 图片处理 / 文档处理 / 办公自动化 / 示例）
+- 搜索框：实时双向绑定 MarketSearchText + Delay=300 防抖
+- 刷新按钮：🔄 刷新市场 → LoadMarketCommand
+- 3 列 WrapPanel 卡片网格：每张 280px 圆角 10（Icon 圆形 40px + Name/Author/SourceName 徽章 + Description 3 行截断 + ⭐ 评分 + 📥 下载数 + 版本 + 分类 + ✅ 已安装标识）
+
+#### 📦 已安装 Tab
+- ListView 6 列：图标 + 技能名 + 版本 + 分类 + 作者 + 操作（🗑 卸载按钮）
+- 数据源：InstalledSkills ObservableCollection 订阅 ISkillService.SkillsChanged 自动 RefreshInstalled
+- 操作栏：🔄 刷新列表 + 💡「内置技能不可卸载」提示
+
+#### 🔄 有更新 Tab
+- ListView 4 列：技能 ID + 本地版本 + 最新版本 + 操作（⬆ 一键更新按钮）
+- 数据源：UpdateAvailableSkills（ISkillService.CheckUpdatesAsync → 过滤 HasUpdate=true）
+- 操作栏：🔄 检查更新 + 💡「仅显示有更新的技能」提示
+
+#### 🧠 SkillCenterViewModel（7 个 RelayCommand 业务）
+- 注入 IMarketplaceSourceService + ISkillService 2 服务
+- 5 个 ObservableProperty：StatusMessage / SelectedMarketSource / MarketCategory / MarketSearchText / IsLoadingMarket
+- 3 个 ObservableCollection：MarketSkillRows / InstalledSkills / UpdateAvailableSkills
+- 命令：LoadMarket / LoadInstalled / LoadUpdates / Install / Uninstall / UpdateSkill / RefreshStatus
+- SkillsChanged 事件订阅 → 自动 RefreshInstalled
+
+#### 🍱 ChatWindow 顶部菜单
+- 新建 `<Menu Grid.Row="0">`：文件（设置 / 退出）+ 技能（打开技能中心 Ctrl+Shift+K / 刷新已安装技能）+ 帮助（关于 DeskPilot）
+- ChatWindow.xaml.cs 加 ExitMenuItem_Click（Application.Current.Shutdown）+ AboutMenuItem_Click（MessageBox 显示版本 + GitHub URL）
+- Window.InputBindings Ctrl+Shift+K 调 ShowSkillCenterCommand
+- ChatViewModel.ShowSkillCenter 用 SkillCenterWindow 工厂 delegate 注入 → MVVM 纯净
+- App.xaml.cs 主分支 + smoke test 分支 ChatViewModel DI 工厂注入 SkillCenterWindow
+
+### 📈 测试覆盖
+- **280 测试全过**（v0.14.1 baseline 259 + v0.15 新增 21 = 280）
+  - SkillCenterWindowTests 3 个（D1 基础结构）
+  - SkillCenterViewModelTests 5 个（D2 业务逻辑 + Stub 服务）
+  - SkillCenterMarketTabTests 7 个（D3 XAML 文本验证）
+  - SkillCenterIntegrationTests 6 个（D4 Menu + 快捷键 + 3 Tab 完整集成）
+- smoke test stdout/stderr 0 字节 = 无 XamlParseException（SkillCenterWindow 22582 bytes XAML 全量解析成功）
+
+### 🔧 关键决策
+- **MVVM 纯净**：`ChatViewModel.ShowSkillCenter` 用 `Func<SkillCenterWindow>?` 工厂 delegate 注入，避免 ViewModel 直接 new Window
+- **避 STA 线程问题**：XAML 验证测试改用 `File.ReadAllText` + `Regex.Match` + `Assert.Contains`，不用 `XamlReader.Parse`
+- **RelayCommand 生成名规则**：`async Task XxxAsync` → `XxxCommand`（去 Async 后缀）
+- **Positional record 必须用构造语法**：`SkillManifest` / `Skill` 是 positional record（13/12 参），不能用对象初始化器
+
+### 📥 下载
+
+- **DeskPilot-Setup-v0.15.0-win-x64.exe**（自包含安装包，单文件 ~73 MB）
+- **DeskPilot-v0.15.0-win-x64.zip**（自包含 ZIP，单文件 ~73 MB）
+- 解压即用，无需安装 .NET 8 Desktop Runtime
+- GitHub Release：https://github.com/maqiul/DeskPilot/releases/tag/v0.15.0
+
+---
+
 ## [v0.14.0] - 2026-06-26
 
 ### 🆕 新增 3 个零依赖工具

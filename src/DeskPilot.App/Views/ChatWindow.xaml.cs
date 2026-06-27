@@ -76,4 +76,21 @@ public partial class ChatWindow : Window
             await _viewModel.TriggerSkillAsync(skill);
         }
     }
+
+    /// <summary>v0.15: 顶部菜单「文件 → 退出」点击 — 关闭整个应用。</summary>
+    private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        Application.Current.Shutdown();
+    }
+
+    /// <summary>v0.15: 顶部菜单「帮助 → 关于」点击 — 显示 DeskPilot 版本信息。</summary>
+    private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.15.0";
+        MessageBox.Show(
+            $"DeskPilot 桌面 AI 助手\n\n版本：v{version}\n\n开源项目：https://github.com/maqiul/DeskPilot\n\n专注办公场景的桌面 AI 助手。",
+            "关于 DeskPilot",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+    }
 }

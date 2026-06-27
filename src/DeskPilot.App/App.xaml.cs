@@ -73,9 +73,17 @@ public partial class App : Application
                     registry.Register(new BatchExcelTool());
                     return registry;
                 });
-                stServices.AddSingleton<ChatViewModel>();
+                // v0.15: ChatViewModel 注入 SkillCenterWindow 工厂 delegate（Ctrl+Shift+K 打开技能中心）
+                stServices.AddSingleton<ChatViewModel>(sp => new ChatViewModel(
+                    sp.GetRequiredService<IChatService>(),
+                    sp.GetRequiredService<ISkillService>(),
+                    sp.GetRequiredService<ISkillExecutor>(),
+                    skillCenterFactory: () => sp.GetRequiredService<SkillCenterWindow>()));
                 stServices.AddTransient<ChatWindow>();
                 stServices.AddTransient<SettingsWindow>();
+                // v0.15: 独立技能中心窗口
+                stServices.AddSingleton<SkillCenterViewModel>();
+                stServices.AddTransient<SkillCenterWindow>();
                 stServices.AddSingleton<ISkillService, SkillService>();
 
                 // v0.12: 多步技能执行器（smoke test 路径）
@@ -186,9 +194,17 @@ public partial class App : Application
             return registry;
         });
 
-        services.AddSingleton<ChatViewModel>();
+        // v0.15: smoke test 分支 ChatViewModel 同样注入 SkillCenterWindow 工厂 delegate
+        services.AddSingleton<ChatViewModel>(sp => new ChatViewModel(
+            sp.GetRequiredService<IChatService>(),
+            sp.GetService<ISkillService>(),
+            sp.GetService<ISkillExecutor>(),
+            skillCenterFactory: () => sp.GetRequiredService<SkillCenterWindow>()));
         services.AddTransient<ChatWindow>();
         services.AddTransient<SettingsWindow>();
+        // v0.15: 独立技能中心窗口
+        services.AddSingleton<SkillCenterViewModel>();
+        services.AddTransient<SkillCenterWindow>();
 
         services.AddSingleton<SettingsViewModel>(sp => new SettingsViewModel(
             sp.GetRequiredService<ISettingsService>(),

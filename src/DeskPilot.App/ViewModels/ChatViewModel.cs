@@ -33,12 +33,15 @@ public partial class ChatViewModel : ObservableObject
     private ISkillService? _skillService;
     private ISkillExecutor? _skillExecutor;
     private CancellationTokenSource? _cts;
+    // v0.15: 技能中心窗口工厂 delegate（避免 ViewModel 直接 new Window 违反 MVVM）
+    private readonly System.Func<DeskPilot.App.Views.SkillCenterWindow>? _skillCenterFactory;
 
-    public ChatViewModel(IChatService chatService, ISkillService? skillService = null, ISkillExecutor? skillExecutor = null)
+    public ChatViewModel(IChatService chatService, ISkillService? skillService = null, ISkillExecutor? skillExecutor = null, System.Func<DeskPilot.App.Views.SkillCenterWindow>? skillCenterFactory = null)
     {
         _chatService = chatService;
         _skillService = skillService;
         _skillExecutor = skillExecutor;
+        _skillCenterFactory = skillCenterFactory;
         Messages = new ObservableCollection<ChatMessage>();
         Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
         EnabledSkills = new ObservableCollection<Skill>();
@@ -47,6 +50,17 @@ public partial class ChatViewModel : ObservableObject
         RefreshSkills();
         if (_skillService != null) _skillService.SkillsChanged += (_, _) => RefreshSkills();
         HookToolEvents(chatService);
+    }
+
+    /// <summary>v0.15: 打开独立技能中心窗口（Ctrl+Shift+K / Menu 「技能 → 打开技能中心」触发）。
+    /// 用工厂 delegate 避免 ViewModel 直接 new Window（保持 MVVM 纯净）。</summary>
+    [RelayCommand]
+    private void ShowSkillCenter()
+    {
+        if (_skillCenterFactory == null) return;
+        var win = _skillCenterFactory();
+        win.Show();
+        win.Activate();
     }
 
     /// <summary>v0.9: 启用的技能列表（顶部快捷横条数据源）。v0.10: 内置+已安装合并去重。</summary>
