@@ -2,6 +2,32 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.16.1] - 2026-06-27
+
+### 🆕 图片旋转/裁剪 2 个新工具
+
+#### 🔄 RotateImageTool（图片旋转 + 翻转）
+- 新建 `src/DeskPilot.Core/Tools/RotateImageTool.cs`（5861 bytes）
+- 支持 `rotation: 0/90/180/270` 旋转 + `flip: none/horizontal/vertical` 翻转
+- 旋转 + 翻转可同时指定，先旋转后翻转（9 种组合）
+- 输出格式自动从 outputPath 后缀推断（png/jpg/bmp/gif）
+- `RiskLevel.Destructive`（写新文件）
+- 测试：`RotateImageToolTests.cs`（3419 bytes）— 4 个测试（EmptyInput / NonExistentFile / Rotate90 验证宽高交换 / FlipHorizontal 验证尺寸不变）
+
+#### ✂️ CropImageTool（图片裁剪）
+- 新建 `src/DeskPilot.Core/Tools/CropImageTool.cs`（5436 bytes）
+- 输入 `(x, y, width, height)` 矩形区域裁剪
+- 超出源图片边界的部分自动截断（带提示信息）
+- 坐标原点在左上角，单位像素
+- 输出格式自动从 outputPath 后缀推断
+- `RiskLevel.Destructive`（写新文件）
+- 测试：`CropImageToolTests.cs`（3697 bytes）— 4 个测试（EmptyInput / NonExistentFile / ValidCrop 验证尺寸 / OutOfBoundsCrop 验证自动截断）
+
+#### 📊 验证结果
+- ✅ Core build 0 错（仅 CA1416 平台兼容性 warning，已存在）
+- ✅ 全量 288/288 测试全过（v0.16.0 baseline 280 + 8 新增）
+- ✅ smoke test 0 字节（v0.16 F SkillCenterWindow 触发 + 新工具不影响）
+
 ## [v0.15.0] - 2026-06-27
 
 ### 🆕 独立技能中心窗口（D1+D2+D3+D4）
