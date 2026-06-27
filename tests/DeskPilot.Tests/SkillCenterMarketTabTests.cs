@@ -64,8 +64,8 @@ public class SkillCenterMarketTabTests
         Assert.Contains("ItemsSource=\"{Binding MarketplaceSourceNames}\"", xaml);
         // 源 Tab 横排用 StackPanel Orientation=Horizontal
         Assert.Matches(@"<ItemsControl[^>]*MarketplaceSourceNames[^>]*>[\s\S]*?<ItemsControl\.ItemsPanel>[\s\S]*?<StackPanel Orientation=\""Horizontal\""", xaml);
-        // 源 Tab 用 SourceTabButton 样式
-        Assert.Contains("Style=\"{StaticResource SourceTabButton}\"", xaml);
+        // 源 Tab 用 SourceTabButton 样式（v0.15.1 hotfix 改 RadioButton.Style + BasedOn 模式支持 MultiBinding）
+        Assert.Contains("BasedOn=\"{StaticResource SourceTabButton}\"", xaml);
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class SkillCenterMarketTabTests
     {
         var xaml = LoadXaml();
         Assert.Contains("ItemsSource=\"{Binding MarketCategories}\"", xaml);
-        Assert.Contains("Style=\"{StaticResource CategoryChipButton}\"", xaml);
+        Assert.Contains("BasedOn=\"{StaticResource CategoryChipButton}\"", xaml);
         // 分类 chips 用 WrapPanel
         Assert.Matches(@"<ItemsControl[^>]*MarketCategories[^>]*>[\s\S]*?<ItemsControl\.ItemsPanel>[\s\S]*?<WrapPanel", xaml);
     }

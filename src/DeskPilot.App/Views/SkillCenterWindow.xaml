@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:DeskPilot.App.ViewModels"
+        xmlns:local="clr-namespace:DeskPilot.App"
         mc:Ignorable="d"
         Title="🛠  DeskPilot 技能中心" Height="640" Width="960"
         WindowStartupLocation="CenterOwner"
@@ -98,7 +99,7 @@
                                 <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -133,7 +134,7 @@
                                 <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource PrimaryHoverBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -206,9 +207,23 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <RadioButton GroupName="MarketSource"
-                                                 Content="{Binding}"
-                                                 Style="{StaticResource SourceTabButton}"
-                                                 IsChecked="{Binding DataContext.SelectedMarketSource, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource SourceMatchConverter}, ConverterParameter={Binding}}"/>
+                                                 Content="{Binding}">
+                                        <RadioButton.Style>
+                                            <Style TargetType="RadioButton" BasedOn="{StaticResource SourceTabButton}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{x:Static local:SourceMatchConverter.Instance}">
+                                                                <Binding/>
+                                                                <Binding Path="DataContext.SelectedMarketSource" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="IsChecked" Value="True"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </RadioButton.Style>
+                                    </RadioButton>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -223,9 +238,23 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <RadioButton GroupName="Category"
-                                                 Content="{Binding}"
-                                                 Style="{StaticResource CategoryChipButton}"
-                                                 IsChecked="{Binding DataContext.MarketCategory, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource CategoryMatchConverter}, ConverterParameter={Binding}}"/>
+                                                 Content="{Binding}">
+                                        <RadioButton.Style>
+                                            <Style TargetType="RadioButton" BasedOn="{StaticResource CategoryChipButton}">
+                                                <Style.Triggers>
+                                                    <DataTrigger Value="True">
+                                                        <DataTrigger.Binding>
+                                                            <MultiBinding Converter="{x:Static local:CategoryMatchConverter.Instance}">
+                                                                <Binding/>
+                                                                <Binding Path="DataContext.MarketCategory" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                            </MultiBinding>
+                                                        </DataTrigger.Binding>
+                                                        <Setter Property="IsChecked" Value="True"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </RadioButton.Style>
+                                    </RadioButton>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -239,8 +268,8 @@
                             <TextBox Grid.Column="0" x:Name="MarketSearchBox"
                                      Text="{Binding MarketSearchText, UpdateSourceTrigger=PropertyChanged, Delay=300}"
                                      Padding="10,8" FontSize="13"
-                                     Background="{StaticResource InputBrush}"
-                                     Foreground="{StaticResource PrimaryTextBrush}"
+                                     Background="{StaticResource CardBrush}"
+                                     Foreground="{StaticResource TextBrush}"
                                      BorderBrush="{StaticResource BorderBrush}"
                                      BorderThickness="1"
                                      VerticalContentAlignment="Center">
@@ -283,14 +312,14 @@
                                                     </Border>
                                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold"
-                                                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                                                   Foreground="{StaticResource TextBrush}"
                                                                    TextTrimming="CharacterEllipsis"/>
                                                         <TextBlock Text="{Binding Author}" FontSize="10"
                                                                    Foreground="{StaticResource SecondaryTextBrush}"
                                                                    TextTrimming="CharacterEllipsis"/>
                                                     </StackPanel>
                                                     <Border Grid.Column="2" CornerRadius="4" Padding="4,2"
-                                                            Background="{StaticResource BadgeBrush}" VerticalAlignment="Top">
+                                                            Background="{StaticResource CardBrush}" VerticalAlignment="Top">
                                                         <TextBlock Text="{Binding SourceName}" FontSize="9"
                                                                    Foreground="{StaticResource PrimaryBrush}"/>
                                                     </Border>
@@ -317,10 +346,10 @@
                                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                                     <TextBlock Text="{Binding Category}" FontSize="9"
                                                                Foreground="{StaticResource PrimaryBrush}"
-                                                               Padding="4,1" Background="{StaticResource HoverBrush}"/>
+                                                               Padding="4,1" Background="{StaticResource PrimaryHoverBrush}"/>
                                                     <TextBlock Text=" ✅ 已安装" FontSize="9" Margin="6,0,0,0"
                                                                Foreground="Green"
-                                                               Visibility="{Binding IsInstalled, Converter={StaticResource BoolToVisConverter}}"/>
+                                                               Visibility="{Binding IsInstalled, Converter={x:Static local:BoolToVisibilityConverter.Instance}}"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </Border>
