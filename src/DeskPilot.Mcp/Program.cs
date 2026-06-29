@@ -39,7 +39,7 @@ internal static class Program
         // 日志走 stderr (避免污染 MCP stdio 协议)
         builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
 
-        // 注册 DeskPilot 工具 (v0.5: 4 → 7)
+        // 注册 DeskPilot 工具 (v0.5: 4 → 7 → v0.16.2: 10)
         builder.Services.AddSingleton<ArchiveByDateTool>();
         builder.Services.AddSingleton<MoveFilesTool>();
         builder.Services.AddSingleton<FindDuplicatesTool>();
@@ -47,6 +47,9 @@ internal static class Program
         builder.Services.AddSingleton<BatchResizeImageTool>();
         builder.Services.AddSingleton<ExtractArchiveTool>();
         builder.Services.AddSingleton<HashFilesTool>();
+        builder.Services.AddSingleton<MergePdfTool>();
+        builder.Services.AddSingleton<ConvertImageTool>();
+        builder.Services.AddSingleton<TextStatsTool>();
 
         // 注册 MCP server + 标记工具类
         builder.Services
@@ -76,6 +79,9 @@ internal sealed class DeskPilotMcpTools
     private readonly BatchResizeImageTool _resize;
     private readonly ExtractArchiveTool _extract;
     private readonly HashFilesTool _hash;
+    private readonly MergePdfTool _mergePdf;
+    private readonly ConvertImageTool _convertImage;
+    private readonly TextStatsTool _textStats;
 
     public DeskPilotMcpTools(
         ArchiveByDateTool archive,
@@ -84,7 +90,10 @@ internal sealed class DeskPilotMcpTools
         RenameByPatternTool rename,
         BatchResizeImageTool resize,
         ExtractArchiveTool extract,
-        HashFilesTool hash)
+        HashFilesTool hash,
+        MergePdfTool mergePdf,
+        ConvertImageTool convertImage,
+        TextStatsTool textStats)
     {
         _archive = archive;
         _move = move;
@@ -93,6 +102,9 @@ internal sealed class DeskPilotMcpTools
         _resize = resize;
         _extract = extract;
         _hash = hash;
+        _mergePdf = mergePdf;
+        _convertImage = convertImage;
+        _textStats = textStats;
     }
 
     /// <summary>
@@ -291,6 +303,61 @@ internal sealed class DeskPilotMcpTools
             recursive
         });
         var result = await _hash.ExecuteAsync(args);
+        return FormatResult(result);
+    }
+
+    /// <summary>
+    /// 把多份 PDF 合并为一份新 PDF（按顺序拼接页面）。
+    /// </summary>
+    /// <param name="inputFiles">输入 PDF 绝对路径数组（按顺序合并）</param>
+    /// <param name="outputPath">合并后的新 PDF 绝对路径</param>
+    [McpServerTool(Name = "merge_pdfs")]
+    public async Task<string> MergePdfs(
+        string[] inputFiles,
+        string outputPath)
+    {
+        var args = System.Text.Json.JsonSerializer.Serialize(new { inputFiles, outputPath });
+        var result = await _mergePdf.ExecuteAsync(args);
+        return FormatResult(result);
+    }
+
+    /// <summary>
+    /// 把一张图片从源格式转换为目标格式（png/jpg/bmp/webp/gif）。
+    /// </summary>
+    /// <param name="inputPath">源图片绝对路径</param>
+    /// <param name="outputPath">目标图片绝对路径</param>
+    /// <param name="targetFormat">目标格式: 小写 png / jpg / bmp / webp / gif</param>
+    /// <param name="quality">JPG 质量 1-100（默认 85，其他格式忽略）</param>
+    [McpServerTool(Name = "convert_image")]
+    public async Task<string> ConvertImage(
+        string inputPath,
+        string outputPath,
+        string targetFormat,
+        int? quality = null)
+    {
+        var args = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            inputPath,
+            outputPath,
+            targetFormat,
+            quality = quality ?? 85
+        });
+        var result = await _convertImage.ExecuteAsync(args);
+        return FormatResult(result);
+    }
+
+    /// <summary>
+    /// 统计文本文件的字符数、单词数、行数等元信息。
+    /// </summary>
+    /// <param name="inputPath">文本文件绝对路径</param>
+    /// <param name="encoding">文件编码（默认 utf-8，可选 gbk / gb2312 / ascii / utf-16）</param>
+    [McpServerTool(Name = "text_stats")]
+    public async Task<string> TextStats(
+        string inputPath,
+        string? encoding = null)
+    {
+        var args = System.Text.Json.JsonSerializer.Serialize(new { inputPath, encoding });
+        var result = await _textStats.ExecuteAsync(args);
         return FormatResult(result);
     }
 

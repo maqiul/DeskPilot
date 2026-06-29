@@ -11,7 +11,7 @@ namespace DeskPilot.Tests;
 ///
 /// 重点验证：
 /// 1) initialize 握手成功
-/// 2) tools/list 返回 4 个工具（archive_files_by_date / move_files / find_duplicates / rename_by_pattern）
+/// 2) tools/list 返回 10 个工具（v0.5: 4 → 7 → v0.16.2: 10）
 /// 3) tools/call 能真实调用工具并返回 ToolResult
 /// </summary>
 public sealed class McpServerTests
@@ -125,7 +125,7 @@ public sealed class McpServerTests
     }
 
     [Fact]
-    public async Task Server_ToolsList_Returns4Tools()
+    public async Task Server_ToolsList_Returns10Tools()
     {
         var (proc, stdin, stdout) = StartServer();
         try
@@ -162,8 +162,8 @@ public sealed class McpServerTests
             Assert.True(result.TryGetProperty("tools", out var tools));
             var toolList = tools.EnumerateArray().ToList();
 
-            // v0.5: 4 → 7 工具
-            Assert.Equal(7, toolList.Count);
+            // v0.5: 4 → 7 → v0.16.2: 10 工具
+            Assert.Equal(10, toolList.Count);
 
             var toolNames = toolList.Select(t => t.GetProperty("name").GetString()!).ToList();
             Assert.Contains("archive_files_by_date", toolNames);
@@ -173,6 +173,9 @@ public sealed class McpServerTests
             Assert.Contains("batch_resize_image", toolNames);
             Assert.Contains("extract_archive", toolNames);
             Assert.Contains("hash_files", toolNames);
+            Assert.Contains("merge_pdfs", toolNames);
+            Assert.Contains("convert_image", toolNames);
+            Assert.Contains("text_stats", toolNames);
         }
         finally
         {

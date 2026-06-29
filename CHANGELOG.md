@@ -2,6 +2,29 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.16.2] - 2026-06-27
+
+### 🆕 MCP Server 新增 3 个工具（7 → 10）
+
+#### 📡 DeskPilot.Mcp 新工具
+- 修改 `src/DeskPilot.Mcp/Program.cs`：
+  - DI 注册加 3 个：`MergePdfTool` + `ConvertImageTool` + `TextStatsTool`
+  - ctor 加 3 个参数 + 字段初始化
+  - 加 3 个 `[McpServerTool]` 方法：`merge_pdfs` + `convert_image` + `text_stats`
+- 工具总数：v0.5 4 → 7 → **v0.16.2 10**（+43%）
+
+#### 🧪 McpServerTests 测试更新
+- 修改 `tests/DeskPilot.Tests/McpServerTests.cs`：
+  - 测试名 `Returns4Tools` → `Returns10Tools`
+  - `Assert.Equal(7, toolList.Count)` → `Assert.Equal(10, toolList.Count)`
+  - 加 3 个新工具名断言：`merge_pdfs` + `convert_image` + `text_stats`
+
+#### 📊 验证结果
+- ✅ Core build 0 错
+- ✅ Mcp build 0 错
+- ✅ 全量 288/288 测试全过（v0.16.1 baseline 288 + 0 新增，仅修改已有 McpServerTests）
+- ✅ smoke test 0 字节（v0.16 F SkillCenterWindow 触发 + MCP 新工具不影响）
+
 ## [v0.16.1] - 2026-06-27
 
 ### 🆕 图片旋转/裁剪 2 个新工具
