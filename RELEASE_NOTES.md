@@ -1,3 +1,23 @@
+## [v0.16.3] - 2026-06-27
+
+### 🆕 SkillDetailWindow 集成进 SkillCenterWindow Market Tab
+
+修复 v0.15 D3 Market Tab 卡片没详情入口的痛点——点击卡片不再只能直接安装，而是弹出 SkillDetailWindow 查看完整技能详情（Description + Prompt 预览 + Tools 列表 + 安装/卸载/检查更新）。
+
+#### 变更
+- SkillCenterWindow.xaml Market Tab 卡片 Border 加 `MouseLeftButtonUp="MarketSkillCard_Click"` + `Tag="{Binding Id}"` + `Cursor="Hand"`
+- SkillCenterWindow.xaml.cs 加 `MarketSkillCard_Click` handler：通过 `App.Services` 拿 `ISkillService` + `ISkillMarket` → 创建 `SkillDetailViewModel` → `ShowDialog()`
+- SkillCenterWindowTests.cs 加 3 个新测试（XAML 验证 + cs 验证 + DI 验证）
+
+#### 架构亮点
+- **不污染 ViewModel**：通过 `App.Services.GetService<>()` 拿 service，不改 SkillCenterViewModel
+- **依赖复用**：复用 v0.11 已存在的 SkillDetailWindow + SkillDetailViewModel
+- **owner 模式**：`{ Owner = this }` 让详情窗跟着 SkillCenterWindow 关闭
+
+#### 验证
+- 291/291 测试全过（v0.16.2 baseline 288 + 3 新增）
+- smoke test EXIT 0
+
 ## [v0.16.2] - 2026-06-27
 
 ### 🆕 MCP Server 新增 3 个工具（7 → 10）

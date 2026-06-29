@@ -296,6 +296,9 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border Style="{StaticResource MarketSkillCard}"
+                                                Cursor="Hand"
+                                                Tag="{Binding Id}"
+                                                MouseLeftButtonUp="MarketSkillCard_Click"
                                                 ToolTip="点击查看详情 / 安装">
                                             <StackPanel>
                                                 <!-- Icon + Name + 来源徽章 行 -->

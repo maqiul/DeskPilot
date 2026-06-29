@@ -2,6 +2,34 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.16.3] - 2026-06-27
+
+### 🆕 SkillDetailWindow 集成进 SkillCenterWindow Market Tab
+
+#### 🎯 功能
+- **问题**：v0.15 D3 SkillCenterWindow Market Tab 卡片**没有详情入口**，点击只能直接安装
+- **解决**：点击 Market Tab 卡片 → 弹出 SkillDetailWindow 查看完整技能详情（Description + Prompt 预览 + Tools 列表 + 安装/卸载/检查更新）
+
+#### 🔧 实施
+- 修改 `src/DeskPilot.App/Views/SkillCenterWindow.xaml`：
+  - Market Tab 卡片 Border 加 `MouseLeftButtonUp="MarketSkillCard_Click"` + `Tag="{Binding Id}"` + `Cursor="Hand"`
+- 修改 `src/DeskPilot.App/Views/SkillCenterWindow.xaml.cs`：
+  - 加 `MarketSkillCard_Click` handler：从 `DataContext.SkillCenterViewModel.MarketSkillRows` 找 skill → 从 `App.Services` 拿 `ISkillService` + `ISkillMarket` → 创建 `SkillDetailViewModel` → `new SkillDetailWindow(detailVm) { Owner = this }.ShowDialog()`
+- 加 3 个新测试（`tests/DeskPilot.Tests/SkillCenterWindowTests.cs`）：
+  - `SkillCenterWindow_Xaml_HasMarketCardClickHandler`（XAML 含 MouseLeftButtonUp + Tag + Cursor 验证）
+  - `SkillCenterWindow_CodeBehind_HasMarketCardClickHandler`（cs 含 handler + SkillDetailWindow + ShowDialog 验证）
+  - `SkillCenterWindow_CodeBehind_ResolvesSkillServicesFromApp`（cs 含 App.Services + ISkillService + ISkillMarket 验证）
+
+#### 🏗️ 架构亮点
+- **不污染 ViewModel**：通过 `App.Services.GetService<>()` 拿 service，而不是改 SkillCenterViewModel 加 public 属性
+- **依赖复用**：复用 v0.11 已存在的 SkillDetailWindow + SkillDetailViewModel（不重写）
+- **owner 模式**：`new SkillDetailWindow(detailVm) { Owner = this }` 让详情窗跟着 SkillCenterWindow 关闭
+
+#### 📊 验证结果
+- ✅ App build 0 错
+- ✅ 全量 291/291 测试全过（v0.16.2 baseline 288 + 3 新增 v0.16 C 测试）
+- ✅ smoke test EXIT 0（SkillCenterWindow + SkillDetailWindow 真实实例化触发 WPF XAML 解析）
+
 ## [v0.16.2] - 2026-06-27
 
 ### 🆕 MCP Server 新增 3 个工具（7 → 10）

@@ -48,6 +48,63 @@ public class SkillCenterWindowTests
         Assert.False(string.IsNullOrEmpty(vm.StatusMessage));
     }
 
+    // ========== v0.16 C: SkillDetailWindow 集成测试（XAML 文本验证 + cs 代码验证） ==========
+
+    [Fact]
+    public void SkillCenterWindow_Xaml_HasMarketCardClickHandler()
+    {
+        // v0.16 C: Market Tab 卡片必须绑定 MouseLeftButtonUp 事件 + Tag 传 skill id
+        var xaml = File.ReadAllText(GetSkillCenterWindowXamlPath());
+        Assert.Contains("MouseLeftButtonUp=\"MarketSkillCard_Click\"", xaml);
+        Assert.Contains("Tag=\"{Binding Id}\"", xaml);
+        Assert.Contains("Cursor=\"Hand\"", xaml);
+    }
+
+    [Fact]
+    public void SkillCenterWindow_CodeBehind_HasMarketCardClickHandler()
+    {
+        // v0.16 C: code-behind 必须有 MarketSkillCard_Click 方法 + 创建 SkillDetailWindow + ShowDialog
+        var cs = File.ReadAllText(GetSkillCenterWindowCsPath());
+        Assert.Contains("MarketSkillCard_Click", cs);
+        Assert.Contains("new SkillDetailWindow(detailVm)", cs);
+        Assert.Contains("ShowDialog()", cs);
+    }
+
+    [Fact]
+    public void SkillCenterWindow_CodeBehind_ResolvesSkillServicesFromApp()
+    {
+        // v0.16 C: 通过 App.Services 拿 ISkillService + ISkillMarket（不污染 ViewModel）
+        var cs = File.ReadAllText(GetSkillCenterWindowCsPath());
+        Assert.Contains("App.Services", cs);
+        Assert.Contains("GetService<ISkillService>", cs);
+        Assert.Contains("GetService<ISkillMarket>", cs);
+    }
+
+    private static string GetSkillCenterWindowXamlPath()
+    {
+        // 从 tests/DeskPilot.Tests/ 向上找到 src/DeskPilot.App/Views/SkillCenterWindow.xaml
+        var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (dir != null)
+        {
+            var candidate = Path.Combine(dir.FullName, "src", "DeskPilot.App", "Views", "SkillCenterWindow.xaml");
+            if (File.Exists(candidate)) return candidate;
+            dir = dir.Parent;
+        }
+        throw new FileNotFoundException("SkillCenterWindow.xaml not found");
+    }
+
+    private static string GetSkillCenterWindowCsPath()
+    {
+        var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (dir != null)
+        {
+            var candidate = Path.Combine(dir.FullName, "src", "DeskPilot.App", "Views", "SkillCenterWindow.xaml.cs");
+            if (File.Exists(candidate)) return candidate;
+            dir = dir.Parent;
+        }
+        throw new FileNotFoundException("SkillCenterWindow.xaml.cs not found");
+    }
+
     // ========== Minimal Stubs ==========
 
     private sealed class StubMarketplace : IMarketplaceSourceService
