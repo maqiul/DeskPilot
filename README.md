@@ -5,12 +5,12 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![WPF](https://img.shields.io/badge/WPF-Windows-0078D4)](https://github.com/dotnet/wpf)
 [![Semantic Kernel](https://img.shields.io/badge/Semantic%20Kernel-AI-FF6F00)](https://github.com/microsoft/semantic-kernel)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](.github/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-107%20passed-brightgreen)](#)
+[![Tools](https://img.shields.io/badge/tools-17-orange)](#-特性)
+[![Tests](https://img.shields.io/badge/tests-291%20passed-brightgreen)](#)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
-**DeskPilot** 是一个基于 .NET 8 + WPF 的桌面 AI 助手，专为**办公场景**打造。
+**DeskPilot** 是一个基于 **.NET 8 + WPF** 的桌面 AI 助手，专为**办公场景**打造。
 和 ChatGPT 套壳应用不同，DeskPilot 的 AI 可以**真正操作你的文件、处理你的文档、自动化你的日常任务**。
 
 ---
@@ -19,9 +19,11 @@
 
 - 💬 **智能问答** —— 支持 OpenAI / DeepSeek / Ollama（本地）等多模型
 - 🔄 **动态模型列表** —— 设置窗口一键 🔄，自动从 Provider 拉取最新模型；离线/失败时用静态兜底
-- 📄 **文档处理** —— 一句话完成 Excel 拆分、Word 转 PDF、批量重命名
+- 📄 **文档处理** —— 一句话完成 Excel 拆分、Word 转 PDF、PDF 合并/裁剪、批量重命名、图片旋转/裁剪
 - 🗂️ **文件整理** —— AI 自动分类、整理、归档你的桌面文件夹
-- 🔌 **插件化架构** —— 基于 MCP (Model Context Protocol) 协议，易扩展
+- 🧩 **技能中心（v0.15+）** —— 独立窗口（`Ctrl+Shift+K`）浏览/安装/卸载多步工作流技能
+- 🛒 **多市场源（v0.11+）** —— 官方源 + 社区源 + 自定义源 三个 Tab 切换
+- 🔌 **MCP Server（v0.5+）** —— 把 10 个核心工具通过 Model Context Protocol 暴露给 Claude Desktop / Cursor 等外部 AI
 - 🔒 **隐私优先** —— 支持完全本地运行（Ollama），API Key 用 Windows DPAPI 加密
 - 🌐 **中文优先** —— 原生支持中文界面和中文文档场景
 - ⚡ **轻量快速** —— 原生 WPF，启动 < 2 秒，内存占用 < 200MB
@@ -45,11 +47,13 @@
 ```
 
 ```
-👤 你：把这 50 个 Word 文档的标题提取出来，做成 Excel
+👤 你：把这 50 张扫描件图片按 EXIF 时间重命名
 
-🤖 AI：✅ 已读取 50 个文档，生成 Excel 包含：
-       文件名 | 标题 | 字数 | 创建时间
-       已保存到 D:\汇总.xlsx
+🤖 AI：✅ 已读取 50 张图片的 EXIF DateTimeOriginal：
+       DSC00001.jpg → 2024-01-15_14-30-00.jpg
+       DSC00002.jpg → 2024-01-15_14-31-12.jpg
+       ...
+       已保存到原目录
 ```
 
 ---
@@ -58,14 +62,45 @@
 
 | 层 | 技术 |
 |---|---|
-| UI 框架 | WPF (.NET 9) |
+| UI 框架 | WPF (.NET 8) |
 | AI 编排 | Microsoft Semantic Kernel |
 | MVVM | CommunityToolkit.Mvvm |
 | 依赖注入 | Microsoft.Extensions.DependencyInjection |
 | 配置管理 | Microsoft.Extensions.Configuration |
 | 日志 | Serilog |
-| 测试 | xUnit + FluentAssertions + Moq |
-| 协议 | MCP (Model Context Protocol) |
+| 测试 | xUnit |
+| 协议 | MCP (Model Context Protocol) SDK 0.3 |
+| 文档处理 | PdfSharpCore 1.3.65（纯托管）+ ClosedXML 0.102.3 |
+| 图标处理 | System.Drawing.Common（仅 Windows）|
+
+---
+
+## 📦 工具清单（共 17 个）
+
+### Core 库（14 个）
+
+| 分类 | 工具 | 说明 |
+|------|------|------|
+| 📄 PDF | `merge_pdfs` | 多 PDF 合并 |
+| 📊 Excel | `batch_excel` | 批量 Excel 拆分/Sheet 提取/数据提取 |
+| 🖼️ 图片 | `batch_resize_image` | 批量缩放 |
+| 🖼️ 图片 | `convert_image` | 格式转换（JPG/PNG/GIF/BMP）|
+| 🖼️ 图片 | `rotate_image` | 旋转（90/180/270）+ 翻转 |
+| 🖼️ 图片 | `crop_image` | 矩形区域裁剪 |
+| 📁 文件 | `find_duplicates` | 按哈希找重复文件 |
+| 📁 文件 | `move_files` | 批量移动（支持创建目标目录）|
+| 📁 文件 | `rename_by_pattern` | 正则替换/前缀/后缀重命名 |
+| 📁 文件 | `archive_by_date` | 按文件日期归档 |
+| 📁 文件 | `hash_files` | SHA256/MD5 哈希 |
+| 📦 归档 | `extract_archive` | ZIP/RAR 解压 |
+| 🔍 搜索 | `search_content` | 文件内容正则搜索 |
+| 📊 文本 | `text_stats` | 字符/行/词数统计 |
+
+### MCP Server 暴露（10 个）
+
+`merge_pdfs` / `batch_excel` / `find_duplicates` / `move_files` / `rename_by_pattern` / `archive_by_date` / `hash_files` / `extract_archive` / `search_content` / `text_stats` + `convert_image`
+
+外部 AI 客户端（Claude Desktop / Cursor / Continue.dev）通过 stdio JSON-RPC 调用。
 
 ---
 
@@ -73,17 +108,17 @@
 
 ### 环境要求
 
-- Windows 10 / 11
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
+- **Windows 10 / 11**（WPF + System.Drawing 仅支持 Windows）
+- **.NET 8 SDK**（[下载](https://dotnet.microsoft.com/download/dotnet/8.0)）
 - （可选）[Ollama](https://ollama.com/) 用于本地模型
 
 ### 编译运行
 
 ```bash
-git clone https://github.com/yourname/deskpilot.git
-cd deskpilot
-dotnet restore
-dotnet build
+git clone https://github.com/maqiul/DeskPilot.git
+cd DeskPilot
+dotnet restore DeskPilot.sln
+dotnet build DeskPilot.sln --configuration Release
 dotnet run --project src/DeskPilot.App
 ```
 
@@ -144,64 +179,90 @@ $env:OPENAI_API_KEY = "sk-xxxxxxxxxxxx"
 
 ---
 
+## 🔌 MCP Server 集成（v0.5+）
+
+DeskPilot 内置 MCP Server，可被外部 AI 客户端调用：
+
+```json
+// Claude Desktop 配置示例
+{
+  "mcpServers": {
+    "deskpilot": {
+      "command": "dotnet",
+      "args": ["run", "--project", "D:\\opensource\\DeskPilot\\src\\DeskPilot.Mcp"]
+    }
+  }
+}
+```
+
+启动后，10 个工具（PDF 合并、Excel 处理、文件查找、批量重命名等）可在 Claude Desktop / Cursor / Continue.dev 中直接调用。
+
+---
+
 ## 📂 项目结构
 
 ```
 DeskPilot/
 ├── src/
-│   ├── DeskPilot.Core/           # 核心库（AI 编排、Agent、Tools）
-│   │   ├── Agents/               # AI Agent 实现
-│   │   ├── Tools/                # 可调用的工具（文件操作、文档处理）
-│   │   ├── Services/             # 业务服务
-│   │   └── Models/               # 数据模型
-│   ├── DeskPilot.App/            # WPF 应用
-│   │   ├── Views/                # 视图（XAML）
-│   │   ├── ViewModels/           # 视图模型
-│   │   ├── Resources/            # 资源（图标、字符串）
-│   │   └── Styles/               # 样式
-│   └── DeskPilot.Verify/         # 工具 E2E 验证程序（控制台，调试用）
-├── tests/                        # 单元测试
+│   ├── DeskPilot.Core/           # 核心库（17 工具 + AI 编排）
+│   │   ├── Tools/                # ITool 实现
+│   │   ├── Services/             # 业务服务（Skill/Marketplace/Chat）
+│   │   └── Models/               # 数据模型（record 类型）
+│   ├── DeskPilot.Mcp/            # MCP Server（暴露 10 工具给外部 AI）
+│   └── DeskPilot.App/            # WPF 应用
+│       ├── Views/                # XAML 窗口
+│       ├── ViewModels/           # MVVM ViewModel
+│       ├── Converters/           # WPF 值转换器
+│       └── Resources/            # 主题/图标
+├── tests/                        # xUnit 测试（291 用例）
+│   └── DeskPilot.Tests/
 ├── docs/                         # 文档
-└── .github/                      # GitHub 配置（CI/CD、Issue 模板）
-
-### 🛠️ 工具 E2E 验证（无需 API Key）
-
-```bash
-# 准备测试文件
-mkdir -p D:\deskpilot_e2e_test\invoices
-echo "发票A" > D:\deskpilot_e2e_test\invoices\inv_001.txt
-echo "发票B" > D:\deskpilot_e2e_test\invoices\inv_002.txt
-
-# 运行验证（默认 Created + Month）
-dotnet run --project src/DeskPilot.Verify -- "D:\deskpilot_e2e_test\invoices" Month Created
-# 跳过真实归档只预览：加 --no
-dotnet run --project src/DeskPilot.Verify -- "D:\deskpilot_e2e_test\invoices" Month Created --no
-```
-
-输出示例：
-```
-📂 源目录:   D:\deskpilot_e2e_test\invoices
-📄 原始文件数: 5
-━━━ Step 1: DryRun 预览 ━━━
-📋 [预览] 共 5 个文件，将移动 5 个，跳过 0 个
-━━━ Step 2: 真实归档 ━━━
-✅ 归档完成：移动 5 个，跳过 0 个，失败 0 个
-━━━ Step 3: 验证归档结果 ━━━
-📂 archive/ 下有 1 个子目录: 📁 2026-06/ (5 个文件)
-✅ 源目录已全部清空，所有文件已归档
-```
+└── .github/                      # GitHub 配置（CI/CD）
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
-查看 [ROADMAP.md](docs/ROADMAP.md) 了解详细规划。
+### ✅ 已完成（v0.0.1 → v0.16.4）
 
-- [x] **MVP (v0.0.1)** —— 智能问答窗口，支持 OpenAI/Ollama
-- [ ] **v0.1** —— 文件整理 + 基础文档处理
-- [ ] **v0.5** —— MCP 协议支持 + 插件系统
-- [ ] **v1.0** —— 完整办公自动化套件 + 多语言支持
+- [x] **v0.0-v0.4** —— 智能问答 + 多模型 + 本地记忆
+- [x] **v0.5** —— MCP 协议支持 + 插件系统
+- [x] **v0.6** —— 三层权限控制 + 危险操作确认
+- [x] **v0.7** —— 本地记忆 + 对话历史
+- [x] **v0.8** —— 主题切换（深色/浅色）
+- [x] **v0.9** —— 技能系统（CRUD 模型）
+- [x] **v0.10** —— 技能市场（GitHub 索引）
+- [x] **v0.11** —— 多市场源架构
+- [x] **v0.12** —— 技能多步工作流
+- [x] **v0.13** —— 搜索/文本统计 2 工具
+- [x] **v0.14** —— PDF 合并 + 图片转换 + Excel 批量 3 工具
+- [x] **v0.14.1** —— WPF XamlParseException 修复
+- [x] **v0.15** —— 独立技能中心窗口（Ctrl+Shift+K）
+- [x] **v0.15.1** —— XamlParseException 热修复
+- [x] **v0.16** —— F smoke test + B 图片工具 + E MCP +3 工具 + C SkillDetail 集成 + CI 修复
+
+### 🔜 下一步（v0.17+）
+
+- [ ] **i18n 抽 resx** —— 全局多语言支持
+- [ ] **PDF 拆分** —— 按页数/范围拆分 PDF
+- [ ] **图片 EXIF 重命名** —— 按 EXIF DateTimeOriginal 批量重命名
+- [ ] **Skill 模板化** —— 用户可创建自定义技能
+- [ ] **系统托盘** —— 后台常驻 + 快捷键唤起
+- [ ] **Markdown 预览** —— 聊天消息支持 Markdown 渲染
+
+---
+
+## 🧪 测试
+
+```bash
+# 跑全量测试
+dotnet test DeskPilot.sln --configuration Release
+
+# 当前状态：291/291 通过
+```
+
+测试覆盖：Core 工具（14 工具 × 4-6 用例）+ MCP Server（3 集成测试）+ Skill/Marketplace/ViewModel 业务逻辑。
 
 ---
 
@@ -209,10 +270,10 @@ dotnet run --project src/DeskPilot.Verify -- "D:\deskpilot_e2e_test\invoices" Mo
 
 欢迎所有形式的贡献！
 
-- 🐛 [报告 Bug](https://github.com/yourname/deskpilot/issues/new?template=bug_report.md)
-- 💡 [提出新功能](https://github.com/yourname/deskpilot/issues/new?template=feature_request.md)
+- 🐛 [报告 Bug](https://github.com/maqiul/DeskPilot/issues/new?template=bug_report.md)
+- 💡 [提出新功能](https://github.com/maqiul/DeskPilot/issues/new?template=feature_request.md)
 - 📝 [改进文档](docs/)
-- 🔧 [提交 PR](https://github.com/yourname/deskpilot/pulls)
+- 🔧 [提交 PR](https://github.com/maqiul/DeskPilot/pulls)
 
 详见 [CONTRIBUTING.md](docs/CONTRIBUTING.md)。
 
@@ -228,7 +289,9 @@ dotnet run --project src/DeskPilot.Verify -- "D:\deskpilot_e2e_test\invoices" Mo
 
 - [Microsoft Semantic Kernel](https://github.com/microsoft/semantic-kernel) —— AI 编排框架
 - [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) —— MVVM 工具包
-- [HandyControl](https://github.com/HandyOrg/HandyControl) —— WPF 控件库
+- [ModelContextProtocol C# SDK](https://github.com/modelcontextprotocol/csharp-sdk) —— MCP 协议实现
+- [PdfSharpCore](https://github.com/ststeiger/PdfSharpCore) —— 纯托管 PDF 处理
+- [ClosedXML](https://github.com/ClosedXML/ClosedXML) —— 纯 .NET Excel 处理
 
 ---
 
