@@ -26,6 +26,29 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ .NET 8 SDK 本地测试 291/291 全过
 - ✅ tag `v0.16.3` 强制更新触发新 workflow
 
+### 📝 文档同步 (2026-07-01)
+
+#### 🎯 背景
+- v0.16.4 CI 修复事故归档后发现 README.md 内容**严重过期**：
+  - badge 写 `107 passed` → 实际 **291 测试**
+  - 技术栈写 `.NET 9` → 实际是 **.NET 8**
+  - 环境要求写 `dotnet 9 SDK` → 实际是 **.NET 8 SDK**
+  - 未提及 v0.15 技能中心 / v0.16 17 工具 / MCP Server / 多市场源
+
+#### ✅ 修复
+- commit `17912bf` - docs: update README.md to v0.16.4 reality (17 tools, 291 tests, .NET 8, MCP 10, multi-marketplace)
+- 130 insertions + 67 deletions
+- README 7999 → 7604 bytes（去重后更精炼）
+
+#### 📊 同步内容
+- ✅ .NET 8 badge（不是 .NET 9）
+- ✅ 17 tools badge + 完整工具清单表（14 Core + 10 MCP）
+- ✅ 291 tests badge（不是 107）
+- ✅ MCP Server Claude Desktop 集成示例
+- ✅ v0.0.1 → v0.16.4 完整 Roadmap + v0.17+ 计划
+- ✅ 测试运行命令 + 覆盖率说明
+- ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
+
 ## [v0.16.3] - 2026-06-27
 
 ### 🆕 SkillDetailWindow 集成进 SkillCenterWindow Market Tab
