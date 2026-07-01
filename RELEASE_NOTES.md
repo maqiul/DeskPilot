@@ -1,5 +1,22 @@
 ## [v0.16.3] - 2026-06-27
 
+### 🐛 CI Hotfix - `.slnx` 转回 `.sln`
+
+修复 v0.15.0 → v0.16.3 的 6 个 Release workflow 全部失败的问题——`.slnx` 是 .NET 9 SDK 引入的新格式，.NET 8 SDK 不支持。转回 `.sln` 格式后 CI 重新工作。
+
+#### 根因
+- `DeskPilot.slnx` 是 .NET 9 SDK 引入的 XML 解决方案文件
+- CI runner 用 `dotnet-version: 8.0.x`（.NET 8 SDK）
+- .NET 8 SDK 报 `error MSB4068: 无法识别元素 <Solution>`
+- 本地装 .NET 8.0.100 SDK 100% 重现
+
+#### 修复
+- 删除 `DeskPilot.slnx`，新建 `DeskPilot.sln`（传统 .NET 兼容格式）
+- 强制更新 tag `v0.16.3` 触发新 workflow
+
+#### 验证
+- .NET 8 SDK 本地 build 0 错误 + 291/291 测试全过
+
 ### 🆕 SkillDetailWindow 集成进 SkillCenterWindow Market Tab
 
 修复 v0.15 D3 Market Tab 卡片没详情入口的痛点——点击卡片不再只能直接安装，而是弹出 SkillDetailWindow 查看完整技能详情（Description + Prompt 预览 + Tools 列表 + 安装/卸载/检查更新）。

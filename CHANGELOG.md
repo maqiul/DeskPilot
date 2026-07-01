@@ -2,6 +2,30 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [v0.16.4] - 2026-06-27
+
+### 🐛 CI 修复 - `.slnx` 转回 `.sln`
+
+#### 🐛 问题
+- v0.15.0 → v0.16.3 的 6 个 Release workflow 全部 Build DeskPilot App 失败
+- GitHub Releases 页面 Latest 还是 v0.14.1（用户下载不到 v0.16.x）
+
+#### 🔍 根因
+- `DeskPilot.slnx` 是 **.NET 9 SDK 引入的新 XML 解决方案格式**
+- .NET 8 SDK（CI runner 用 `setup-dotnet@v4` + `dotnet-version: 8.0.x`）**不支持 `.slnx`**
+- 报 `error MSB4068: 无法识别元素 <Solution>`
+- 本地装了 .NET 8.0.100 SDK 重现 100% 确认
+
+#### ✅ 修复
+- 把 `DeskPilot.slnx` 转回 `DeskPilot.sln`（传统 .NET 兼容格式）
+- commit `4de420b` + 强制更新 tag `v0.16.3`
+- 本地 .NET 8 SDK build 0 错误 + 291/291 测试全过
+
+#### 📊 验证
+- ✅ .NET 8 SDK 本地 build 0 错误
+- ✅ .NET 8 SDK 本地测试 291/291 全过
+- ✅ tag `v0.16.3` 强制更新触发新 workflow
+
 ## [v0.16.3] - 2026-06-27
 
 ### 🆕 SkillDetailWindow 集成进 SkillCenterWindow Market Tab
