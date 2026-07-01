@@ -19,18 +19,20 @@ public sealed class McpServerTests
     private static readonly string McpProjectDir = LocateMcpProjectDir();
 
     /// <summary>
-    /// 找 DeskPilot.Mcp 项目根目录。从当前测试 bin 目录向上找 .slnx 文件所在目录。
+    /// 找 DeskPilot.Mcp 项目根目录。从当前测试 bin 目录向上找 .sln 文件所在目录（兼容 .slnx）。
+    /// v0.16.4: 改用 .sln（传统格式，.NET 8 SDK 兼容）；同时兼容 .slnx 标记（防老环境）。
     /// </summary>
     private static string LocateMcpProjectDir()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null)
         {
-            if (File.Exists(Path.Combine(dir.FullName, "DeskPilot.slnx")))
+            if (File.Exists(Path.Combine(dir.FullName, "DeskPilot.sln"))
+                || File.Exists(Path.Combine(dir.FullName, "DeskPilot.slnx")))
                 return Path.Combine(dir.FullName, "src", "DeskPilot.Mcp");
             dir = dir.Parent;
         }
-        throw new DirectoryNotFoundException("DeskPilot.slnx not found upward from " + AppContext.BaseDirectory);
+        throw new DirectoryNotFoundException("DeskPilot.sln/slnx not found upward from " + AppContext.BaseDirectory);
     }
 
     private static string GetMcpDll()
