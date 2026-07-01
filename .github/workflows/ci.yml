@@ -20,13 +20,13 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Restore dependencies
-      run: dotnet restore DeskPilot.slnx
+      run: dotnet restore DeskPilot.sln
 
     - name: Build
-      run: dotnet build DeskPilot.slnx --no-restore --configuration Release
+      run: dotnet build DeskPilot.sln --no-restore --configuration Release
 
     - name: Test
-      run: dotnet test DeskPilot.slnx --no-build --configuration Release --verbosity normal
+      run: dotnet test DeskPilot.sln --no-build --configuration Release --verbosity normal
 
     # v0.5.1: WPF 启动 smoke test — 用 DESKPILOT_SMOKE_TEST=1 走全链路
     # 覆盖 XAML 解析 → DI 注入 → ChatWindow 实例化 → 无异常退出
