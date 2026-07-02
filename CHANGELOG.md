@@ -94,6 +94,24 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - 扫描件按 EXIF 时间重命名归档
 - 备份照片按时间顺序排序
 
+### 📝 文档同步 (2026-07-01 17:14)
+
+#### 🎯 背景
+- v0.17.0 发布后 README.md 仍写 `17 tools / 291 tests`，与实际 `18 tools / 296 tests` 不一致
+- 工具清单表缺 `rename_by_exif` 行
+- Roadmap 未勾选 v0.17 A
+
+#### ✅ 修复
+- commit `c9c7318` - docs: update README.md to v0.17.0 reality (18 tools, 296 tests, rename_by_exif)
+- 9 insertions + 7 deletions
+
+#### 📊 同步内容
+- ✅ badge 17 → 18 tools + 291 → 296 tests
+- ✅ Core 库 14 → 15 + 加 `rename_by_exif` 行
+- ✅ MCP Server 10 → 11 + 加 `rename_by_exif`
+- ✅ Roadmap v0.17 A 勾选
+- ✅ 下一步标题 v0.17+ → v0.18+
+
 ## [v0.16.3] - 2026-06-27
 
 ### 🆕 SkillDetailWindow 集成进 SkillCenterWindow Market Tab
