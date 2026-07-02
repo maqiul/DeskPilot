@@ -49,6 +49,40 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.17.2] - 2026-07-01
+
+### 🐛 CI 修复第二步 - release.yml `.slnx` 转回 `.sln` + RELEASE_NOTES.md 同步 v0.17 sections
+
+#### 🐛 问题
+- v0.16.4 CI 修复事故（2026-06-27）只改了 `ci.yml` + `McpServerTests`，**漏改 `release.yml`**
+- `release.yml` 的 `build-mcp` step 4 仍是 `dotnet restore DeskPilot.slnx` → CI runner .NET 8 SDK 失败
+- v0.17.0 / v0.17.1 发布时**没追加 sections 到 `RELEASE_NOTES.md`** → release workflow `awk "/^## \[${VERSION}\]/,/^## \[/"` 提取失败
+- 6 个 Release workflow 失败根因完整链路：
+  1. `DeskPilot.slnx` (.NET 9 SDK 格式) → .NET 8 SDK 不支持
+  2. `ci.yml` 用 `.slnx` → Restore 失败
+  3. `release.yml` 用 `.slnx` → Restore 失败（v0.16.4 漏改）
+  4. `McpServerTests.LocateMcpProjectDir` 找 `.slnx` → cctor 失败
+  5. `RELEASE_NOTES.md` 缺 v0.17 sections → awk 提取失败
+
+#### 🔍 根因
+- v0.16.4 修复时**只覆盖了 1 个 workflow（ci.yml）+ 1 个测试**，没有系统盘点所有引用 .slnx 的地方
+- v0.17.0 / v0.17.1 发布时**只更新了 `CHANGELOG.md`**，没同步 `RELEASE_NOTES.md`
+
+#### ✅ 修复
+- `release.yml` line 39：`dotnet restore DeskPilot.slnx` → `dotnet restore DeskPilot.sln`
+- `RELEASE_NOTES.md` 顶部追加 `## [v0.17.1]` + `## [v0.17.0]` sections
+- commit `4a3b973` + tag `v0.17.2`
+
+#### 📊 验证
+- ✅ 全量 296/296 测试通过
+- ✅ release.yml 用 `.sln`（CI runner .NET 8 SDK 兼容）
+- ✅ RELEASE_NOTES.md 包含 v0.17.0 + v0.17.1 sections（awk 提取成功）
+
+#### 📚 教训
+- **CI 修复必须系统盘点所有相关文件**：`.github/workflows/*.yml` 至少 2 个（ci.yml + release.yml）
+- **新 tag 发布前必须同步 RELEASE_NOTES.md**（不能等事故后再补）
+- **CHANGELOG.md ≠ RELEASE_NOTES.md**：CHANGELOG 是全历史，RELEASE_NOTES 是当前 release section
+
 ## [v0.17.0] - 2026-07-01
 
 ### 🆕 RenameByExifTool 图片 EXIF 批量重命名
