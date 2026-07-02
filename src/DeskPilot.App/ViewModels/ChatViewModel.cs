@@ -36,6 +36,18 @@ public partial class ChatViewModel : ObservableObject
     // v0.15: 技能中心窗口工厂 delegate（避免 ViewModel 直接 new Window 违反 MVVM）
     private readonly System.Func<DeskPilot.App.Views.SkillCenterWindow>? _skillCenterFactory;
 
+    /// <summary>v0.20.0: 窗口标题（含版本号）— 绑定到 ChatWindow.Title。</summary>
+    public string WindowTitle
+    {
+        get
+        {
+            var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            return ver != null
+                ? $"DeskPilot 桌面 AI 助手 v{ver.Major}.{ver.Minor}.{ver.Build}"
+                : "DeskPilot 桌面 AI 助手";
+        }
+    }
+
     public ChatViewModel(IChatService chatService, ISkillService? skillService = null, ISkillExecutor? skillExecutor = null, System.Func<DeskPilot.App.Views.SkillCenterWindow>? skillCenterFactory = null)
     {
         _chatService = chatService;

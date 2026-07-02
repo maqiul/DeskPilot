@@ -6,7 +6,7 @@
         xmlns:vm="clr-namespace:DeskPilot.App.ViewModels"
         xmlns:local="clr-namespace:DeskPilot.App"
         mc:Ignorable="d"
-        Title="DeskPilot 桌面 AI 助手" Height="680" Width="960"
+        Title="{Binding WindowTitle}" Height="680" Width="960"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource BackgroundBrush}"
         d:DataContext="{d:DesignInstance Type=vm:ChatViewModel}">
