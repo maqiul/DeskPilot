@@ -1,3 +1,16 @@
+## [v0.22.0] - 2026-07-01
+
+### 🆕 一键导出对话为 Markdown
+
+#### 功能
+- 文件菜单 → 导出对话
+- 弹出 SaveFileDialog，默认文件名 `deskpilot-yyyyMMdd-HHmmss.md`
+- 输出 Markdown 格式（标题 + 时间 + 用户/AI 分组）
+
+#### 验证
+- ✅ 全量 307/307 测试通过
+- ✅ smoke test EXIT 0
+
 ## [v0.21.0] - 2026-07-01
 
 ### 🆕 启动时间统计

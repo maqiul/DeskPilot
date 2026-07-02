@@ -49,6 +49,23 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.22.0] - 2026-07-01
+
+### 🆕 一键导出对话为 Markdown
+
+#### ✨ 功能
+- **文件菜单 → 导出对话**（快捷键待绑定）
+- 弹出 `SaveFileDialog`，默认文件名 `deskpilot-yyyyMMdd-HHmmss.md`
+- 输出格式：
+  - `# DeskPilot 对话记录` 标题
+  - 导出时间
+  - 每条消息按 `👤 用户 / 🤖 AI` 分组
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 307/307 测试通过（v0.21 baseline 303 + 4 新增）
+- ✅ smoke test 输出 `[DeskPilot] OnStartup completed in 592ms`
+
 ## [v0.21.0] - 2026-07-01
 
 ### 🆕 启动时间统计（OnStartup Console 输出）
