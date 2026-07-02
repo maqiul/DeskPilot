@@ -49,6 +49,24 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.27.0] - 2026-07-01
+
+### 🆕 单条消息删除按钮
+
+#### ✨ 功能
+- 每条消息气泡右下角加 `🗑` 删除按钮
+- 点击立即从对话集合中移除该消息
+
+#### 🛠️ 实现
+- `ChatViewModel.DeleteMessageCommand`（`[RelayCommand]` 接受 `ChatMessage` 参数）
+- **用 `ReferenceEquals` 遍历 Messages 找原对象**（避免 FilteredMessages 过滤后 IndexOf 错位）
+- `ChatWindow.xaml` 复制按钮下方加删除按钮
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 331/331 测试通过（v0.26 baseline 327 + 4 新增）
+- ✅ smoke test 输出 `[DeskPilot] OnStartup completed in 597ms`
+
 ## [v0.26.0] - 2026-07-01
 
 ### 🆕 单条消息复制按钮
