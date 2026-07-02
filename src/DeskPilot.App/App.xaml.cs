@@ -25,6 +25,19 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // v0.19.0: 单实例 Mutex - 防止 DeskPilot 多开
+        var singleInstance = new SingleInstanceService();
+        if (!singleInstance.IsFirstInstance)
+        {
+            // 第二次启动：激活旧窗口 + 退出
+            singleInstance.ActivateExistingInstance();
+            singleInstance.Dispose();
+            Shutdown(0);
+            return;
+        }
+        // 第一个实例：注册 Exit 事件清理 Mutex
+        Exit += (_, _) => singleInstance.Dispose();
+
         // v0.5.1: CI smoke test — 设置 DESKPILOT_SMOKE_TEST=1 启动验证 XAML+DI 全链路
         if (Environment.GetEnvironmentVariable("DESKPILOT_SMOKE_TEST") == "1")
         {

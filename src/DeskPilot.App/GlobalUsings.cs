@@ -12,3 +12,6 @@ global using OpenFileDialog = Microsoft.Win32.OpenFileDialog;
 global using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 global using HorizontalAlignment = System.Windows.HorizontalAlignment;
 global using Binding = System.Windows.Data.Binding;
+
+// v0.19.0: 单实例 Mutex - 解决与 WinForms Application/Win32 API 的命名冲突
+global using Mutex = System.Threading.Mutex;
