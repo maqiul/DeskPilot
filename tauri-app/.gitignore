@@ -1,0 +1,18 @@
+# Tauri 构建产物
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# 前端构建产物
+node_modules/
+dist/
+
+# TypeScript 增量编译缓存
+tsconfig.tsbuildinfo
+
+# Sidecar 二进制（未来真正集成时再加）
+sidecar/
+
+# IDE
+.vscode/
+.idea/
+*.swp

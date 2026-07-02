@@ -1,0 +1,23 @@
+[package]
+name = "deskpilot-v2"
+version = "0.0.1"
+description = "DeskPilot v2 (Tauri 2.x + Vue 3 + .NET 8 Sidecar)"
+edition = "2021"
+
+[lib]
+name = "deskpilot_v2_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.0", features = [] }
+tauri-plugin-shell = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+urlencoding = "2.1"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
