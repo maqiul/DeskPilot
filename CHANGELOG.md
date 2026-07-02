@@ -49,6 +49,51 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.17.0] - 2026-07-01
+
+### 🆕 RenameByExifTool 图片 EXIF 批量重命名
+
+#### 🎯 功能
+- **问题**：相机/手机照片默认命名（如 `DSC00001.jpg`）没有业务含义，整理困难
+- **解决**：读取图片 **EXIF DateTimeOriginal**（拍摄时间），按用户指定的日期格式 + 可选前缀批量重命名
+- **示例**：`DSC00001.jpg`（拍摄于 2024-06-15 14:30:00）→ `2024-06-15_14-30-00.jpg` 或 `IMG_2024-06-15_14-30-00.jpg`
+
+#### 🛠️ 实现
+- 新增 `src/DeskPilot.Core/Tools/RenameByExifTool.cs`（9644 bytes）
+  - 使用 `System.Drawing.Common`（v0.5 已引入，零新依赖）
+  - EXIF PropertyItem 0x9003 = DateTimeOriginal
+  - 支持 JPG/JPEG/PNG（PNG 无 EXIF 自动 fallback 到文件修改时间）
+  - 冲突解决同 `RenameByPatternTool`（`_2` / `_3` 后缀）
+  - DryRun 模式只预览不重命名
+- 新增 `tests/DeskPilot.Tests/RenameByExifToolTests.cs`（6078 bytes，5 个测试）
+
+#### 📊 工具参数
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|------|------|------|------|------|
+| `directory` | string | ✅ | - | 目标目录绝对路径 |
+| `pattern` | string | ❌ | `*.jpg` | glob 过滤（可改 `*.png` / `*.jpeg`）|
+| `dateFormat` | string | ❌ | `yyyy-MM-dd_HH-mm-ss` | 日期格式 |
+| `prefix` | string | ❌ | - | 可选前缀（如 `IMG_`）|
+| `fallbackToFileDate` | bool | ❌ | `true` | 无 EXIF 时是否用文件修改时间 |
+| `dryRun` | bool | ❌ | `false` | true 只预览不重命名 |
+
+#### ✅ 测试覆盖（5 个测试）
+1. `EmptyInput_ReturnsError` - directory 为空 → 错误
+2. `NonExistentDirectory_ReturnsError` - 目录不存在 → 错误
+3. `JpegWithExif_RenamesToDateTimeOriginal` - 有 EXIF → 重命名成功 + 日期正确
+4. `JpegWithoutExif_UsesFileDateFallback` - 无 EXIF → 用文件修改时间
+5. `DryRun_PreviewOnly_DoesNotRename` - DryRun 模式 → 不实际改名
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 296/296 测试通过（v0.16 291 + 5 新增）
+- ✅ WPF App smoke test PASSED（exit 0）
+
+#### 💡 业务场景
+- 摄影用户从相机导出后按拍摄时间整理
+- 扫描件按 EXIF 时间重命名归档
+- 备份照片按时间顺序排序
+
 ## [v0.16.3] - 2026-06-27
 
 ### 🆕 SkillDetailWindow 集成进 SkillCenterWindow Market Tab
