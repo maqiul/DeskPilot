@@ -5,8 +5,8 @@
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![WPF](https://img.shields.io/badge/WPF-Windows-0078D4)](https://github.com/dotnet/wpf)
 [![Semantic Kernel](https://img.shields.io/badge/Semantic%20Kernel-AI-FF6F00)](https://github.com/microsoft/semantic-kernel)
-[![Tools](https://img.shields.io/badge/tools-17-orange)](#-特性)
-[![Tests](https://img.shields.io/badge/tests-291%20passed-brightgreen)](#)
+[![Tools](https://img.shields.io/badge/tools-18-orange)](#-特性)
+[![Tests](https://img.shields.io/badge/tests-296%20passed-brightgreen)](#)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
@@ -75,9 +75,9 @@
 
 ---
 
-## 📦 工具清单（共 17 个）
+## 📦 工具清单（共 18 个）
 
-### Core 库（14 个）
+### Core 库（15 个）
 
 | 分类 | 工具 | 说明 |
 |------|------|------|
@@ -87,6 +87,7 @@
 | 🖼️ 图片 | `convert_image` | 格式转换（JPG/PNG/GIF/BMP）|
 | 🖼️ 图片 | `rotate_image` | 旋转（90/180/270）+ 翻转 |
 | 🖼️ 图片 | `crop_image` | 矩形区域裁剪 |
+| 🖼️ 图片 | `rename_by_exif` | 按 EXIF DateTimeOriginal 批量重命名 |
 | 📁 文件 | `find_duplicates` | 按哈希找重复文件 |
 | 📁 文件 | `move_files` | 批量移动（支持创建目标目录）|
 | 📁 文件 | `rename_by_pattern` | 正则替换/前缀/后缀重命名 |
@@ -96,9 +97,9 @@
 | 🔍 搜索 | `search_content` | 文件内容正则搜索 |
 | 📊 文本 | `text_stats` | 字符/行/词数统计 |
 
-### MCP Server 暴露（10 个）
+### MCP Server 暴露（11 个）
 
-`merge_pdfs` / `batch_excel` / `find_duplicates` / `move_files` / `rename_by_pattern` / `archive_by_date` / `hash_files` / `extract_archive` / `search_content` / `text_stats` + `convert_image`
+`merge_pdfs` / `batch_excel` / `find_duplicates` / `move_files` / `rename_by_pattern` / `archive_by_date` / `hash_files` / `extract_archive` / `search_content` / `text_stats` / `convert_image`
 
 外部 AI 客户端（Claude Desktop / Cursor / Continue.dev）通过 stdio JSON-RPC 调用。
 
@@ -241,8 +242,9 @@ DeskPilot/
 - [x] **v0.15** —— 独立技能中心窗口（Ctrl+Shift+K）
 - [x] **v0.15.1** —— XamlParseException 热修复
 - [x] **v0.16** —— F smoke test + B 图片工具 + E MCP +3 工具 + C SkillDetail 集成 + CI 修复
+- [x] **v0.17** —— A 图片 EXIF 重命名工具
 
-### 🔜 下一步（v0.17+）
+### 🔜 下一步（v0.18+）
 
 - [ ] **i18n 抽 resx** —— 全局多语言支持
 - [ ] **PDF 拆分** —— 按页数/范围拆分 PDF
