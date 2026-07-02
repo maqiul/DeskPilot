@@ -1,3 +1,25 @@
+## [v0.17.4] - 2026-07-01
+
+### 📝 README.md Roadmap 详细化
+
+README.md v0.17 Roadmap 单行勾选扩展为「EXIF + 文档同步 + CI 修复第二步」。
+
+- 1 行新增 + 1 行删除
+- 配套 commit `a444fc0` + tag `v0.17.4`
+
+无代码变更，纯文档细节同步。
+
+## [v0.17.3] - 2026-07-01
+
+### 📝 CHANGELOG 同步 v0.17.2 release.yml 修复
+
+CHANGELOG.md v0.17.2 section 完整记录 v0.16.4 CI 修复事故第二步（release.yml `.slnx` → `.sln` + RELEASE_NOTES.md 同步 v0.17 sections）。
+
+- 34 行新增
+- 配套 commit `e434201` + tag `v0.17.3`
+
+无代码变更，纯文档完整性同步。
+
 ## [v0.17.1] - 2026-07-01
 
 ### 📝 文档同步
