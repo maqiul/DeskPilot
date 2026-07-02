@@ -208,11 +208,29 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
+            <!-- v0.24.0: 对话搜索框（仅在有消息时显示） -->
+            <Border Background="{StaticResource CardBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" Padding="20,8"
+                    Visibility="{Binding HasMessages, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🔍" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0" Foreground="{StaticResource SecondaryTextBrush}"/>
+                    <TextBox Grid.Column="1" Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged, Delay=300}"
+                             Background="Transparent" BorderThickness="0" FontSize="13"
+                             Foreground="{StaticResource TextBrush}"
+                             ToolTip="搜索当前对话中的关键词（实时过滤）"/>
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SecondaryTextBrush}" Margin="8,0,0,0"
+                               Text="{Binding MatchCountText}"/>
+                </Grid>
+            </Border>
             <!-- 消息列表（无消息时隐藏） -->
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           Padding="20,16" x:Name="MessagesScrollViewer"
                           Visibility="{Binding HasMessages, Converter={x:Static local:BoolToVisibilityConverter.Instance}}">
-                <ItemsControl ItemsSource="{Binding Messages}">
+                <ItemsControl ItemsSource="{Binding FilteredMessages}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="0,0,0,16">

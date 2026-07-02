@@ -55,7 +55,13 @@ public partial class ChatViewModel : ObservableObject
         _skillExecutor = skillExecutor;
         _skillCenterFactory = skillCenterFactory;
         Messages = new ObservableCollection<ChatMessage>();
-        Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
+        Messages.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasMessages));
+            // v0.24.0: 消息集合变化时通知过滤结果重新计算
+            OnPropertyChanged(nameof(FilteredMessages));
+            OnPropertyChanged(nameof(MatchCountText));
+        };
         EnabledSkills = new ObservableCollection<Skill>();
         StepProgresses = new ObservableCollection<StepProgress>();
         UpdateBadgeMap();
@@ -310,6 +316,36 @@ public partial class ChatViewModel : ObservableObject
     }
 
     /// <summary>v0.22.0: 导出对话为 Markdown 文件。</summary>
+    [ObservableProperty]
+    private string _searchKeyword = string.Empty;
+
+    /// <summary>v0.24.0: 搜索结果消息集合（基于 SearchKeyword 过滤 Messages）。</summary>
+    public System.Collections.Generic.List<ChatMessage> FilteredMessages
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(SearchKeyword))
+                return Messages.ToList();
+            return Messages.Where(m => m.Content.Contains(SearchKeyword, System.StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+    }
+
+    /// <summary>v0.24.0: 匹配结果统计文本（如 "3 / 10" 或 ""）。</summary>
+    public string MatchCountText
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(SearchKeyword)) return string.Empty;
+            return $"{FilteredMessages.Count} / {Messages.Count}";
+        }
+    }
+
+    partial void OnSearchKeywordChanged(string value)
+    {
+        // v0.24.0: 关键词变化时通知 FilteredMessages 和 MatchCountText 重新计算
+        OnPropertyChanged(nameof(FilteredMessages));
+        OnPropertyChanged(nameof(MatchCountText));
+    }
     [RelayCommand]
     private void ExportToMarkdown(string? filePath)
     {
