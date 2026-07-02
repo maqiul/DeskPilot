@@ -282,6 +282,14 @@
                                                 ToolTip="复制此消息"
                                                 Content="📋" FontSize="12"
                                                 Foreground="{StaticResource SecondaryTextBrush}"/>
+                                        <Button HorizontalAlignment="Right" Margin="0,6,0,0" Padding="8,2"
+                                                Background="Transparent" BorderThickness="0"
+                                                Cursor="Hand"
+                                                Command="{Binding DataContext.DeleteMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip="从对话中删除此消息"
+                                                Content="🗑" FontSize="12"
+                                                Foreground="{StaticResource SecondaryTextBrush}"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>

@@ -309,6 +309,22 @@ public partial class ChatViewModel : ObservableObject
         _cts?.Cancel();
     }
 
+    /// <summary>v0.27.0: 从对话中删除单条消息（按 ReferenceEquals 找到原对象）。</summary>
+    [RelayCommand]
+    private void DeleteMessage(ChatMessage? message)
+    {
+        if (message == null) return;
+        // 不用 IndexOf(message)：SearchKeyword 过滤时 FilteredMessages 是临时 List，索引不对应原 Messages
+        for (int i = 0; i < Messages.Count; i++)
+        {
+            if (ReferenceEquals(Messages[i], message))
+            {
+                Messages.RemoveAt(i);
+                return;
+            }
+        }
+    }
+
     /// <summary>v0.26.0: 复制单条消息内容到剪贴板。</summary>
     [RelayCommand]
     private void CopyMessage(ChatMessage? message)
