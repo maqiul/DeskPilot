@@ -110,6 +110,22 @@ public partial class ChatWindow : Window
         Application.Current.Shutdown();
     }
 
+    /// <summary>v0.22.0: 顶部菜单「文件 → 导出对话」点击 — 弹出 SaveFileDialog 让用户选位置，导出为 Markdown。</summary>
+    private void ExportMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = $"deskpilot-{System.DateTime.Now:yyyyMMdd-HHmmss}.md",
+            DefaultExt = ".md",
+            Filter = "Markdown 文件 (*.md)|*.md|所有文件 (*.*)|*.*",
+            Title = "导出对话为 Markdown"
+        };
+        if (dlg.ShowDialog() == true)
+        {
+            _viewModel.ExportToMarkdownCommand.Execute(dlg.FileName);
+        }
+    }
+
     /// <summary>v0.15: 顶部菜单「帮助 → 关于」点击 — 显示 DeskPilot 版本信息。</summary>
     private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
     {

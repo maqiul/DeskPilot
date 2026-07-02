@@ -51,6 +51,9 @@
             <MenuItem Header="文件(_F)">
                 <MenuItem Header="设置(_S)..." Command="{Binding ShowSettingsCommand}"/>
                 <Separator/>
+                <!-- v0.22.0: 导出对话为 Markdown 文件 -->
+                <MenuItem Header="导出对话(_E)..." Click="ExportMenuItem_Click"/>
+                <Separator/>
                 <MenuItem Header="退出(_X)" Click="ExitMenuItem_Click"/>
             </MenuItem>
             <MenuItem Header="技能(_K)">

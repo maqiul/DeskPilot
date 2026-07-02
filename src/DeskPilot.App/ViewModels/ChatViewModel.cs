@@ -308,4 +308,33 @@ public partial class ChatViewModel : ObservableObject
         if (_chatService is SemanticKernelChatService sk)
             sk.ClearMemory();
     }
+
+    /// <summary>v0.22.0: 导出对话为 Markdown 文件。</summary>
+    [RelayCommand]
+    private void ExportToMarkdown(string? filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath)) return;
+        try
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("# DeskPilot 对话记录");
+            sb.AppendLine();
+            sb.AppendLine($"*导出时间：{System.DateTime.Now:yyyy-MM-dd HH:mm:ss}*");
+            sb.AppendLine();
+            foreach (var msg in Messages)
+            {
+                var role = msg.Role == "user" ? "👤 用户" : "🤖 AI";
+                sb.AppendLine($"## {role}");
+                sb.AppendLine();
+                sb.AppendLine(msg.Content);
+                sb.AppendLine();
+            }
+            System.IO.File.WriteAllText(filePath, sb.ToString(), System.Text.Encoding.UTF8);
+            ToolStatus = $"✅ 已导出 {Messages.Count} 条消息到 {System.IO.Path.GetFileName(filePath)}";
+        }
+        catch (System.Exception ex)
+        {
+            ToolStatus = $"❌ 导出失败：{ex.Message}";
+        }
+    }
 }
