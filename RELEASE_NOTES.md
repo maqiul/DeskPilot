@@ -1,3 +1,48 @@
+## [v0.17.1] - 2026-07-01
+
+### 📝 文档同步
+
+CHANGELOG.md v0.17.0 section 末尾追加 README.md 同步说明（commit `c9c7318`）。
+
+- 18 行新增
+- 记录 v0.17.0 README 同步背景（badge 17→18、工具表缺 `rename_by_exif`、Roadmap 未勾选）+ 修复 + 同步内容
+- 配套 commit `bd66174` + tag `v0.17.1`
+
+无代码变更，纯文档完整性同步。
+
+## [v0.17.0] - 2026-07-01
+
+### 🆕 RenameByExifTool 图片 EXIF 批量重命名
+
+新增第 18 个工具：按图片 **EXIF DateTimeOriginal**（拍摄时间）批量重命名。适用于「相机/手机照片按拍摄时间整理」「扫描件按 EXIF 时间重命名」等场景。
+
+#### 工具参数
+| 参数 | 类型 | 必填 | 默认 | 说明 |
+|------|------|------|------|------|
+| `directory` | string | ✅ | - | 目标目录绝对路径 |
+| `pattern` | string | ❌ | `*.jpg` | glob 过滤 |
+| `dateFormat` | string | ❌ | `yyyy-MM-dd_HH-mm-ss` | 日期格式 |
+| `prefix` | string | ❌ | - | 可选前缀 |
+| `fallbackToFileDate` | bool | ❌ | `true` | 无 EXIF 时是否用文件修改时间 |
+| `dryRun` | bool | ❌ | `false` | true 只预览不重命名 |
+
+#### 示例
+- `DSC00001.jpg`（拍摄于 2024-06-15 14:30:00）→ `2024-06-15_14-30-00.jpg`
+- 或带前缀：`IMG_2024-06-15_14-30-00.jpg`
+
+#### 实现
+- `src/DeskPilot.Core/Tools/RenameByExifTool.cs`（9644 bytes）
+- 使用 `System.Drawing.Common`（v0.5 已引入，零新依赖）
+- EXIF PropertyItem 0x9003 = DateTimeOriginal
+- 支持 JPG/JPEG/PNG（PNG 无 EXIF 自动 fallback 到文件修改时间）
+- 冲突解决同 `RenameByPatternTool`（`_2` / `_3` 后缀）
+- 5 个新测试，全部通过
+
+#### 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 296/296 测试通过（v0.16 291 + 5 新增）
+- ✅ WPF App smoke test PASSED（exit 0）
+
 ## [v0.16.3] - 2026-06-27
 
 ### 🐛 CI Hotfix - `.slnx` 转回 `.sln`
