@@ -49,6 +49,28 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.28.0] - 2026-07-01
+
+### 🆕 单条消息重新生成按钮
+
+#### ✨ 功能
+- assistant 消息气泡右下角加 `🔄` 重新生成按钮
+- 点击自动找到对应 user prompt → 删除原 assistant → 重新流式生成
+- 只对 assistant 消息显示（`RoleToRegenVisibilityConverter`）
+
+#### 🛠️ 实现
+- `ChatViewModel.RegenerateMessageCommand`（`[RelayCommand]` async Task + `ChatMessage` 参数）
+- 向前遍历找到最近 user prompt
+- `RoleConverters.RoleToRegenVisibilityConverter` 新建
+
+#### 🐛 踩坑
+- **CS0101/CS0111**：`edit_file` 匹配 `ConvertBack` 多处出错 → 用 `write_file` 整体重写 RoleConverters.cs
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 335/335 测试通过（v0.27 baseline 331 + 4 新增）
+- ✅ smoke test 输出 `[DeskPilot] OnStartup completed in 583ms`
+
 ## [v0.27.0] - 2026-07-01
 
 ### 🆕 单条消息删除按钮

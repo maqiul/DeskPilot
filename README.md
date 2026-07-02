@@ -215,7 +215,7 @@ DeskPilot/
 │       ├── ViewModels/           # MVVM ViewModel
 │       ├── Converters/           # WPF 值转换器
 │       └── Resources/            # 主题/图标
-├── tests/                        # xUnit 测试（331 用例）
+├── tests/                        # xUnit 测试（335 用例）
 │   └── DeskPilot.Tests/
 ├── docs/                         # 文档
 └── .github/                      # GitHub 配置（CI/CD）
@@ -253,8 +253,9 @@ DeskPilot/
 - [x] **v0.25** —— 消息时间戳显示（HH:mm:ss 本地时间）
 - [x] **v0.26** —— 单条消息复制按钮（点击复制到剪贴板）
 - [x] **v0.27** —— 单条消息删除按钮（点击从对话移除）
+- [x] **v0.28** —— 单条消息重新生成按钮（重新用相同 prompt 流式生成）
 
-### 🔜 下一步（v0.28+）
+### 🔜 下一步（v0.29+）
 
 - [ ] **i18n 抽 resx** —— 全局多语言支持
 - [ ] **PDF 拆分** —— 按页数/范围拆分 PDF
