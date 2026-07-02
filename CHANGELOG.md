@@ -49,6 +49,27 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.25.0] - 2026-07-01
+
+### 🆕 消息时间戳显示（HH:mm:ss 本地时间）
+
+#### ✨ 功能
+- 每条聊天消息气泡右上角显示本地时间 `HH:mm:ss`
+- 自动 UTC → 本地时区转换（CST = UTC+8）
+
+#### 🛠️ 实现
+- `ChatMessage.Timestamp`（`[ObservableProperty] DateTime = UtcNow`）
+- `ChatMessage.LocalTimeText`（`Timestamp.ToLocalTime().ToString("HH:mm:ss")`）
+- `ChatWindow.xaml` 气泡内加 `DockPanel`（标签 + 时间戳右对齐）
+
+#### 🐛 踩坑
+- **MVVMTK0034**：`LocalTimeText` 用了 `_timestamp` → 改用生成的 `Timestamp` 属性
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 324/324 测试通过（v0.24 baseline 320 + 4 新增）
+- ✅ smoke test 输出 `[DeskPilot] OnStartup completed in 601ms`
+
 ## [v0.24.0] - 2026-07-01
 
 ### 🆕 对话历史搜索（实时关键词过滤）
