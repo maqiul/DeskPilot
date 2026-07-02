@@ -1,6 +1,8 @@
+using DeskPilot.App.Services;
 using DeskPilot.App.ViewModels;
 using DeskPilot.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,6 +13,8 @@ namespace DeskPilot.App.Views;
 public partial class ChatWindow : Window
 {
     private readonly ChatViewModel _viewModel;
+    // v0.18.0: 系统托盘 - 可选注入，关闭时最小化到托盘
+    private TrayIconService? _trayIcon;
 
     public ChatWindow(ChatViewModel viewModel)
     {
@@ -18,6 +22,29 @@ public partial class ChatWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
         viewModel.Messages.CollectionChanged += (_, _) => ScrollToBottom();
+        Closing += ChatWindow_Closing;
+    }
+
+    /// <summary>
+    /// v0.18.0: 由 App.xaml.cs 注入托盘服务
+    /// </summary>
+    public void SetTrayIcon(TrayIconService trayIcon)
+    {
+        _trayIcon = trayIcon;
+    }
+
+    /// <summary>
+    /// v0.18.0: 关闭时最小化到托盘而不是退出
+    /// 用户通过托盘菜单"退出"才会真正结束进程
+    /// </summary>
+    private void ChatWindow_Closing(object? sender, CancelEventArgs e)
+    {
+        if (_trayIcon != null)
+        {
+            e.Cancel = true;
+            Hide();
+            _trayIcon.Show();
+        }
     }
 
     private void ScrollToBottom()

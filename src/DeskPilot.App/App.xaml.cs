@@ -107,6 +107,12 @@ public partial class App : Application
                 stSkillCenter.Show();
                 stSkillCenter.Close();
 
+                // v0.18.0: smoke test 触发 TrayIconService 实例化，让 WinForms NotifyIcon 真实创建 + Dispose
+                // 防 TrayIconService 集成 XAML+WinForms 互操作的初始化错误静默存活
+                var stTrayIcon = new TrayIconService(stWindow);
+                stWindow.SetTrayIcon(stTrayIcon);
+                stTrayIcon.Dispose();
+
                 Shutdown(0);
             }
             catch (Exception ex)
@@ -276,6 +282,13 @@ public partial class App : Application
 
         // === 8) 启动窗口 ===
         var chatWindow = Services.GetRequiredService<ChatWindow>();
+
+        // v0.18.0: 系统托盘 - ChatWindow 关闭时最小化到托盘（而不是退出进程）
+        var trayIcon = new TrayIconService(chatWindow);
+        chatWindow.SetTrayIcon(trayIcon);
+        // v0.18.0: 主进程退出时清理托盘
+        Exit += (_, _) => trayIcon.Dispose();
+
         chatWindow.Show();
     }
 

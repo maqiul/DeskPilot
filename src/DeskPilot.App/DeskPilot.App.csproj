@@ -26,6 +26,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <!-- v0.18.0: 系统托盘 NotifyIcon 需要 WinForms 互操作 -->
+    <UseWindowsForms>true</UseWindowsForms>
     <NoWarn>SKEXP0010;SKEXP0001</NoWarn>
   </PropertyGroup>
 
