@@ -215,7 +215,7 @@ DeskPilot/
 │       ├── ViewModels/           # MVVM ViewModel
 │       ├── Converters/           # WPF 值转换器
 │       └── Resources/            # 主题/图标
-├── tests/                        # xUnit 测试（296 用例）
+├── tests/                        # xUnit 测试（297 用例）
 │   └── DeskPilot.Tests/
 ├── docs/                         # 文档
 └── .github/                      # GitHub 配置（CI/CD）
@@ -243,10 +243,10 @@ DeskPilot/
 - [x] **v0.15.1** —— XamlParseException 热修复
 - [x] **v0.16** —— F smoke test + B 图片工具 + E MCP +3 工具 + C SkillDetail 集成 + CI 修复
 - [x] **v0.17** —— A 图片 EXIF 重命名工具 + 文档完整同步 + CI 修复第二步 + 6 个 doc-only 同步版本（v0.17.1→v0.17.6）
+- [x] **v0.18** —— 系统托盘 NotifyIcon（关闭最小化 + 双击恢复 + 右键菜单退出）
 
-### 🔜 下一步（v0.18+）
+### 🔜 下一步（v0.19+）
 
-- [ ] **系统托盘** —— 后台常驻 + 快捷键唤起
 - [ ] **i18n 抽 resx** —— 全局多语言支持
 - [ ] **PDF 拆分** —— 按页数/范围拆分 PDF
 - [ ] **Skill 模板化** —— 用户可创建自定义技能

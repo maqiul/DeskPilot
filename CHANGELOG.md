@@ -49,6 +49,38 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.18.0] - 2026-07-01
+
+### 🆕 系统托盘 NotifyIcon（最小化到托盘 + 双击恢复 + 右键菜单退出）
+
+新增第 1 个 **App 层功能**（之前都是工具/ViewModel/Window）：WPF App 关闭时最小化到 Windows 系统托盘，而不是直接退出进程。用户通过托盘菜单"退出"才会真正结束进程。
+
+#### ✨ 功能
+- **关闭主窗口 → 最小化到托盘**：点击 ChatWindow 右上角关闭按钮不退出，托盘出现图标
+- **双击托盘图标 → 恢复窗口**：自动取消最小化 + 激活到前台
+- **托盘右键菜单**：「显示主窗口」+「退出」
+- **应用退出时清理托盘**：App.Exit 事件触发 Dispose，避免图标残留
+
+#### 🛠️ 技术实现
+| 文件 | 改动 |
+|---|---|
+| `src/DeskPilot.App/DeskPilot.App.csproj` | 加 `<UseWindowsForms>true</UseWindowsForms>`（启用 WinForms 互操作）|
+| `src/DeskPilot.App/GlobalUsings.cs` | 新建（728 bytes，9 个全局 using 别名解决 WinForms 命名冲突）|
+| `src/DeskPilot.App/Services/TrayIconService.cs` | 新建（2829 bytes，NotifyIcon 包装）|
+| `src/DeskPilot.App/Views/ChatWindow.xaml.cs` | 加 `SetTrayIcon()` 方法 + `Closing` event → 取消 + 隐藏 |
+| `src/DeskPilot.App/App.xaml.cs` | 主分支 + smoke test 分支都注入 TrayIcon + Exit 事件清理 |
+| `tests/DeskPilot.Tests/TrayIconServiceTests.cs` | 新建（1 个 ArgumentNullException 测试）|
+
+#### 🐛 踩坑
+- **`<UseWindowsForms>` 引入 WinForms 全局命名空间污染**：导致 12 个 WPF 类（`Application` / `Brushes` / `Button` / `KeyEventArgs` / `MessageBox` 等）出现 CS0104 命名冲突
+- **解决方案**：`GlobalUsings.cs` 用 `global using X = System.Windows.X` 一处改全局生效
+- **`SystemIcons` 在 `System.Drawing`** 而非 `System.Windows.Forms`（编译错误 CS0234）
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误 + 2 个 CA1416 警告（跨平台 System.Drawing.Common，已知）
+- ✅ 全量 297/297 测试通过（v0.17.7 baseline 296 + 1 新增）
+- ✅ smoke test EXIT 0（含 TrayIcon 实例化 + Dispose）
+
 ## [v0.17.5] - 2026-07-01
 
 ### 📝 RELEASE_NOTES 同步 v0.17.3/v0.17.4 doc-only releases

@@ -1,3 +1,31 @@
+## [v0.18.0] - 2026-07-01
+
+### 🆕 系统托盘 NotifyIcon
+
+WPF App 关闭时最小化到 Windows 系统托盘，而不是直接退出进程。
+
+#### 功能
+- **关闭主窗口 → 最小化到托盘**
+- **双击托盘图标 → 恢复窗口**（自动取消最小化 + 激活到前台）
+- **托盘右键菜单**：「显示主窗口」+「退出」
+- **应用退出时清理托盘**（避免图标残留）
+
+#### 实现
+- `src/DeskPilot.App/DeskPilot.App.csproj` - 加 `<UseWindowsForms>true</UseWindowsForms>`
+- `src/DeskPilot.App/GlobalUsings.cs` - 新建（12 个全局 using 别名解决 WinForms 命名冲突）
+- `src/DeskPilot.App/Services/TrayIconService.cs` - 新建（NotifyIcon 包装 + 双击恢复 + 右键菜单）
+- `src/DeskPilot.App/Views/ChatWindow.xaml.cs` - 加 `SetTrayIcon()` + `Closing` event → 取消 + 隐藏
+- `src/DeskPilot.App/App.xaml.cs` - 主分支 + smoke test 分支都注入 TrayIcon + Exit 清理
+
+#### 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 297/297 测试通过
+- ✅ smoke test EXIT 0
+
+#### 踩坑
+- `<UseWindowsForms>` 引入 WinForms 全局命名空间污染 → `GlobalUsings.cs` 用 `global using` 别名修复
+- `SystemIcons` 在 `System.Drawing` 而非 `System.Windows.Forms`
+
 ## [v0.17.4] - 2026-07-01
 
 ### 📝 README.md Roadmap 详细化
