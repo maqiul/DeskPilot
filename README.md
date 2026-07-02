@@ -215,7 +215,7 @@ DeskPilot/
 │       ├── ViewModels/           # MVVM ViewModel
 │       ├── Converters/           # WPF 值转换器
 │       └── Resources/            # 主题/图标
-├── tests/                        # xUnit 测试（301 用例）
+├── tests/                        # xUnit 测试（303 用例）
 │   └── DeskPilot.Tests/
 ├── docs/                         # 文档
 └── .github/                      # GitHub 配置（CI/CD）
@@ -245,8 +245,9 @@ DeskPilot/
 - [x] **v0.17** —— A 图片 EXIF 重命名工具 + 文档完整同步 + CI 修复第二步 + 6 个 doc-only 同步版本（v0.17.1→v0.17.6）
 - [x] **v0.18** —— 系统托盘 NotifyIcon（关闭最小化 + 双击恢复 + 右键菜单退出）
 - [x] **v0.19** —— 单实例 Mutex（防止多开 + 第二次启动激活旧窗口）
+- [x] **v0.20** —— ChatWindow 标题栏显示版本号（v{X.Y.Z}）
 
-### 🔜 下一步（v0.20+）
+### 🔜 下一步（v0.21+）
 
 - [ ] **i18n 抽 resx** —— 全局多语言支持
 - [ ] **PDF 拆分** —— 按页数/范围拆分 PDF

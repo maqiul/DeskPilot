@@ -49,6 +49,21 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.20.0] - 2026-07-01
+
+### 🆕 ChatWindow 标题栏显示版本号
+
+主窗口标题栏从静态 `"DeskPilot 桌面 AI 助手"` 改为动态绑定 `"DeskPilot 桌面 AI 助手 v{X.Y.Z}"`，自动跟随 AssemblyVersion。
+
+#### ✨ 实现
+- `ChatViewModel.WindowTitle` 新属性（get-only，从 `Assembly.GetExecutingAssembly().Version` 拼装）
+- `ChatWindow.xaml` `Title="..."` → `Title="{Binding WindowTitle}"`
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 303/303 测试通过
+- ✅ smoke test EXIT 0
+
 ## [v0.19.0] - 2026-07-01
 
 ### 🆕 单实例 Mutex（防止多开 + 第二次启动激活旧窗口）

@@ -1,3 +1,17 @@
+## [v0.20.0] - 2026-07-01
+
+### 🆕 ChatWindow 标题栏显示版本号
+
+主窗口标题栏从静态 "DeskPilot 桌面 AI 助手" 改为动态绑定 "DeskPilot 桌面 AI 助手 v{X.Y.Z}"。
+
+#### 实现
+- `src/DeskPilot.App/ViewModels/ChatViewModel.cs` - 加 `WindowTitle` 属性
+- `src/DeskPilot.App/Views/ChatWindow.xaml` - `Title="{Binding WindowTitle}"`
+
+#### 验证
+- ✅ 全量 303/303 测试通过
+- ✅ smoke test EXIT 0
+
 ## [v0.19.0] - 2026-07-01
 
 ### 🆕 单实例 Mutex
