@@ -49,6 +49,22 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.21.0] - 2026-07-01
+
+### 🆕 启动时间统计（OnStartup Console 输出）
+
+#### ✨ 实现
+- `App.xaml.cs` 加静态 `Stopwatch StartupWatch` 字段（进程启动时初始化）
+- `OnStartup` 完成后 `Console.WriteLine($"[DeskPilot] OnStartup completed in {ms}ms")`
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 303/303 测试通过
+- ✅ smoke test 输出 `[DeskPilot] OnStartup completed in 1664ms`
+
+#### 🐛 踩坑
+- 尝试写单元测试但失败（WinExe + WPF partial class + 测试项目无法访问 public static 属性）→ 删除测试，仅靠 smoke test 验证
+
 ## [v0.20.0] - 2026-07-01
 
 ### 🆕 ChatWindow 标题栏显示版本号

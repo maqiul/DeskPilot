@@ -1,3 +1,13 @@
+## [v0.21.0] - 2026-07-01
+
+### 🆕 启动时间统计
+
+`App.xaml.cs` 加静态 `Stopwatch`，`OnStartup` 完成后输出 `[DeskPilot] OnStartup completed in {ms}ms` 到 Console。
+
+#### 验证
+- smoke test 输出 `[DeskPilot] OnStartup completed in 1664ms`
+- 全量 303/303 测试通过
+
 ## [v0.20.0] - 2026-07-01
 
 ### 🆕 ChatWindow 标题栏显示版本号
