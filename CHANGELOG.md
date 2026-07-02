@@ -49,6 +49,25 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.23.0] - 2026-07-01
+
+### 🆕 自动检查更新服务（GitHub Releases API）
+
+#### ✨ 功能
+- 调用 `https://api.github.com/repos/maqiul/DeskPilot/releases/latest` 获取最新版本号
+- 与当前程序集版本号比较（SemanticVersion 数值比较）
+- 失败时静默吞掉（网络异常、API 限流）
+
+#### 🛠️ 实现
+- `src/DeskPilot.App/Services/UpdateCheckService.cs`（1913 bytes）
+- `UpdateCheckService.IsNewer(latest, current)` 静态方法
+- `UpdateCheckService.CurrentVersion` 从 Assembly 版本号获取
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 314/314 测试通过（v0.22 baseline 307 + 7 新增）
+- ✅ smoke test EXIT 0
+
 ## [v0.22.0] - 2026-07-01
 
 ### 🆕 一键导出对话为 Markdown

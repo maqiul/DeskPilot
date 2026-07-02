@@ -1,3 +1,14 @@
+## [v0.23.0] - 2026-07-01
+
+### 🆕 自动检查更新服务（GitHub Releases API）
+
+- 新增 `UpdateCheckService`（GitHub Releases API + SemanticVersion 比较）
+- `IsNewer(latest, current)` 静态方法
+- 失败时静默吞掉（网络异常、API 限流）
+
+#### 验证
+- ✅ 全量 314/314 测试通过
+
 ## [v0.22.0] - 2026-07-01
 
 ### 🆕 一键导出对话为 Markdown
