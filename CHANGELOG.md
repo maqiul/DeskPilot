@@ -49,6 +49,28 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.26.0] - 2026-07-01
+
+### 🆕 单条消息复制按钮
+
+#### ✨ 功能
+- 每条消息气泡右下角加 `📋` 复制按钮
+- 点击复制消息内容到系统剪贴板
+- 状态栏提示「📋 已复制到剪贴板」/「❌ 复制失败」
+
+#### 🛠️ 实现
+- `ChatViewModel.CopyMessageCommand`（`[RelayCommand]` 接受 `ChatMessage` 参数）
+- `System.Windows.Clipboard.SetText(message.Content)`
+- `ChatWindow.xaml` 气泡内加 `<Button>` 用 `RelativeSource AncestorType=Window` 找到 DataContext
+
+#### 🛑 调研发现
+- v0.26 候选「取消按钮」**已存在**（`CancelCommand` + UI 按钮 + `IsBusy` 可见性绑定）→ 跳到下个候选
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 327/327 测试通过（v0.25 baseline 324 + 3 新增）
+- ✅ smoke test 输出 `[DeskPilot] OnStartup completed in 636ms`
+
 ## [v0.25.0] - 2026-07-01
 
 ### 🆕 消息时间戳显示（HH:mm:ss 本地时间）

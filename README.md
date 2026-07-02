@@ -215,7 +215,7 @@ DeskPilot/
 │       ├── ViewModels/           # MVVM ViewModel
 │       ├── Converters/           # WPF 值转换器
 │       └── Resources/            # 主题/图标
-├── tests/                        # xUnit 测试（324 用例）
+├── tests/                        # xUnit 测试（327 用例）
 │   └── DeskPilot.Tests/
 ├── docs/                         # 文档
 └── .github/                      # GitHub 配置（CI/CD）
@@ -251,8 +251,9 @@ DeskPilot/
 - [x] **v0.23** —— 自动检查更新服务（GitHub Releases API + SemanticVersion 比较）
 - [x] **v0.24** —— 对话历史搜索（实时关键词过滤，大小写不敏感）
 - [x] **v0.25** —— 消息时间戳显示（HH:mm:ss 本地时间）
+- [x] **v0.26** —— 单条消息复制按钮（点击复制到剪贴板）
 
-### 🔜 下一步（v0.26+）
+### 🔜 下一步（v0.27+）
 
 - [ ] **i18n 抽 resx** —— 全局多语言支持
 - [ ] **PDF 拆分** —— 按页数/范围拆分 PDF
