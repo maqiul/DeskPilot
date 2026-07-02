@@ -49,6 +49,38 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.17.5] - 2026-07-01
+
+### 📝 RELEASE_NOTES 同步 v0.17.3/v0.17.4 doc-only releases
+
+- 22 行新增
+- 追加 v0.17.3（CHANGELOG 同步 v0.17.2 release.yml 修复）+ v0.17.4（README Roadmap 详细化）sections
+- 配套 commit `ae0a015` + tag `v0.17.5`
+
+无代码变更，纯文档完整性同步（release workflow `awk` 提取 v0.17.3/v0.17.4 sections 用）。
+
+## [v0.17.4] - 2026-07-01
+
+### 📝 README.md Roadmap 详细化
+
+README.md v0.17 Roadmap 单行勾选扩展为「EXIF + 文档同步 + CI 修复第二步」。
+
+- 1 行新增 + 1 行删除
+- 配套 commit `a444fc0` + tag `v0.17.4`
+
+无代码变更，纯文档细节同步。
+
+## [v0.17.3] - 2026-07-01
+
+### 📝 CHANGELOG 同步 v0.17.2 release.yml 修复
+
+CHANGELOG.md v0.17.2 section 完整记录 v0.16.4 CI 修复事故第二步（release.yml `.slnx` → `.sln` + RELEASE_NOTES.md 同步 v0.17 sections）。
+
+- 34 行新增
+- 配套 commit `e434201` + tag `v0.17.3`
+
+无代码变更，纯文档完整性同步。
+
 ## [v0.17.2] - 2026-07-01
 
 ### 🐛 CI 修复第二步 - release.yml `.slnx` 转回 `.sln` + RELEASE_NOTES.md 同步 v0.17 sections
