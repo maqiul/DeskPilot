@@ -1,3 +1,23 @@
+## [v0.19.0] - 2026-07-01
+
+### 🆕 单实例 Mutex
+
+DeskPilot 启动时检测是否已有实例运行，避免多开。
+
+#### 功能
+- **第一次启动**：正常创建主窗口
+- **第二次启动**：检测到 Mutex 已存在 → 自动激活旧窗口 + 退出当前进程
+- **应用退出时清理 Mutex**
+
+#### 实现
+- `src/DeskPilot.App/Services/SingleInstanceService.cs` - 新建（Mutex + Win32 ShowWindow/SetForegroundWindow）
+- `src/DeskPilot.App/GlobalUsings.cs` - 加 Mutex 别名
+- `src/DeskPilot.App/App.xaml.cs` - OnStartup 最开始加 Mutex 检查
+
+#### 验证
+- ✅ 全量 301/301 测试通过
+- ✅ smoke test EXIT 0
+
 ## [v0.18.0] - 2026-07-01
 
 ### 🆕 系统托盘 NotifyIcon

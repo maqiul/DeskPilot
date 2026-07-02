@@ -49,6 +49,35 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.19.0] - 2026-07-01
+
+### 🆕 单实例 Mutex（防止多开 + 第二次启动激活旧窗口）
+
+新增第 2 个 **App 层功能**：DeskPilot 启动时检测是否已有实例运行，避免多开。
+
+#### ✨ 功能
+- **第一次启动**：正常创建 ChatWindow + TrayIcon + 主流程
+- **第二次启动**：检测到 Mutex 已存在 → 自动激活旧窗口（Win32 ShowWindow + SetForegroundWindow）→ 退出当前进程
+- **应用退出时清理 Mutex**：避免下次启动失败（Mutex 残留导致永远无法启动）
+
+#### 🛠️ 技术实现
+| 文件 | 改动 |
+|---|---|
+| `src/DeskPilot.App/Services/SingleInstanceService.cs` | 新建（2063 bytes）|
+| `src/DeskPilot.App/GlobalUsings.cs` | 加 `Mutex = System.Threading.Mutex` 别名（v0.18.0 引入 WinForms 后需要消歧）|
+| `src/DeskPilot.App/App.xaml.cs` | `OnStartup` 最开始加 Mutex 检查 + Exit 事件清理 |
+| `tests/DeskPilot.Tests/SingleInstanceServiceTests.cs` | 新建（4 个测试：FirstInstance/SecondInstance/Dispose_Releases/ActivateExisting）|
+
+#### 🐛 踩坑
+- **Mutex 命名空间冲突**：`System.Threading.Mutex` vs `System.Windows.Forms`（未冲突，但需要明确指定）
+- **Win32 P/Invoke**：`ShowWindow` + `SetForegroundWindow` 用 `[DllImport("user32.dll")]`
+- **Mutex 全局名**：`Global\\` 前缀确保跨用户会话互斥
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 301/301 测试通过（v0.18.1 baseline 297 + 4 新增）
+- ✅ smoke test EXIT 0（含 SingleInstance 实例化）
+
 ## [v0.18.0] - 2026-07-01
 
 ### 🆕 系统托盘 NotifyIcon（最小化到托盘 + 双击恢复 + 右键菜单退出）
