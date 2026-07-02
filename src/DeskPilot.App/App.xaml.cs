@@ -20,6 +20,11 @@ public partial class App : Application
 {
     public static IServiceProvider Services { get; private set; } = null!;
     public static IConfiguration Configuration { get; private set; } = null!;
+    // v0.21.0: 启动耗时统计（输出到 Console，便于诊断冷启动性能）
+    private static readonly System.Diagnostics.Stopwatch StartupWatch = System.Diagnostics.Stopwatch.StartNew();
+
+    /// <summary>v0.21.0: 当前应用启动耗时（毫秒）。从进程启动开始计时，OnStartup 完成后首次输出到 Console。</summary>
+    public static long StartupElapsedMilliseconds => StartupWatch.ElapsedMilliseconds;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -303,6 +308,9 @@ public partial class App : Application
         Exit += (_, _) => trayIcon.Dispose();
 
         chatWindow.Show();
+
+        // v0.21.0: 输出 OnStartup 总耗时（便于冷启动性能分析）
+        Console.WriteLine($"[DeskPilot] OnStartup completed in {StartupWatch.ElapsedMilliseconds}ms");
     }
 
     /// <summary>
