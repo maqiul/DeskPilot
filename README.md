@@ -215,7 +215,7 @@ DeskPilot/
 │       ├── ViewModels/           # MVVM ViewModel
 │       ├── Converters/           # WPF 值转换器
 │       └── Resources/            # 主题/图标
-├── tests/                        # xUnit 测试（314 用例）
+├── tests/                        # xUnit 测试（320 用例）
 │   └── DeskPilot.Tests/
 ├── docs/                         # 文档
 └── .github/                      # GitHub 配置（CI/CD）
@@ -249,8 +249,9 @@ DeskPilot/
 - [x] **v0.21** —— 启动时间统计（OnStartup Console 输出）
 - [x] **v0.22** —— 一键导出对话为 Markdown（文件菜单 → 导出）
 - [x] **v0.23** —— 自动检查更新服务（GitHub Releases API + SemanticVersion 比较）
+- [x] **v0.24** —— 对话历史搜索（实时关键词过滤，大小写不敏感）
 
-### 🔜 下一步（v0.24+）
+### 🔜 下一步（v0.25+）
 
 - [ ] **i18n 抽 resx** —— 全局多语言支持
 - [ ] **PDF 拆分** —— 按页数/范围拆分 PDF

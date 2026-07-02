@@ -49,6 +49,31 @@ DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://
 - ✅ 测试运行命令 + 覆盖率说明
 - ✅ 致谢部分加 PdfSharpCore / ClosedXML / ModelContextProtocol C# SDK
 
+## [v0.24.0] - 2026-07-01
+
+### 🆕 对话历史搜索（实时关键词过滤）
+
+#### ✨ 功能
+- ChatWindow 顶部加搜索框（仅在有消息时显示）
+- 输入关键词实时过滤消息列表（300ms 防抖）
+- 大小写不敏感 + 支持中文
+- 右侧显示匹配统计 `N / Total`
+
+#### 🛠️ 实现
+- `ChatViewModel.SearchKeyword`（`[ObservableProperty]`）+ `OnSearchKeywordChanged` partial method 通知 UI
+- `ChatViewModel.FilteredMessages`（`Messages.Where` LINQ）
+- `ChatViewModel.MatchCountText`（`filtered/total`）
+- `Messages.CollectionChanged` hook 通知过滤结果变化
+- `ChatWindow.xaml` 加 Border + TextBox + MatchCountText
+
+#### 🐛 踩坑
+- **CS0759**：`OnMessagesChanged` partial 方法不存在（Messages 不是 `[ObservableProperty]`）→ 改用 `CollectionChanged` 事件
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误
+- ✅ 全量 320/320 测试通过（v0.23 baseline 314 + 6 新增）
+- ✅ smoke test 输出 `[DeskPilot] OnStartup completed in 588ms`
+
 ## [v0.23.0] - 2026-07-01
 
 ### 🆕 自动检查更新服务（GitHub Releases API）
