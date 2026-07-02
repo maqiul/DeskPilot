@@ -274,6 +274,14 @@
                                                    TextWrapping="Wrap"
                                                    FontSize="14" LineHeight="20"
                                                    Foreground="{StaticResource TextBrush}"/>
+                                        <Button HorizontalAlignment="Right" Margin="0,6,0,0" Padding="8,2"
+                                                Background="Transparent" BorderThickness="0"
+                                                Cursor="Hand"
+                                                Command="{Binding DataContext.CopyMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip="复制此消息"
+                                                Content="📋" FontSize="12"
+                                                Foreground="{StaticResource SecondaryTextBrush}"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>

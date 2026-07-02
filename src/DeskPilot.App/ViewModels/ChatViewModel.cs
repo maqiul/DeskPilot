@@ -309,6 +309,23 @@ public partial class ChatViewModel : ObservableObject
         _cts?.Cancel();
     }
 
+    /// <summary>v0.26.0: 复制单条消息内容到剪贴板。</summary>
+    [RelayCommand]
+    private void CopyMessage(ChatMessage? message)
+    {
+        if (message == null || string.IsNullOrEmpty(message.Content)) return;
+        try
+        {
+            System.Windows.Clipboard.SetText(message.Content);
+            ToolStatus = "📋 已复制到剪贴板";
+        }
+        catch
+        {
+            // 剪贴板可能被其他程序占用，静默失败
+            ToolStatus = "❌ 复制失败";
+        }
+    }
+
     [RelayCommand]
     private void Clear()
     {
