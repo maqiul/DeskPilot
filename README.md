@@ -242,7 +242,7 @@ DeskPilot/
 - [x] **v0.15** —— 独立技能中心窗口（Ctrl+Shift+K）
 - [x] **v0.15.1** —— XamlParseException 热修复
 - [x] **v0.16** —— F smoke test + B 图片工具 + E MCP +3 工具 + C SkillDetail 集成 + CI 修复
-- [x] **v0.17** —— A 图片 EXIF 重命名工具
+- [x] **v0.17** —— A 图片 EXIF 重命名工具 + 文档完整同步 + CI 修复第二步
 
 ### 🔜 下一步（v0.18+）
 
