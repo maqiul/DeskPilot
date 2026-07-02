@@ -290,6 +290,15 @@
                                                 ToolTip="从对话中删除此消息"
                                                 Content="🗑" FontSize="12"
                                                 Foreground="{StaticResource SecondaryTextBrush}"/>
+                                        <Button HorizontalAlignment="Right" Margin="0,6,0,0" Padding="8,2"
+                                                Background="Transparent" BorderThickness="0"
+                                                Cursor="Hand"
+                                                Command="{Binding DataContext.RegenerateMessageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip="使用相同 prompt 重新生成回复"
+                                                Content="🔄" FontSize="12"
+                                                Foreground="{StaticResource SecondaryTextBrush}"
+                                                Visibility="{Binding Role, Converter={x:Static local:RoleToRegenVisibilityConverter.Instance}}"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>

@@ -309,6 +309,74 @@ public partial class ChatViewModel : ObservableObject
         _cts?.Cancel();
     }
 
+    /// <summary>v0.28.0: 重新生成 assistant 消息（找到对应 user prompt → 删 assistant → 重发流式）。</summary>
+    [RelayCommand]
+    private async Task RegenerateMessageAsync(ChatMessage? message)
+    {
+        if (message == null || IsBusy) return;
+        // 必须是 assistant 消息
+        if (message.Role != "assistant") return;
+
+        // 找到该 assistant 之前的最后一条 user 消息作为 prompt
+        int assistantIdx = -1;
+        for (int i = 0; i < Messages.Count; i++)
+        {
+            if (ReferenceEquals(Messages[i], message)) { assistantIdx = i; break; }
+        }
+        if (assistantIdx < 0) return;
+
+        string? prompt = null;
+        for (int i = assistantIdx - 1; i >= 0; i--)
+        {
+            if (Messages[i].Role == "user")
+            {
+                prompt = Messages[i].Content;
+                break;
+            }
+        }
+        if (string.IsNullOrEmpty(prompt)) return;
+
+        // 删除原 assistant 消息
+        Messages.RemoveAt(assistantIdx);
+
+        // 重新流式生成
+        IsBusy = true;
+        _cts = new CancellationTokenSource();
+        ToolStatus = "💭 重新生成中...";
+
+        var newAssistantMsg = new ChatMessage("assistant", "");
+        Messages.Add(newAssistantMsg);
+
+        try
+        {
+            await foreach (var chunk in _chatService.ChatStreamAsync(prompt, _cts.Token))
+            {
+                newAssistantMsg.Content += chunk;
+            }
+            if (string.IsNullOrEmpty(ToolStatus) || ToolStatus.StartsWith("💭"))
+                ToolStatus = string.Empty;
+        }
+        catch (System.Exception ex)
+        {
+            if (ex is OperationCanceledException)
+            {
+                newAssistantMsg.Content = "⏸️ 已取消";
+                ToolStatus = string.Empty;
+            }
+            else
+            {
+                newAssistantMsg.Content = $"❌ 出错了：{ex.Message}";
+                ToolStatus = $"❌ 异常：{ex.Message}";
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+            _cts?.Dispose();
+            _cts = null;
+        }
+    }
+
     /// <summary>v0.27.0: 从对话中删除单条消息（按 ReferenceEquals 找到原对象）。</summary>
     [RelayCommand]
     private void DeleteMessage(ChatMessage? message)

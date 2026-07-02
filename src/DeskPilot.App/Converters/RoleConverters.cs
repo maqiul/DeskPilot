@@ -204,3 +204,19 @@ public sealed class CategoryMatchConverter : IMultiValueConverter
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
+
+/// <summary>v0.28.0: role=assistant 时 Visible，否则 Collapsed（用于「重新生成」按钮只对 assistant 消息显示）。</summary>
+public sealed class RoleToRegenVisibilityConverter : IValueConverter
+{
+    public static readonly RoleToRegenVisibilityConverter Instance = new();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (value is string role && role.Equals("assistant", StringComparison.OrdinalIgnoreCase))
+            return Visibility.Visible;
+        return Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
