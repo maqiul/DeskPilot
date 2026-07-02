@@ -196,7 +196,7 @@ DeskPilot 内置 MCP Server，可被外部 AI 客户端调用：
 }
 ```
 
-启动后，10 个工具（PDF 合并、Excel 处理、文件查找、批量重命名等）可在 Claude Desktop / Cursor / Continue.dev 中直接调用。
+启动后，11 个工具（PDF 合并、Excel 处理、文件查找、批量重命名、EXIF 重命名等）可在 Claude Desktop / Cursor / Continue.dev 中直接调用。
 
 ---
 
@@ -205,17 +205,17 @@ DeskPilot 内置 MCP Server，可被外部 AI 客户端调用：
 ```
 DeskPilot/
 ├── src/
-│   ├── DeskPilot.Core/           # 核心库（17 工具 + AI 编排）
+│   ├── DeskPilot.Core/           # 核心库（18 工具 + AI 编排）
 │   │   ├── Tools/                # ITool 实现
 │   │   ├── Services/             # 业务服务（Skill/Marketplace/Chat）
 │   │   └── Models/               # 数据模型（record 类型）
-│   ├── DeskPilot.Mcp/            # MCP Server（暴露 10 工具给外部 AI）
+│   ├── DeskPilot.Mcp/            # MCP Server（暴露 11 工具给外部 AI）
 │   └── DeskPilot.App/            # WPF 应用
 │       ├── Views/                # XAML 窗口
 │       ├── ViewModels/           # MVVM ViewModel
 │       ├── Converters/           # WPF 值转换器
 │       └── Resources/            # 主题/图标
-├── tests/                        # xUnit 测试（291 用例）
+├── tests/                        # xUnit 测试（296 用例）
 │   └── DeskPilot.Tests/
 ├── docs/                         # 文档
 └── .github/                      # GitHub 配置（CI/CD）
@@ -242,15 +242,14 @@ DeskPilot/
 - [x] **v0.15** —— 独立技能中心窗口（Ctrl+Shift+K）
 - [x] **v0.15.1** —— XamlParseException 热修复
 - [x] **v0.16** —— F smoke test + B 图片工具 + E MCP +3 工具 + C SkillDetail 集成 + CI 修复
-- [x] **v0.17** —— A 图片 EXIF 重命名工具 + 文档完整同步 + CI 修复第二步
+- [x] **v0.17** —— A 图片 EXIF 重命名工具 + 文档完整同步 + CI 修复第二步 + 6 个 doc-only 同步版本（v0.17.1→v0.17.6）
 
 ### 🔜 下一步（v0.18+）
 
+- [ ] **系统托盘** —— 后台常驻 + 快捷键唤起
 - [ ] **i18n 抽 resx** —— 全局多语言支持
 - [ ] **PDF 拆分** —— 按页数/范围拆分 PDF
-- [ ] **图片 EXIF 重命名** —— 按 EXIF DateTimeOriginal 批量重命名
 - [ ] **Skill 模板化** —— 用户可创建自定义技能
-- [ ] **系统托盘** —— 后台常驻 + 快捷键唤起
 - [ ] **Markdown 预览** —— 聊天消息支持 Markdown 渲染
 
 ---
