@@ -15,13 +15,19 @@ public partial class ChatMessage : ObservableObject
 {
     [ObservableProperty] private string _role = string.Empty;
     [ObservableProperty] private string _content = string.Empty;
+    /// <summary>v0.25.0: 消息时间戳（默认 UtcNow，转本地时区显示）。</summary>
+    [ObservableProperty] private DateTime _timestamp = DateTime.UtcNow;
 
     public ChatMessage() { }
     public ChatMessage(string role, string content)
     {
         _role = role;
         _content = content;
+        _timestamp = DateTime.UtcNow;
     }
+
+    /// <summary>v0.25.0: 本地时区时间（UI 绑定用，避免 XAML 时区转换）。</summary>
+    public string LocalTimeText => Timestamp.ToLocalTime().ToString("HH:mm:ss");
 }
 
 /// <summary>
