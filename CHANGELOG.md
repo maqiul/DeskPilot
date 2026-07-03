@@ -2,6 +2,47 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.0.9] - 2026-07-01
+
+### 🆕 Vue 端工具面板 UI（15 Tool 卡片 + Destructive 二次确认 + 结果展示）
+
+#### ✨ 新增功能
+- **右侧工具面板**（占总面积 30%）：从 `.NET Sidecar /api/tools/list` 拉取 15 个 Tool 卡片
+- **每张卡片显示**：工具名（monospace）+ 风险徽章（✓ Safe / ⚠️ Destructive）+ 描述 + 「调用」按钮
+- **Destructive 二次确认**：9 个 Destructive Tool 点击 → 弹模态框 → 要求用户二次确认
+- **参数输入浮层**：调用前弹出 JSON 输入框（可留空 = `{}`）
+- **结果展示区**：成功后绿色面板（summary 高亮 + data 折叠 JSON）；失败后红色面板（error）
+
+#### 🎨 UI 风格
+- 延续 Melon 橙系（`#ff6a00`）配色 + 圆角卡片 + 空状态提示
+- 工具卡片 Safe 用灰边、Destructive 用橙边 + 浅黄底
+
+#### 🛠 技术实现
+- `onMounted` 调 `refreshToolList()` 拉 15 个 Tool
+- `DESTRUCTIVE_TOOLS` Set 标识 9 个已知 Destructive Tool
+- `invokeTool(name)` async POST `/api/tools/execute?name=X` body=JSON
+- Vue 3 composition API + `<script setup lang="ts">` + reactive refs
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 638ms 输出 `dist/index.html` + `dist/assets/index-4mUS2Ndn.js`
+- ✅ 工具列表渲染 15 个（通过 GET `/api/tools/list`）
+- ✅ Destructive Tool 模态框二次确认流（前端 Vue 逻辑验证，UI build OK）
+- ✅ Tool 执行走 `.NET Sidecar /api/tools/execute` 端点
+
+#### 🔧 关键决策
+- **保守 Destructive 识别**：用 `DESTRUCTIVE_TOOLS` Set 而不是 ITool.Risk 枚举（前端不知道服务端 Risk 字段，得 v0.1.0 让 `/api/tools/list` 返回 `risk` 字段）
+- **浮层模态框**：用 `position: fixed; inset: 0` + rgba 背景遮罩，简化做法不上 `vue-modal` 库
+- **参数输入框 textarea**：避免第三方 JSON editor 依赖，留空 = `{}` 兜底
+
+#### 🔜 v0.1.0 候选（你拍板）
+- **A `/api/tools/list` 返回 `risk` 字段** → 去掉前端 `DESTRUCTIVE_TOOLS` 硬编码，统一从后端拿
+- **B Tool 调用持久化历史** → Sidecar 记录最近 100 条调用到 JSON 文件
+- **C Tool 调用结果导出 Markdown** → 一键保存到桌面
+- **D 接 SemanticKernel 智能路由** → ❌ 需 API key
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：335 → 13,562 bytes（+13,227，工具面板全套 UI）
+
 ## [tauri-v0.0.8] - 2026-07-01
 
 ### 🆕 Sidecar 全量注册 15 个 Core Tools

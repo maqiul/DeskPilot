@@ -1,28 +1,58 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
 
+interface ToolDescriptor {
+  name: string;
+  description: string;
+  kernelFunctionCount: number;
+}
+
 const messages = ref<ChatMessage[]>([]);
 const userInput = ref("");
 const isBusy = ref(false);
+const tools = ref<ToolDescriptor[]>([]);
+const toolArgsInput = ref(""); // 当前选中 Tool 的 JSON 参数输入框
+const selectedTool = ref<string>("");
+const pendingTool = ref<string>(""); // 二次确认中的 Tool 名
+const toolResult = ref<any>(null);
+const toolError = ref<string>("");
+const isToolBusy = ref(false);
 
-// v0.0.5: 直接 fetch .NET Sidecar SSE 流式端点（不走 Tauri command 简化路径）
-// http://localhost:5180/api/chat/stream?prompt=...
-const SIDE_STREAM = "http://localhost:5180/api/chat/stream";
+const SIDE_BASE = "http://localhost:5180";
+const SIDE_STREAM = `${SIDE_BASE}/api/chat/stream`;
+const SIDE_TOOLS_LIST = `${SIDE_BASE}/api/tools/list`;
+
+// v0.0.7 通过关键词识别是否为 Destructive Tool（保守策略：先识别已知的 9 个）
+const DESTRUCTIVE_TOOLS = new Set([
+  "batch_excel", "batch_resize_image", "convert_image", "crop_image",
+  "merge_pdfs", "move_files", "rename_by_exif", "rename_by_pattern", "rotate_image"
+]);
+
+onMounted(async () => {
+  await refreshToolList();
+});
+
+async function refreshToolList() {
+  try {
+    const resp = await fetch(SIDE_TOOLS_LIST);
+    const data = await resp.json();
+    tools.value = data.tools ?? [];
+  } catch (e: any) {
+    toolError.value = `加载工具列表失败：${e.message ?? e}`;
+  }
+}
 
 async function sendMessage() {
   const prompt = userInput.value.trim();
   if (!prompt || isBusy.value) return;
-
-  // v0.0.5: 先 push user prompt，再 push 占位 assistant message（用于流式填充）
   messages.value.push({ role: "user", content: prompt });
   userInput.value = "";
   isBusy.value = true;
-
   const idx = messages.value.length;
   messages.value.push({ role: "assistant", content: "" });
 
@@ -31,25 +61,17 @@ async function sendMessage() {
     if (!response.ok || !response.body) {
       throw new Error(`HTTP ${response.status}`);
     }
-
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
-
-    // SSE 协议：data: {...}\n\n
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
       buffer += decoder.decode(value, { stream: true });
-
-      // 按 \n\n 切分消息
-      let idx;
-      while ((idx = buffer.indexOf("\n\n")) !== -1) {
-        const rawEvent = buffer.slice(0, idx);
-        buffer = buffer.slice(idx + 2);
-
-        // 解析 data: 前缀
+      let sepIdx;
+      while ((sepIdx = buffer.indexOf("\n\n")) !== -1) {
+        const rawEvent = buffer.slice(0, sepIdx);
+        buffer = buffer.slice(sepIdx + 2);
         const lines = rawEvent.split("\n");
         for (const line of lines) {
           if (line.startsWith("data:")) {
@@ -58,14 +80,13 @@ async function sendMessage() {
             try {
               const obj = JSON.parse(data);
               if (typeof obj.chunk === "string") {
-                // 追加到 assistant 消息
                 messages.value[idx] = {
                   role: "assistant",
                   content: messages.value[idx].content + obj.chunk
                 };
               }
-            } catch (e) {
-              // ignore JSON parse errors
+            } catch {
+              // ignore parse errors
             }
           }
         }
@@ -80,30 +101,166 @@ async function sendMessage() {
     isBusy.value = false;
   }
 }
+
+function startInvoke(name: string) {
+  selectedTool.value = name;
+  toolArgsInput.value = ""; // 重置参数
+  toolResult.value = null;
+  toolError.value = "";
+}
+
+function cancelInvoke() {
+  selectedTool.value = "";
+  toolArgsInput.value = "";
+}
+
+async function confirmInvoke() {
+  const name = pendingTool.value;
+  pendingTool.value = "";
+  await invokeTool(name);
+}
+
+async function directInvoke() {
+  const name = selectedTool.value;
+  cancelInvoke();
+  await invokeTool(name);
+}
+
+async function invokeTool(name: string) {
+  if (isToolBusy.value) return;
+  isToolBusy.value = true;
+  toolError.value = "";
+  toolResult.value = null;
+
+  let argsJson = toolArgsInput.value.trim();
+  if (!argsJson) argsJson = "{}";
+
+  try {
+    const resp = await fetch(`${SIDE_BASE}/api/tools/execute?name=${encodeURIComponent(name)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: argsJson
+    });
+    const data = await resp.json();
+    if (data.success) {
+      toolResult.value = data;
+    } else {
+      toolError.value = data.error ?? data.summary ?? "执行失败";
+    }
+  } catch (e: any) {
+    toolError.value = `请求失败：${e.message ?? e}`;
+  } finally {
+    isToolBusy.value = false;
+    cancelInvoke();
+  }
+}
 </script>
 
 <template>
   <div class="app">
     <header>
-      <h1>🛩 DeskPilot v2 (Tauri MVP · 流式)</h1>
-      <p>.NET 8 Sidecar + Vue 3 + Tauri 2.x · SSE Stream</p>
+      <h1>🛩 DeskPilot v2 (Tauri · 工具面板)</h1>
+      <p>.NET 8 Sidecar · Vue 3 · Tauri 2.x · Sidecar expose 15 Core Tools</p>
     </header>
     <main>
-      <div class="messages">
-        <div v-for="(m, i) in messages" :key="i" :class="['msg', m.role]">
-          <strong>{{ m.role === "user" ? "你" : "AI" }}：</strong>{{ m.content }}
+      <!-- 左：聊天区（v0.0.5 保留） -->
+      <section class="chat-pane">
+        <div class="messages">
+          <div v-for="(m, i) in messages" :key="i" :class="['msg', m.role]">
+            <strong>{{ m.role === "user" ? "你" : "AI" }}：</strong>{{ m.content }}
+          </div>
+          <div v-if="messages.length === 0" class="empty-hint">
+            👈 试试右侧工具面板，例如调用 <code>text_stats</code> 统计 README.md
+          </div>
         </div>
-      </div>
-      <form @submit.prevent="sendMessage" class="input-row">
-        <input
-          v-model="userInput"
-          :disabled="isBusy"
-          placeholder="输入消息，回车发送"
-        />
-        <button type="submit" :disabled="isBusy">
-          {{ isBusy ? "流式中..." : "发送" }}
-        </button>
-      </form>
+        <form @submit.prevent="sendMessage" class="input-row">
+          <input v-model="userInput" :disabled="isBusy" placeholder="输入消息，回车发送" />
+          <button type="submit" :disabled="isBusy">
+            {{ isBusy ? "流式中..." : "发送" }}
+          </button>
+        </form>
+      </section>
+
+      <!-- 右：工具面板（v0.0.9 新增） -->
+      <aside class="tool-pane">
+        <div class="tool-header">
+          <h2>🛠 工具面板</h2>
+          <span class="tool-count">{{ tools.length }} 个</span>
+          <button class="refresh" @click="refreshToolList" :disabled="isToolBusy">🔄</button>
+        </div>
+
+        <div class="tool-list">
+          <div
+            v-for="t in tools"
+            :key="t.name"
+            :class="['tool-card', { destructive: DESTRUCTIVE_TOOLS.has(t.name) }]"
+          >
+            <div class="tool-card-head">
+              <span class="tool-name">{{ t.name }}</span>
+              <span v-if="DESTRUCTIVE_TOOLS.has(t.name)" class="risk-badge">⚠️ Destructive</span>
+              <span v-else class="risk-badge safe">✓ Safe</span>
+            </div>
+            <p class="tool-desc">{{ t.description }}</p>
+            <button
+              class="invoke-btn"
+              :disabled="isToolBusy"
+              @click="startInvoke(t.name)"
+            >
+              调用
+            </button>
+          </div>
+        </div>
+
+        <!-- 参数输入浮层 -->
+        <div v-if="selectedTool" class="invoke-modal" @click.self="cancelInvoke">
+          <div class="invoke-box">
+            <h3>调用 {{ selectedTool }}</h3>
+            <label>参数 JSON（留空 = {}）：</label>
+            <textarea v-model="toolArgsInput" rows="6" placeholder='例如：{"filePath":"D:\\test.md"}' />
+            <div class="invoke-actions">
+              <button class="cancel" @click="cancelInvoke">取消</button>
+              <button class="primary" @click="DESTRUCTIVE_TOOLS.has(selectedTool) ? (pendingTool=selectedTool, cancelInvoke(), pendingTool=selectedTool, selectedTool='') : invokeTool(selectedTool)" :disabled="isToolBusy">
+                ⚡ 执行
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Destructive 二次确认 -->
+        <div v-if="pendingTool" class="invoke-modal" @click.self="pendingTool=''">
+          <div class="invoke-box danger">
+            <h3>⚠️ 危险操作确认</h3>
+            <p>工具 <code>{{ pendingTool }}</code> 是 <strong>Destructive</strong> 工具，<br/>执行后会真实写入/修改/删除文件，且不可撤销。</p>
+            <p class="hint">如果只是预览，请先关闭，查阅工具的 <code>dryRun</code> 参数。</p>
+            <div class="invoke-actions">
+              <button class="cancel" @click="pendingTool=''">取消</button>
+              <button class="danger-btn" @click="confirmInvoke" :disabled="isToolBusy">
+                我已确认，执行
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 结果展示 -->
+        <div v-if="toolResult" class="result-panel success">
+          <div class="result-head">
+            <strong>✅ 调用成功</strong>
+            <button class="close" @click="toolResult=null">×</button>
+          </div>
+          <pre v-if="toolResult.summary" class="summary">{{ toolResult.summary }}</pre>
+          <details v-if="toolResult.data">
+            <summary>📊 data</summary>
+            <pre>{{ JSON.stringify(toolResult.data, null, 2) }}</pre>
+          </details>
+        </div>
+        <div v-if="toolError" class="result-panel error">
+          <div class="result-head">
+            <strong>❌ 调用失败</strong>
+            <button class="close" @click="toolError=''">×</button>
+          </div>
+          <pre>{{ toolError }}</pre>
+        </div>
+      </aside>
     </main>
   </div>
 </template>
@@ -112,16 +269,64 @@ async function sendMessage() {
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .app { display: flex; flex-direction: column; height: 100vh; background: #f5f6fa; }
-header { background: #ff6a00; color: white; padding: 16px 20px; }
+header { background: #ff6a00; color: white; padding: 14px 20px; }
 header h1 { font-size: 18px; }
 header p { font-size: 12px; opacity: 0.9; margin-top: 4px; }
-main { flex: 1; display: flex; flex-direction: column; padding: 16px; gap: 12px; overflow: hidden; }
-.messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
+
+/* 左聊天区 */
+.chat-pane { flex: 7; display: flex; flex-direction: column; background: white; border-radius: 12px; padding: 12px; overflow: hidden; }
+.messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px; }
 .msg { padding: 10px 14px; border-radius: 12px; max-width: 80%; line-height: 1.5; word-break: break-word; white-space: pre-wrap; }
 .msg.user { background: #ff6a00; color: white; align-self: flex-end; }
-.msg.assistant { background: white; color: #333; align-self: flex-start; border: 1px solid #e0e0e0; }
-.input-row { display: flex; gap: 8px; }
+.msg.assistant { background: #f5f6fa; color: #333; align-self: flex-start; border: 1px solid #e0e0e0; }
+.empty-hint { align-self: center; color: #888; padding: 40px; text-align: center; }
+.empty-hint code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+
+.input-row { display: flex; gap: 8px; margin-top: 8px; }
 .input-row input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
 .input-row button { padding: 10px 20px; background: #ff6a00; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
 .input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 右工具面板 */
+.tool-pane { flex: 3; display: flex; flex-direction: column; background: white; border-radius: 12px; padding: 12px; overflow: hidden; }
+.tool-header { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee; }
+.tool-header h2 { font-size: 16px; flex: 1; }
+.tool-count { font-size: 12px; color: #888; padding: 2px 8px; background: #f5f6fa; border-radius: 10px; }
+.refresh { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.tool-list { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; gap: 8px; }
+.tool-card { padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; background: #fafafa; }
+.tool-card.destructive { border-color: #ff9800; background: #fff8e1; }
+.tool-card-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.tool-name { font-family: monospace; font-size: 13px; font-weight: bold; flex: 1; }
+.risk-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+.risk-badge.safe { background: #c8e6c9; color: #2e7d32; }
+.risk-badge:not(.safe) { background: #ffccbc; color: #bf360c; }
+.tool-desc { font-size: 11px; color: #666; line-height: 1.4; margin-bottom: 8px; max-height: 50px; overflow-y: auto; }
+.invoke-btn { width: 100%; padding: 6px; background: #ff6a00; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.invoke-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 浮层 */
+.invoke-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.invoke-box { background: white; border-radius: 12px; padding: 20px; min-width: 380px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.invoke-box.danger { border: 2px solid #ff9800; }
+.invoke-box h3 { margin-bottom: 12px; color: #333; }
+.invoke-box p { font-size: 14px; color: #555; margin-bottom: 8px; }
+.invoke-box p.hint { font-size: 12px; color: #888; background: #f5f6fa; padding: 8px; border-radius: 6px; }
+.invoke-box label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+.invoke-box textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 12px; resize: vertical; }
+.invoke-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
+.invoke-actions button { padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; border: 1px solid #ddd; background: white; }
+.invoke-actions .primary { background: #ff6a00; color: white; border: none; }
+.invoke-actions .danger-btn { background: #ff5252; color: white; border: none; }
+
+/* 结果 */
+.result-panel { padding: 10px; border-radius: 8px; margin-top: 8px; max-height: 200px; overflow-y: auto; font-size: 12px; }
+.result-panel.success { background: #e8f5e9; border: 1px solid #a5d6a7; }
+.result-panel.error { background: #ffebee; border: 1px solid #ef9a9a; }
+.result-head { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.result-head .close { background: none; border: none; cursor: pointer; font-size: 16px; padding: 0 4px; }
+.summary { white-space: pre-wrap; word-break: break-word; }
+.result-panel details { margin-top: 6px; }
+.result-panel details pre { font-size: 11px; padding: 6px; background: rgba(0,0,0,0.05); border-radius: 4px; max-height: 150px; overflow-y: auto; }
 </style>
