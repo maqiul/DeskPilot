@@ -2,6 +2,62 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.0.7] - 2026-07-01
+
+### 🆕 Sidecar 暴露 Core Tools（DI 注册 + `/api/tools/list` + `/api/tools/execute`）
+
+v0.0.7 复用 DeskPilot.Core 18 个 ITool 工具，Sidecar 通过 DI 注册 5 个 Safe Tool 暴露为 HTTP 端点。
+
+#### ✨ 新增端点
+- **GET /api/tools/list**：列出已注册的工具（name / description / kernelFunctionCount）
+- **POST /api/tools/execute?name=xxx**：执行指定工具，POST body 是 arguments JSON
+
+#### 🛠 当前已注册的 5 个 Safe Tool
+| 名称 | 描述 | 用途 |
+|---|---|---|
+| `text_stats` | 文本文件统计 | 行数 / 字符数 / 字节 / 编码 / 高频词 |
+| `search_content` | 文件内容正则搜索 | 找 TODO、找关键词 |
+| `hash_files` | 批量哈希 | md5/sha256 + 找重复文件 |
+| `find_duplicates` | 查找重复文件 | 按 SHA256 分组 |
+| `extract_archive` | 解压 ZIP | 自动防 Zip Slip |
+
+#### 📊 端到端验证
+```
+# 启动 Sidecar
+$ deskpilot-server-x86_64-pc-windows-msvc.exe --urls=http://localhost:5181
+
+# 列出工具
+$ curl http://localhost:5181/api/tools/list
+{"count":5,"tools":[{"name":"extract_archive",...},...]}
+
+# 执行文本统计
+$ curl -X POST http://localhost:5181/api/tools/execute?name=text_stats \
+       -H "Content-Type: application/json" \
+       --data-binary "{\"filePath\":\"D:\\opensource\\DeskPilot\\README.md\"}"
+{"success":true,"summary":"📄 README.md: 309 行 / 8571 字符 / 11,912 字节 (utf-8)",
+ "data":{"lineCount":309,"charCount":8571,"byteCount":11912,...}}
+```
+
+#### 🔧 关键决策
+- **只注册 5 个 Safe Tool**：MVP 阶段先暴露只读工具让端到端可视；剩余 13 个（Destructive Tool 如 RenameByPattern / MoveFiles 等）v0.0.8 加用时按风险等级分批暴露
+- **POST body 传 arguments JSON**：而不是 query string，避免复杂 JSON URL encode
+- **复用现有 ITool.ExecuteAsync**：18 工具接口都是 `Task<ToolResult> ExecuteAsync(string argumentsJson, CancellationToken ct)`，0 重写
+
+#### 📊 验证
+- ✅ .NET 8 SDK build 0 错误 + 0 警告（已通过）
+- ✅ sidecar 启动 5181 端口（`{"service":"DeskPilot.Server","version":"v0.0.7","status":"running"}`）
+- ✅ /api/tools/list 返回 5 个工具
+- ✅ /api/tools/execute?name=text_stats 真实读 README.md 返回 309 行
+
+#### 🔜 v0.0.8 候选
+- 注册剩余 13 个 Tool（Destructive 写文件类）
+- Tauri Vue 端加工具选择 UI（卡片列表 + 「调用」按钮）
+- 接 SemanticKernel：让 ChatAsync 真用 SK + Tool Registry 决策调用哪个 Tool
+
+#### 📦 项目变更
+- `src/DeskPilot.Server/Program.cs`：+IToolRegistry DI +5 个 Tool 注册 +2 个端点（list + execute）
+- `src/DeskPilot.Server/StubChatService.cs`：注释字符串 v0.0.2 → v0.0.7
+
 ## [v0.16.4] - 2026-06-27
 
 ### 🐛 CI 修复 - `.slnx` 转回 `.sln`

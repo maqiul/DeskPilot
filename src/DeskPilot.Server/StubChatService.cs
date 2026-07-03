@@ -21,7 +21,7 @@ public sealed class StubChatService : IChatService
 
         var echo = string.IsNullOrWhiteSpace(userMessage)
             ? "（空消息）"
-            : $"DeskPilot v2 Sidecar 收到：{userMessage}（v0.0.2 stub，v0.0.3 接 SK）";
+            : $"DeskPilot v2 Sidecar 收到：{userMessage}（v0.0.7 stub，v0.0.8 接 SK + 工具路由）";
 
         return echo;
     }
