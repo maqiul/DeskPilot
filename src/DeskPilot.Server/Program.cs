@@ -7,6 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 // v0.0.2 MVP: StubChatService。v0.0.4 接真 AI 时换 SemanticKernelChatService
 builder.Services.AddSingleton<IChatService, StubChatService>();
 
+// v0.1.1: Tool 调用历史持久化（最近 100 条）
+builder.Services.AddSingleton<ToolHistoryStore>();
+
 // v0.0.8: 全量注册 17 个 Core Tools
 builder.Services.AddSingleton<IToolRegistry>(sp =>
 {
@@ -42,7 +45,7 @@ var app = builder.Build();
 app.MapGet("/", () => Results.Ok(new
 {
     service = "DeskPilot.Server",
-    version = "v0.1.0",
+    version = "v0.1.1",
     status = "running"
 }));
 
@@ -60,7 +63,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = sb.ToString(),
             success = true,
-            version = "v0.1.0"
+            version = "v0.1.1"
         });
     }
     catch (System.Exception ex)
@@ -69,7 +72,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = $"错误：{ex.Message}",
             success = false,
-            version = "v0.1.0"
+            version = "v0.1.1"
         });
     }
 });
@@ -116,20 +119,10 @@ app.MapGet("/api/tools/list", (IToolRegistry registry) =>
     });
 });
 
-// v0.0.7: 执行一个 Tool
-app.MapPost("/api/tools/execute", async (string name, HttpContext ctx, IToolRegistry registry, CancellationToken ct) =>
+// v0.1.1: 执行一个 Tool（接入 ToolHistoryStore）
+app.MapPost("/api/tools/execute", async (string name, HttpContext ctx, IToolRegistry registry, ToolHistoryStore history, CancellationToken ct) =>
 {
-    var tool = registry.Get(name);
-    if (tool is null)
-    {
-        return Results.Ok(new
-        {
-            success = false,
-            error = $"Tool '{name}' 不存在。可用工具：{string.Join(", ", registry.ListNames())}"
-        });
-    }
-
-    // POST body 是 arguments JSON
+    // POST body 是 arguments JSON（先读记录到历史，再 dispatch）
     string argsJson = "{}";
     using (var reader = new StreamReader(ctx.Request.Body))
     {
@@ -137,9 +130,37 @@ app.MapPost("/api/tools/execute", async (string name, HttpContext ctx, IToolRegi
         if (string.IsNullOrWhiteSpace(argsJson)) argsJson = "{}";
     }
 
+    var tool = registry.Get(name);
+    if (tool is null)
+    {
+        history.Add(new ToolHistoryEntry
+        {
+            ToolName = name,
+            ArgsJson = argsJson,
+            Success = false,
+            Summary = "",
+            ErrorMessage = $"Tool '{name}' 不存在"
+        });
+        return Results.Ok(new
+        {
+            success = false,
+            error = $"Tool '{name}' 不存在。可用工具：{string.Join(", ", registry.ListNames())}"
+        });
+    }
+
+    // POST body 是 arguments JSON（前面已读，重复 skip）
     try
     {
         var result = await tool.ExecuteAsync(argsJson, ct);
+        // 记录历史
+        history.Add(new ToolHistoryEntry
+        {
+            ToolName = name,
+            ArgsJson = argsJson,
+            Success = result.Success,
+            Summary = result.Summary ?? "",
+            ErrorMessage = result.ErrorMessage
+        });
         return Results.Ok(new
         {
             success = result.Success,
@@ -150,12 +171,41 @@ app.MapPost("/api/tools/execute", async (string name, HttpContext ctx, IToolRegi
     }
     catch (System.Exception ex)
     {
+        // 失败也记录
+        history.Add(new ToolHistoryEntry
+        {
+            ToolName = name,
+            ArgsJson = argsJson,
+            Success = false,
+            Summary = "",
+            ErrorMessage = ex.Message
+        });
         return Results.Ok(new
         {
             success = false,
             error = ex.Message
         });
     }
+});
+
+// v0.1.1: 列出最近 N 条 Tool 调用历史（默认 50，最大 100）
+app.MapGet("/api/tools/history", (ToolHistoryStore history, int? limit) =>
+{
+    var n = Math.Clamp(limit ?? 50, 1, 100);
+    var entries = history.List(n).Select(e => new
+    {
+        timestamp = e.Timestamp,
+        toolName = e.ToolName,
+        argsJson = e.ArgsJson,
+        success = e.Success,
+        summary = e.Summary,
+        errorMessage = e.ErrorMessage
+    });
+    return Results.Ok(new
+    {
+        count = entries.Count(),
+        entries
+    });
 });
 
 app.Run();

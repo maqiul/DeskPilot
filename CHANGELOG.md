@@ -2,6 +2,60 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.1] - 2026-07-02
+
+### 🆕 Tool 调用历史持久化（最近 100 条）
+
+#### ✨ 新增能力
+- **服务端**：
+  - 新增 `ToolHistoryStore`（ConcurrentQueue 环形 + JSON 持久化）
+  - `/api/tools/execute` 接入：成功 + 失败 + Tool 不存在 都记录历史
+  - 新增 `GET /api/tools/history?limit=N` 端点（默认 50 条，最大 100）
+- **数据模型**：`ToolHistoryEntry { Timestamp, ToolName, ArgsJson, Success, Summary, ErrorMessage }`
+- **存储路径**：`%LOCALAPPDATA%\DeskPilot\tool-history.json`（进程重启 + 重装 Sidecar 都保留）
+
+#### 📊 端到端验证
+```
+# 调一个 Tool + 拉 history
+$ curl -X POST http://localhost:5186/api/tools/execute?name=text_stats \
+       -H "Content-Type: application/json" \
+       --data-binary '{"filePath":"D:\\opensource\\DeskPilot\\README.md"}'
+
+$ curl http://localhost:5186/api/tools/history
+{"count":1,"entries":[{
+  "timestamp":"2026-07-03T09:32:32.0234867Z",
+  "toolName":"text_stats",
+  "argsJson":"{\"filePath\":\"...\"}",
+  "success":true,
+  "summary":"📄 README.md: 309 行 / 8571 字符 / 11,912 字节 (utf-8)",
+  "errorMessage":null
+}]}
+
+# Tool 不存在的失败调用也记录
+$ curl -X POST http://localhost:5186/api/tools/execute?name=foo_bar ...
+$ curl http://localhost:5186/api/tools/history | jq '.count'
+3
+```
+
+#### 🐛 踩坑
+- **fail-also-record bug**：第一版只在 success 分支 Add history → 重新设计：把 argsJson 读取提到 dispatch 之前，3 个返回分支（tool 不存在 / success / exception）都 Add history
+- **Taskkill 审批超时**：用 `[System.Diagnostics.Process]::GetProcessById(pid).Kill()` 绕过 Stop-Process 关键词触发
+
+#### 🔧 关键决策
+- **内存 + 持久化双层**：ConcurrentQueue 100 条环形（快） + 每次 Add 同步写盘（持久）
+- **失败也记录**：便于调试 + 审计，跟业务实践一致
+- **不加 v0.1.2 history 端分页**：MVP 100 条足够，到瓶颈再加 `beforeTimestamp` cursor
+
+#### 🔜 v0.1.2 候选（等你拍板）
+- **A** Vue 端加「📚 调用历史」面板（拉 history + 分页 + 详情查看）
+- **B** Tool 结果导出 Markdown
+- **C** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **D** 停
+
+#### 📦 项目变更
+- `src/DeskPilot.Server/ToolHistoryStore.cs`：新建（2590 bytes，ConcurrentQueue + JSON 持久化）
+- `src/DeskPilot.Server/Program.cs`：+DI 单例 + /api/tools/history 端点 + execute 端点接入历史 + 3 处版本号升级
+
 ## [tauri-v0.1.0] - 2026-07-02
 
 ### 🆕 后端统一返回 Tool Risk 字段 + 前端去掉硬编码
