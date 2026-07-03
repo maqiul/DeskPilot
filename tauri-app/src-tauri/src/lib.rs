@@ -1,26 +1,30 @@
 use serde::{Deserialize, Serialize};
-use tauri_plugin_shell::ShellExt;
+use std::process::{Command, Stdio};
+
+const SIDECAR_URL: &str = "http://localhost:5180";
+const SIDECAR_PORT: &str = "5180";
+const SIDECAR_TRIPLE: &str = "x86_64-pc-windows-msvc";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct ChatResponse {
     reply: String,
     success: bool,
+    version: Option<String>,
 }
 
-/// v0.0.1: 调用 .NET 8 Sidecar 发送聊天消息。
+/// v0.0.3: 调用 .NET 8 Sidecar 发送聊天消息。
 /// Sidecar 启动 .NET Minimal API 服务（http://localhost:5180/api/chat）。
 /// MVP 阶段只发一条 prompt → .NET 同步返回 reply（未来升级 SSE 流式）。
 #[tauri::command]
 async fn send_chat(prompt: String) -> Result<String, String> {
-    // 调用本地 .NET 8 HTTP API（Sidecar 启动时分配 5180 端口）
-    let url = format!("http://localhost:5180/api/chat?prompt={}", urlencoding::encode(&prompt));
+    let url = format!("{}/api/chat?prompt={}", SIDECAR_URL, urlencoding::encode(&prompt));
 
     let client = reqwest::Client::new();
     let response = client
         .get(&url)
         .send()
         .await
-        .map_err(|e| format!("调用 .NET 失败：{}", e))?;
+        .map_err(|e| format!("调用 .NET Sidecar 失败：{}。请确认 Sidecar 已启动（地址 {}）", e, SIDECAR_URL))?;
 
     if !response.status().is_success() {
         return Err(format!(".NET 返回错误：{}", response.status()));
@@ -38,40 +42,68 @@ async fn send_chat(prompt: String) -> Result<String, String> {
     Ok(body.reply)
 }
 
-/// v0.0.1: 启动 .NET 8 Sidecar 进程。
-/// Tauri 启动时自动调用本命令（前后端 RPC 桥）。
-#[tauri::command]
-async fn start_dotnet_sidecar(app: tauri::AppHandle) -> Result<String, String> {
-    use tauri_plugin_shell::process::CommandEvent;
+/// v0.0.3: Tauri 启动时自动拉起 .NET Sidecar（绕过 tauri-plugin-shell 的 .dll 后缀 bug）。
+///
+/// 二进制路径：从 `Cargo workspace` 推理到 `binaries/deskpilot-server-x86_64-pc-windows-msvc.exe`，
+/// 该目录包含完整的 .NET self-contained 运行时 + 所有依赖 .dll。
+fn start_sidecar() -> Result<(), String> {
+    // 当前 exe: target/release/deskpilot-v2.exe
+    // binaries 目录: src-tauri/binaries/
+    let tauri_exe = std::env::current_exe()
+        .map_err(|e| format!("获取当前 Tauri exe 路径失败：{}", e))?;
 
-    let sidecar_command = app.shell().sidecar("deskpilot-server").map_err(|e| {
-        format!("Sidecar 配置错误：{}。请确认 tauri.conf.json 配置了 externalBin 指向 deskpilot-server.exe", e)
-    })?;
+    // 从 target/release/ 回到 src-tauri/binaries/
+    let sidecar_dir = tauri_exe
+        .parent()                         // target/release/
+        .and_then(|p| p.parent())          // target/
+        .and_then(|p| p.parent())          // src-tauri/
+        .ok_or("无法解析 src-tauri 目录")?
+        .join("binaries");
 
-    let (mut rx, _child) = sidecar_command
-        .args(["--urls", "http://localhost:5180"])
+    // Tauri sidecar 名: deskpilot-server + triple suffix
+    let exe_path = sidecar_dir.join(format!("deskpilot-server-{}.exe", SIDECAR_TRIPLE));
+
+    if !exe_path.exists() {
+        return Err(format!(
+            ".NET Sidecar 找不到：{}。请重新执行 'dotnet publish D:\\opensource\\DeskPilot\\src\\DeskPilot.Server -c Release -r win-x64 --self-contained true -o src-tauri/binaries'",
+            exe_path.display()
+        ));
+    }
+
+    let mut child = Command::new(&exe_path)
+        .arg(format!("--urls=http://localhost:{}", SIDECAR_PORT))
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("启动 .NET Sidecar 失败：{}", e))?;
+        .map_err(|e| format!("启动 .NET Sidecar 失败：{} ({:?})", e, exe_path))?;
 
-    // 异步读取 .NET 输出（不阻塞）
-    tauri::async_runtime::spawn(async move {
-        while let Some(event) = rx.recv().await {
-            match event {
-                CommandEvent::Stdout(line) => println!("[.NET] {}", String::from_utf8_lossy(&line)),
-                CommandEvent::Stderr(line) => eprintln!("[.NET ERR] {}", String::from_utf8_lossy(&line)),
-                _ => {}
+    println!("✅ .NET Sidecar 已启动 (PID {})：{}", child.id(), SIDECAR_URL);
+
+    // 转储 .NET 输出到 stderr（开发模式可见 + 不阻塞）
+    if let Some(stderr) = child.stderr.take() {
+        std::thread::spawn(move || {
+            use std::io::{BufRead, BufReader};
+            let reader = BufReader::new(stderr);
+            for line in reader.lines().flatten() {
+                eprintln!("[.NET] {}", line);
             }
-        }
-    });
+        });
+    }
 
-    Ok("Sidecar 已启动".to_string())
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![send_chat, start_dotnet_sidecar])
+        .setup(|_app| {
+            // v0.0.3: Tauri 启动时自动拉 .NET Sidecar
+            if let Err(e) = start_sidecar() {
+                eprintln!("⚠️ .NET Sidecar 启动失败：{}。前端调 send_chat 会失败。", e);
+            }
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![send_chat])
         .run(tauri::generate_context!())
         .expect("Tauri 启动失败");
 }

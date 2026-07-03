@@ -6,6 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>DeskPilot.Server</RootNamespace>
     <AssemblyName>deskpilot-server</AssemblyName>
+    <!-- v0.0.3: sidecar 必须 self-contained + 所有运行时 .dll 在同目录。
+         Tauri cargo build 会自动从 binaries/ copy 到 target/release/。 -->
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>

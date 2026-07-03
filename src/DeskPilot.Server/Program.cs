@@ -6,8 +6,10 @@ var builder = WebApplication.CreateBuilder(args);
 // v0.0.2 MVP: StubChatService。v0.0.3 替换为 SemanticKernelChatService
 builder.Services.AddSingleton<IChatService, StubChatService>();
 
-// v0.0.2 只绑 5180 端口（与 Tauri lib.rs 默认端口对齐）
-builder.WebHost.UseUrls("http://localhost:5180");
+// v0.0.3: 支持 CLI --urls 参数（Tauri sidecar 启动时传端口），默认 5180
+var urls = args.FirstOrDefault(a => a.StartsWith("--urls="))?.Substring("--urls=".Length)
+           ?? "http://localhost:5180";
+builder.WebHost.UseUrls(urls);
 
 var app = builder.Build();
 

@@ -9,8 +9,8 @@ dist/
 # TypeScript 增量编译缓存
 tsconfig.tsbuildinfo
 
-# Sidecar 二进制（未来真正集成时再加）
-sidecar/
+# .NET Sidecar 二进制 + 依赖（deskpilot-server.exe + *.dll）
+src-tauri/binaries/
 
 # IDE
 .vscode/
