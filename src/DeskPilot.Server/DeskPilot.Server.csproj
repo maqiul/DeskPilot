@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DeskPilot.Server</RootNamespace>
+    <AssemblyName>deskpilot-server</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 复用现有 IChatService 接口（语义内核封装）+ 18 工具 -->
+    <ProjectReference Include="..\DeskPilot.Core\DeskPilot.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- v0.0.2 MVP 阶段用 StubChatService；v0.0.3 替换为 SemanticKernelChatService -->
+    <InternalsVisibleTo Include="DeskPilot.Tests" />
+  </ItemGroup>
+
+</Project>
