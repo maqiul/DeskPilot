@@ -98,8 +98,34 @@ pub fn run() {
     tauri::Builder::default()
         .setup(|_app| {
             // v0.0.3: Tauri 启动时自动拉 .NET Sidecar
-            if let Err(e) = start_sidecar() {
-                eprintln!("⚠️ .NET Sidecar 启动失败：{}。前端调 send_chat 会失败。", e);
+            match start_sidecar() {
+                Ok(_) => {
+                    // v0.0.6: 后台线程等 .NET 起来（最多 5 秒 retry）
+                    std::thread::spawn(|| {
+                        let client = reqwest::blocking::Client::builder()
+                            .timeout(std::time::Duration::from_secs(2))
+                            .build()
+                            .unwrap_or_else(|_| reqwest::blocking::Client::new());
+                        for i in 1..=10 {
+                            std::thread::sleep(std::time::Duration::from_millis(500));
+                            let ok = client
+                                .get(format!("{}/", SIDECAR_URL))
+                                .send()
+                                .map(|r| r.status().is_success())
+                                .unwrap_or(false);
+                            if ok {
+                                println!("✅ Sidecar 健康检查通过（第 {} 次）：{}", i, SIDECAR_URL);
+                                return;
+                            }
+                        }
+                        eprintln!(
+                            "⚠️ Sidecar 10 次重试后仍未响应。前端 send_chat 可能失败。"
+                        );
+                    });
+                }
+                Err(e) => {
+                    eprintln!("⚠️ .NET Sidecar 启动失败：{}。前端调 send_chat 会失败。", e);
+                }
             }
             Ok(())
         })
