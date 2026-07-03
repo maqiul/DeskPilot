@@ -25,6 +25,7 @@ public sealed class ToolDescriptor
     public string Description { get; init; } = string.Empty;
     public string InputSchemaJson { get; init; } = string.Empty;
     public int KernelFunctionCount { get; init; }
+    public string Risk { get; init; } = string.Empty;
 }
 
 public sealed class ToolRegistry : IToolRegistry
@@ -52,7 +53,8 @@ public sealed class ToolRegistry : IToolRegistry
             Name = tool.Name,
             Description = tool.Description,
             InputSchemaJson = tool.InputSchemaJson,
-            KernelFunctionCount = kernelFunctionMethods.Length
+            KernelFunctionCount = kernelFunctionMethods.Length,
+            Risk = tool.Risk.ToString()
         };
 
         _tools[tool.Name] = (tool, descriptor);

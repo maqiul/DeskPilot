@@ -2,6 +2,60 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.0] - 2026-07-02
+
+### 🆕 后端统一返回 Tool Risk 字段 + 前端去掉硬编码
+
+#### ✨ 后端改动
+- `DeskPilot.Core/Tools/ToolRegistry.cs`：`ToolDescriptor` 加 `Risk` 字段，扫描时填 `tool.Risk.ToString()`
+- `DeskPilot.Server/Program.cs`：`/api/tools/list` 端点返回 `risk` 字段；3 处版本号 v0.0.8 → v0.1.0
+
+#### ✨ 前端改动
+- `tauri-app/src/App.vue`：删 `DESTRUCTIVE_TOOLS` 硬编码 Set，改用 `t.risk === "Destructive"` 判断
+- 新增 `isDestructive(t)` / `selectedToolRisk()` / `executeSelected()` 三个工具函数
+- `ToolDescriptor` 类型加 `risk: string` 字段
+
+#### 📊 端到端验证
+```
+$ curl http://localhost:5184/api/tools/list | jq -r '.tools[] | "\(.name)\t\(.risk)"'
+archive_files_by_date    Destructive
+batch_excel              Destructive
+batch_resize_image       Destructive
+convert_image            Destructive
+crop_image               Destructive
+extract_archive          Destructive
+find_duplicates          Safe
+hash_files               Safe
+merge_pdfs               Destructive
+move_files               Destructive
+rename_by_exif           Destructive
+rename_by_pattern        Destructive
+rotate_image             Destructive
+search_content           Safe
+text_stats               Safe
+```
+
+#### 🔧 关键决策
+- **15 个 Tool 风险统计**：6 个 Safe + 9 个 Destructive（与 v0.0.9 硬编码 Set 完全一致）
+- **Destructive 的执行流向**：参数模态框 → Destructive 检查 → 二次确认框 / 直接调用
+- **不修 ITool.Risk 字段**：v0.1.0 范围只搬运到前端，不动 Tool 类的 Risk level 定义（v0.1.1 可考虑）
+
+#### 📊 验证
+- ✅ .NET 8 SDK Server build 0 错误（112 个 CA1416 历史警告）
+- ✅ Vue 3 + TS `npm run build` 0 错误（573ms / 11 modules）
+- ✅ Server `GET /api/tools/list` 返回 15 个 tool 含 risk 字段
+
+#### 🔜 v0.1.1 候选（你拍板）
+- **A** Tool 调用持久化历史（Sidecar 写最近 100 条 JSON）
+- **B** Tool 结果导出 Markdown
+- **C** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **D** 停
+
+#### 📦 项目变更
+- `src/DeskPilot.Core/Tools/ToolRegistry.cs`：+Risk 字段、扫描时填值
+- `src/DeskPilot.Server/Program.cs`：`/api/tools/list` 返回 risk、3 处版本号升级
+- `tauri-app/src/App.vue`：删 DESTRUCTIVE_TOOLS Set、加 3 个工具函数
+
 ## [tauri-v0.0.9] - 2026-07-01
 
 ### 🆕 Vue 端工具面板 UI（15 Tool 卡片 + Destructive 二次确认 + 结果展示）

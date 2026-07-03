@@ -10,6 +10,7 @@ interface ToolDescriptor {
   name: string;
   description: string;
   kernelFunctionCount: number;
+  risk: string;
 }
 
 const messages = ref<ChatMessage[]>([]);
@@ -27,11 +28,30 @@ const SIDE_BASE = "http://localhost:5180";
 const SIDE_STREAM = `${SIDE_BASE}/api/chat/stream`;
 const SIDE_TOOLS_LIST = `${SIDE_BASE}/api/tools/list`;
 
-// v0.0.7 通过关键词识别是否为 Destructive Tool（保守策略：先识别已知的 9 个）
-const DESTRUCTIVE_TOOLS = new Set([
-  "batch_excel", "batch_resize_image", "convert_image", "crop_image",
-  "merge_pdfs", "move_files", "rename_by_exif", "rename_by_pattern", "rotate_image"
-]);
+// v0.1.0: 服务端 /api/tools/list 返回 risk 字段，前端去掉硬编码 Set
+// Destructive Tool 二次确认从每个 tool 的 risk 字段判断
+function isDestructive(t: ToolDescriptor): boolean {
+  return t.risk === "Destructive";
+}
+
+// 当前选中 Tool 的 risk（"Safe" / "Destructive"）
+function selectedToolRisk(): string {
+  const t = tools.value.find(x => x.name === selectedTool.value);
+  return t?.risk ?? "Safe";
+}
+
+// 执行按钮（Destructive 弹二次确认，其他直接调）
+function executeSelected() {
+  const name = selectedTool.value;
+  const risk = selectedToolRisk();
+  if (risk === "Destructive") {
+    // 二次确认流：先关参数模态，弹确认框
+    pendingTool.value = name;
+    selectedTool.value = "";
+  } else {
+    invokeTool(name);
+  }
+}
 
 onMounted(async () => {
   await refreshToolList();
@@ -193,11 +213,11 @@ async function invokeTool(name: string) {
           <div
             v-for="t in tools"
             :key="t.name"
-            :class="['tool-card', { destructive: DESTRUCTIVE_TOOLS.has(t.name) }]"
+            :class="['tool-card', { destructive: isDestructive(t) }]"
           >
             <div class="tool-card-head">
               <span class="tool-name">{{ t.name }}</span>
-              <span v-if="DESTRUCTIVE_TOOLS.has(t.name)" class="risk-badge">⚠️ Destructive</span>
+              <span v-if="isDestructive(t)" class="risk-badge">⚠️ Destructive</span>
               <span v-else class="risk-badge safe">✓ Safe</span>
             </div>
             <p class="tool-desc">{{ t.description }}</p>
@@ -219,7 +239,7 @@ async function invokeTool(name: string) {
             <textarea v-model="toolArgsInput" rows="6" placeholder='例如：{"filePath":"D:\\test.md"}' />
             <div class="invoke-actions">
               <button class="cancel" @click="cancelInvoke">取消</button>
-              <button class="primary" @click="DESTRUCTIVE_TOOLS.has(selectedTool) ? (pendingTool=selectedTool, cancelInvoke(), pendingTool=selectedTool, selectedTool='') : invokeTool(selectedTool)" :disabled="isToolBusy">
+              <button class="primary" @click="executeSelected" :disabled="isToolBusy">
                 ⚡ 执行
               </button>
             </div>

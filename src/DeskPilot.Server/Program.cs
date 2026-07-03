@@ -42,7 +42,7 @@ var app = builder.Build();
 app.MapGet("/", () => Results.Ok(new
 {
     service = "DeskPilot.Server",
-    version = "v0.0.8",
+    version = "v0.1.0",
     status = "running"
 }));
 
@@ -60,7 +60,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = sb.ToString(),
             success = true,
-            version = "v0.0.8"
+            version = "v0.1.0"
         });
     }
     catch (System.Exception ex)
@@ -69,7 +69,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = $"错误：{ex.Message}",
             success = false,
-            version = "v0.0.8"
+            version = "v0.1.0"
         });
     }
 });
@@ -99,14 +99,15 @@ app.MapGet("/api/chat/stream", async (string prompt, IChatService chat, HttpCont
     }
 });
 
-// v0.0.7: 列出所有已注册的 Tools
+// v0.1.0: 列出所有已注册的 Tools（新增 risk 字段）
 app.MapGet("/api/tools/list", (IToolRegistry registry) =>
 {
     var tools = registry.ListTools().Select(t => new
     {
         name = t.Name,
         description = t.Description,
-        kernelFunctionCount = t.KernelFunctionCount
+        kernelFunctionCount = t.KernelFunctionCount,
+        risk = t.Risk
     });
     return Results.Ok(new
     {
