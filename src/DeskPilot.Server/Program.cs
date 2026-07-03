@@ -7,16 +7,27 @@ var builder = WebApplication.CreateBuilder(args);
 // v0.0.2 MVP: StubChatService。v0.0.4 接真 AI 时换 SemanticKernelChatService
 builder.Services.AddSingleton<IChatService, StubChatService>();
 
-// v0.0.7: 注册 18 个 Core Tools 到 IToolRegistry
-// 暂只注册 5 个 Safe Tool 让端到端可见，剩余 13 个 v0.0.8 推进
+// v0.0.8: 全量注册 17 个 Core Tools
 builder.Services.AddSingleton<IToolRegistry>(sp =>
 {
     var registry = new ToolRegistry();
-    registry.Register(new HashFilesTool());           // Safe：计算文件 hash
-    registry.Register(new TextStatsTool());           // Safe：统计文本
-    registry.Register(new SearchContentTool());       // Safe：搜索文本
-    registry.Register(new FindDuplicatesTool());      // Safe：找重复文件
-    registry.Register(new ExtractArchiveTool());      // Safe：解压
+    // 5 个 Safe Tool（v0.0.7 已注册）
+    registry.Register(new HashFilesTool());
+    registry.Register(new TextStatsTool());
+    registry.Register(new SearchContentTool());
+    registry.Register(new FindDuplicatesTool());
+    registry.Register(new ExtractArchiveTool());
+    // 12 个 v0.0.8 新增（含 1 Safe + 11 Destructive）
+    registry.Register(new ArchiveByDateTool());
+    registry.Register(new BatchExcelTool());
+    registry.Register(new BatchResizeImageTool());
+    registry.Register(new ConvertImageTool());
+    registry.Register(new CropImageTool());
+    registry.Register(new MergePdfTool());
+    registry.Register(new MoveFilesTool());
+    registry.Register(new RenameByExifTool());
+    registry.Register(new RenameByPatternTool());
+    registry.Register(new RotateImageTool());
     return registry;
 });
 
@@ -31,7 +42,7 @@ var app = builder.Build();
 app.MapGet("/", () => Results.Ok(new
 {
     service = "DeskPilot.Server",
-    version = "v0.0.7",
+    version = "v0.0.8",
     status = "running"
 }));
 
@@ -49,7 +60,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = sb.ToString(),
             success = true,
-            version = "v0.0.7"
+            version = "v0.0.8"
         });
     }
     catch (System.Exception ex)
@@ -58,7 +69,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = $"错误：{ex.Message}",
             success = false,
-            version = "v0.0.7"
+            version = "v0.0.8"
         });
     }
 });

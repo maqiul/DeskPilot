@@ -2,6 +2,59 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.0.8] - 2026-07-01
+
+### 🆕 Sidecar 全量注册 15 个 Core Tools
+
+v0.0.7 只注册 5 个 Safe Tool，v0.0.8 把 DeskPilot.Core 的全部 15 个 Tool 类都注册到 IToolRegistry，端点 `/api/tools/list` 和 `/api/tools/execute` 自动可见。
+
+#### 🛠 全量 15 个 Tool（含 6 个 Safe + 9 个 Destructive）
+
+| 名称 | 风险 | 用途 |
+|---|---|---|
+| `hash_files` | Safe | 批量计算 md5/sha1/sha256/sha512 |
+| `text_stats` | Safe | 文本文件统计（行/字符/编码/高频词）|
+| `search_content` | Safe | 按正则搜文件内容 |
+| `find_duplicates` | Safe | 按 SHA256 找重复文件 |
+| `extract_archive` | Safe | 解压 zip（防 Zip Slip）|
+| `archive_files_by_date` | Safe | 按日期归档到子文件夹 |
+| `batch_excel` | Destructive | list_sheets / extract_data / write_summary |
+| `batch_resize_image` | Destructive | 批量缩图（保持比例）|
+| `convert_image` | Destructive | png/jpg/bmp/webp/gif 互转 |
+| `crop_image` | Destructive | 图片裁剪 |
+| `merge_pdfs` | Destructive | 多 PDF 合成一份 |
+| `move_files` | Destructive | 移动文件 |
+| `rename_by_exif` | Destructive | 按 EXIF 拍摄时间重命名 |
+| `rename_by_pattern` | Destructive | 按模式重命名 |
+| `rotate_image` | Destructive | 图片旋转 + 翻转 |
+
+#### 📊 端到端验证
+```
+$ deskpilot-server-x86_64-pc-windows-msvc.exe --urls=http://localhost:5182
+
+$ curl http://localhost:5182/api/tools/list | jq '.count'
+15
+
+$ curl -X POST http://localhost:5182/api/tools/execute?name=text_stats \
+       -H "Content-Type: application/json" \
+       --data-binary '{"filePath":"D:\\opensource\\DeskPilot\\README.md"}'
+{"success":true,"summary":"📄 README.md: 309 行 / ...",...}
+```
+
+#### 🔧 关键决策
+- **15 = 真正的 Tool 类数**（不是 17/18 — ToolRegistry 跳过 `ITool.cs` 接口和 `ToolRegistry.cs` 自身）
+- **Destructive Tool 全部暴露**：Vue 端 v0.0.9 需要加二次确认对话框，否则用户点错可能误删文件
+- **不接 SemanticKernel 调用**：B 候选需要 API key，本机尚未设置
+
+#### 🔜 v0.0.9 候选（Vue UI）
+- 右侧工具面板（卡片列表 + 名称 + 风险徽章 + 「调用」按钮）
+- Destructive Tool 二次确认对话框
+- 调用结果展示区（JSON 折叠 + summary 高亮）
+
+#### 📦 项目变更
+- `src/DeskPilot.Server/Program.cs`：注册 10 个新 Tool + 3 处版本号升级 v0.0.7 → v0.0.8
+- 一行 build 0 错 0 警告
+
 ## [tauri-v0.0.7] - 2026-07-01
 
 ### 🆕 Sidecar 暴露 Core Tools（DI 注册 + `/api/tools/list` + `/api/tools/execute`）
