@@ -4,6 +4,7 @@ import { ref, onMounted } from "vue";
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  timestamp?: number; // v0.1.12: 消息时间戳（毫秒）
 }
 
 interface ToolDescriptor {
@@ -88,11 +89,11 @@ async function refreshToolList() {
 async function sendMessage() {
   const prompt = userInput.value.trim();
   if (!prompt || isBusy.value) return;
-  messages.value.push({ role: "user", content: prompt });
+  messages.value.push({ role: "user", content: prompt, timestamp: Date.now() });
   userInput.value = "";
   isBusy.value = true;
   const idx = messages.value.length;
-  messages.value.push({ role: "assistant", content: "" });
+  messages.value.push({ role: "assistant", content: "", timestamp: Date.now() });
 
   try {
     const response = await fetch(`${SIDE_STREAM}?prompt=${encodeURIComponent(prompt)}`);
@@ -286,7 +287,8 @@ async function invokeTool(name: string) {
     if (appendResultToChat.value && toolResult.value) {
       messages.value.push({
         role: "assistant",
-        content: formatResultForChat(toolResult.value)
+        content: formatResultForChat(toolResult.value),
+        timestamp: Date.now()
       });
     }
   }
@@ -314,6 +316,16 @@ function formatResultForChat(r: any): string {
 function removeMessage(idx: number) {
   if (idx < 0 || idx >= messages.value.length) return;
   messages.value.splice(idx, 1);
+}
+
+// v0.1.12: 格式化消息时间戳（HH:mm:SS），缺省显示空串
+function formatChatTimestamp(ts?: number): string {
+  if (!ts) return "";
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
 }
 
 // v0.1.11: 一键清空全部聊天（带二次确认）
@@ -433,6 +445,8 @@ const filteredTools = computed(() => {
         <div class="messages">
           <div v-for="(m, i) in messages" :key="i" :class="['msg', m.role]">
             <strong>{{ m.role === "user" ? "你" : "AI" }}：</strong>{{ m.content }}
+            <!-- v0.1.12: 消息时间戳（HH:mm:SS 灰色右下角） -->
+            <span class="msg-timestamp">{{ formatChatTimestamp(m.timestamp) }}</span>
             <!-- v0.1.10: 单条删除按钮（hover 显示） -->
             <button class="msg-delete" @click="removeMessage(i)" title="删除这条消息">×</button>
           </div>
@@ -616,6 +630,9 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 .msg-delete { position: absolute; top: 4px; right: 6px; background: transparent; border: none; color: #999; font-size: 14px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s; }
 .msg:hover .msg-delete { opacity: 1; }
 .msg-delete:hover { background: #ffebee; color: #c62828; }
+
+/* v0.1.12: 消息时间戳 */
+.msg-timestamp { display: block; font-size: 10px; color: #999; margin-top: 4px; font-family: monospace; }
 .msg.user { background: #ff6a00; color: white; align-self: flex-end; }
 .msg.assistant { background: #f5f6fa; color: #333; align-self: flex-start; border: 1px solid #e0e0e0; }
 .empty-hint { align-self: center; color: #888; padding: 40px; text-align: center; }

@@ -2,6 +2,54 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.12] - 2026-07-02
+
+### 🆕 聊天区消息时间戳（HH:mm:SS）
+
+#### ✨ 新增能力
+- **每条消息右下角显示时间戳**：`HH:mm:SS` 格式（24 小时制）
+- **3 个 push 点**（user / assistant / tool-result）自动写入 `timestamp: Date.now()`
+- **可选字段**：旧消息（如果有）没 timestamp 时不显示（不报错）
+
+#### 🎨 UI 风格
+- 灰色 10px 字体 + monospace 等宽（与 WPF v0.25 风格一致）
+- 消息下方小间距（margin-top: 4px）
+- 不抢主内容视觉
+
+#### 🛠 技术实现
+- `interface ChatMessage` 加 `timestamp?: number` 可选字段
+- `formatChatTimestamp(ts?)` helper：缺省返回 `""`，否则格式化 `HH:mm:SS`
+- 3 处 `messages.value.push` 都加 `timestamp: Date.now()`
+- 模板 `<span class="msg-timestamp">{{ formatChatTimestamp(m.timestamp) }}</span>`
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 612ms / 11 modules transformed
+- ✅ TypeScript 编译通过（4 个 TS2353/TS2339 修在 ChatMessage 类型扩展后解决）
+
+#### 🐛 踩坑
+- **TS2353 Object literal may only specify known properties**：ChatMessage 接口未声明 timestamp，3 处 push 编译失败
+- **修法**：接口加 `timestamp?: number` 可选字段（保持向后兼容）
+
+#### 🔧 关键决策
+- **可选字段 `timestamp?: number`**：旧消息不报错（清除时不重置历史）
+- **HH:mm:SS 而非 full date**：聊天场景下秒级足够，日期太长干扰阅读
+- **monospace 字体**：让秒数对齐（视觉整齐）
+- **灰色 10px**：辅助信息不抢主内容
+
+#### 🔜 v0.1.13 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** 消息时间戳加 Tooltip（hover 显示完整日期）
+- **C** Tauri 端使用 `/api/health` 深度探活（v0.1.7 已就绪但未启用）
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：
+  - +`timestamp?: number` 加到 ChatMessage 接口
+  - +`formatChatTimestamp(ts?)` helper（9 行）
+  - +3 处 push 加 timestamp 字段
+  - +`<span class="msg-timestamp">` 在 msg template
+  - +CSS `.msg-timestamp`（1 行）
+
 ## [tauri-v0.1.11] - 2026-07-02
 
 ### 🆕 聊天区「🧹 清空全部」按钮 + 二次确认
