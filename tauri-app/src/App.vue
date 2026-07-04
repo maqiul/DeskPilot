@@ -37,6 +37,7 @@ const history = ref<HistoryEntry[]>([]);
 const showHistory = ref(false);
 const appendResultToChat = ref(true); // v0.1.8: Tool 结果自动回填聊天
 const toolSearchKeyword = ref(""); // v0.1.9: Tool 搜索过滤（同 WPF v0.24）
+const showClearAllConfirm = ref(false); // v0.1.11: 清空全部二次确认
 const isHistoryLoading = ref(false);
 const selectedHistoryIdx = ref<number>(-1);
 
@@ -315,6 +316,21 @@ function removeMessage(idx: number) {
   messages.value.splice(idx, 1);
 }
 
+// v0.1.11: 一键清空全部聊天（带二次确认）
+function clearAllMessages() {
+  messages.value = [];
+  showClearAllConfirm.value = false;
+}
+
+function requestClearAll() {
+  if (messages.value.length === 0) return;
+  showClearAllConfirm.value = true;
+}
+
+function cancelClearAll() {
+  showClearAllConfirm.value = false;
+}
+
 // v0.1.2: 加载历史
 async function loadHistory(reset = true) {
   isHistoryLoading.value = true;
@@ -398,6 +414,22 @@ const filteredTools = computed(() => {
     <main>
       <!-- 左：聊天区（v0.0.5 保留） -->
       <section class="chat-pane">
+        <div class="chat-header">
+          <span class="msg-count">{{ messages.length }} 条消息</span>
+          <!-- v0.1.11: 一键清空 -->
+          <button class="clear-all" @click="requestClearAll" :disabled="messages.length === 0" title="清空全部聊天">🧹 清空</button>
+        </div>
+        <!-- v0.1.11: 二次确认模态框 -->
+        <div v-if="showClearAllConfirm" class="confirm-overlay" @click.self="cancelClearAll">
+          <div class="confirm-modal">
+            <h3>清空全部聊天消息？</h3>
+            <p>将删除所有 {{ messages.length }} 条消息，不可恢复。</p>
+            <div class="confirm-actions">
+              <button class="cancel" @click="cancelClearAll">取消</button>
+              <button class="confirm" @click="clearAllMessages">确认清空</button>
+            </div>
+          </div>
+        </div>
         <div class="messages">
           <div v-for="(m, i) in messages" :key="i" :class="['msg', m.role]">
             <strong>{{ m.role === "user" ? "你" : "AI" }}：</strong>{{ m.content }}
@@ -588,6 +620,25 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 .msg.assistant { background: #f5f6fa; color: #333; align-self: flex-start; border: 1px solid #e0e0e0; }
 .empty-hint { align-self: center; color: #888; padding: 40px; text-align: center; }
 .empty-hint code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+
+/* v0.1.11: 聊天头部 + 一键清空 */
+.chat-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid #eee; margin-bottom: 6px; }
+.msg-count { font-size: 11px; color: #999; padding: 2px 6px; background: #f5f6fa; border-radius: 10px; }
+.clear-all { background: white; color: #c62828; border: 1px solid #ffcdd2; border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 12px; }
+.clear-all:hover:not(:disabled) { background: #ffebee; }
+.clear-all:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* v0.1.11: 二次确认模态 */
+.confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.confirm-modal { background: white; border-radius: 12px; padding: 20px 24px; max-width: 360px; box-shadow: 0 12px 48px rgba(0,0,0,0.25); }
+.confirm-modal h3 { font-size: 16px; margin-bottom: 10px; color: #333; }
+.confirm-modal p { font-size: 13px; color: #666; margin-bottom: 16px; }
+.confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.confirm-actions button { border: none; border-radius: 6px; padding: 6px 16px; cursor: pointer; font-size: 13px; }
+.confirm-actions .cancel { background: #f0f0f0; color: #333; }
+.confirm-actions .cancel:hover { background: #e0e0e0; }
+.confirm-actions .confirm { background: #c62828; color: white; font-weight: bold; }
+.confirm-actions .confirm:hover { background: #b71c1c; }
 
 .input-row { display: flex; gap: 8px; margin-top: 8px; }
 .input-row input { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }

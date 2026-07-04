@@ -2,6 +2,50 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.11] - 2026-07-02
+
+### 🆕 聊天区「🧹 清空全部」按钮 + 二次确认
+
+#### ✨ 新增能力
+- **「🧹 清空」按钮**：放在聊天区右上角
+- **二次确认模态框**：点按钮弹模态，再点「确认清空」才真清
+- **取消按钮 + 蒙层点击取消**：3 种方式退出确认
+- **禁用状态**：`messages.length === 0` 时按钮禁用
+- **消息计数**：「X 条消息」徽章在左
+
+#### 🎨 UI 风格
+- 按钮红底 + 红字（警示色 #c62828 + #ffcdd2）
+- 模态框居中 + 12px 圆角 + 大阴影
+- 蒙层 rgba(0,0,0,0.4) 半透明黑
+
+#### 🛠 技术实现
+- `showClearAllConfirm: ref(false)` 二次确认状态
+- `clearAllMessages()` `requestClearAll()` `cancelClearAll()` 3 个函数
+- `<div class="confirm-overlay" @click.self="cancelClearAll">` 蒙层点击关闭
+- 模态结构：title + 描述（含消息数） + 2 个按钮
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 658ms / 11 modules transformed
+
+#### 🔧 关键决策
+- **二次确认**：呼应 v0.0.9 Destructive Tool 二次确认设计模式
+- **click.self only**：避免模态内容区误关闭
+- **含消息数提示**：`将删除所有 X 条消息` 让用户看到具体代价
+- **0 消息禁用按钮**：避免无效交互
+
+#### 🔜 v0.1.12 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** 聊天区加时间戳显示（每条消息时间，呼应 WPF v0.25）
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：
+  - +`showClearAllConfirm = ref(false)`
+  - +`clearAllMessages()` `requestClearAll()` `cancelClearAll()` 3 个函数
+  - +`<div class="chat-header">` UI
+  - +`<div class="confirm-overlay">` + `<div class="confirm-modal">` 模态框
+  - +CSS `.chat-header` `.msg-count` `.clear-all` `.confirm-overlay` `.confirm-modal` `.confirm-actions` (~22 行)
+
 ## [tauri-v0.1.10] - 2026-07-02
 
 ### 🆕 聊天区单条删除按钮
