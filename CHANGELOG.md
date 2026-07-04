@@ -2,6 +2,47 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.2] - 2026-07-02
+
+### 🆕 Vue 端「📚 调用历史」面板
+
+#### ✨ 新增能力
+- **右侧抽屉面板**：点 `📚` 按钮弹出（覆盖工具面板右侧 360px）
+- **拉数据**：调 `GET /api/tools/history?limit=50` 取最近 50 条
+- **列表渲染**：✅/❌ 状态 + 工具名（monospace）+ 本地时间（zh-CN 格式）
+- **点开详情**：summary 高亮 + args JSON 折叠 + errorMessage 折叠
+- **自动刷新**：invokeTool 调用完若面板打开则自动 loadHistory
+
+#### 🎨 UI 风格
+- 抽屉绝对定位 `right: 12px` + 圆角 12px + 阴影 + 360px 宽
+- 失败记录红底、成功灰底、展开橙边
+- 复用 v0.0.9 Melon 橙系配色 + 圆角 6px 卡片
+
+#### 🛠 技术实现
+- 新增 `HistoryEntry` interface + 4 个 reactive 状态（history / showHistory / isHistoryLoading / selectedHistoryIdx）
+- 新增 4 个函数：`loadHistory()` / `toggleHistory()` / `selectHistoryEntry()` / `formatTimestamp()`
+- 复用 v0.1.1 `/api/tools/history` 端点
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 655ms / 11 modules transformed
+- ✅ 历史面板 + 列表 + 详情展开 / 折叠（前端 Vue 逻辑验证）
+- ✅ 自动刷新（invokeTool finally 分支触发）
+
+#### 🔧 关键决策
+- **绝对定位抽屉**：不用 v-if 重渲染整个工具面板，原面板保留
+- **localStorage 不做**：服务端已 JSON 持久化，前端不需要再缓存
+- **不加分页**：MVP 50 条够用，到瓶颈再加 beforeTimestamp cursor
+- **不显示 OpenAPI args schema**：用 raw argsJson 折叠就够，避免重复
+
+#### 🔜 v0.1.3 候选（你拍板）
+- **A** Tool 结果导出 Markdown
+- **B** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **C** 历史面板加分页（beforeTimestamp cursor）
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：+HistoryEntry interface + 4 个 reactive + 4 个函数 + 历史抽屉 template + ~70 行 CSS
+
 ## [tauri-v0.1.1] - 2026-07-02
 
 ### 🆕 Tool 调用历史持久化（最近 100 条）

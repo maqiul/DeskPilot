@@ -24,9 +24,24 @@ const toolResult = ref<any>(null);
 const toolError = ref<string>("");
 const isToolBusy = ref(false);
 
+// v0.1.2: 历史面板
+interface HistoryEntry {
+  timestamp: string;
+  toolName: string;
+  argsJson: string;
+  success: boolean;
+  summary: string;
+  errorMessage: string | null;
+}
+const history = ref<HistoryEntry[]>([]);
+const showHistory = ref(false);
+const isHistoryLoading = ref(false);
+const selectedHistoryIdx = ref<number>(-1);
+
 const SIDE_BASE = "http://localhost:5180";
 const SIDE_STREAM = `${SIDE_BASE}/api/chat/stream`;
 const SIDE_TOOLS_LIST = `${SIDE_BASE}/api/tools/list`;
+const SIDE_HISTORY = `${SIDE_BASE}/api/tools/history`;
 
 // v0.1.0: 服务端 /api/tools/list 返回 risk 字段，前端去掉硬编码 Set
 // Destructive Tool 二次确认从每个 tool 的 risk 字段判断
@@ -172,6 +187,44 @@ async function invokeTool(name: string) {
   } finally {
     isToolBusy.value = false;
     cancelInvoke();
+    // v0.1.2: 调用完自动刷新历史
+    if (showHistory.value) {
+      loadHistory();
+    }
+  }
+}
+
+// v0.1.2: 加载历史
+async function loadHistory() {
+  isHistoryLoading.value = true;
+  try {
+    const resp = await fetch(`${SIDE_HISTORY}?limit=50`);
+    const data = await resp.json();
+    history.value = data.entries ?? [];
+  } catch (e: any) {
+    toolError.value = `加载历史失败：${e.message ?? e}`;
+  } finally {
+    isHistoryLoading.value = false;
+  }
+}
+
+function toggleHistory() {
+  showHistory.value = !showHistory.value;
+  if (showHistory.value && history.value.length === 0) {
+    loadHistory();
+  }
+}
+
+function selectHistoryEntry(idx: number) {
+  selectedHistoryIdx.value = selectedHistoryIdx.value === idx ? -1 : idx;
+}
+
+function formatTimestamp(ts: string): string {
+  try {
+    const d = new Date(ts);
+    return d.toLocaleString("zh-CN", { hour12: false });
+  } catch {
+    return ts;
   }
 }
 </script>
@@ -207,6 +260,7 @@ async function invokeTool(name: string) {
           <h2>🛠 工具面板</h2>
           <span class="tool-count">{{ tools.length }} 个</span>
           <button class="refresh" @click="refreshToolList" :disabled="isToolBusy">🔄</button>
+          <button class="history-btn" @click="toggleHistory">📚</button>
         </div>
 
         <div class="tool-list">
@@ -280,6 +334,46 @@ async function invokeTool(name: string) {
           </div>
           <pre>{{ toolError }}</pre>
         </div>
+
+        <!-- v0.1.2: 历史面板抽屉 -->
+        <div v-if="showHistory" class="history-panel">
+          <div class="history-head">
+            <h3>📚 调用历史</h3>
+            <button class="refresh" @click="loadHistory" :disabled="isHistoryLoading">🔄</button>
+            <button class="close" @click="showHistory=false">×</button>
+          </div>
+          <div v-if="isHistoryLoading" class="history-loading">加载中...</div>
+          <div v-else-if="history.length === 0" class="history-empty">
+            暂无调用记录
+          </div>
+          <div v-else class="history-list">
+            <div
+              v-for="(h, idx) in history"
+              :key="idx"
+              :class="['history-item', { failed: !h.success, expanded: selectedHistoryIdx === idx }]"
+              @click="selectHistoryEntry(idx)"
+            >
+              <div class="history-item-head">
+                <span :class="['history-status', h.success ? 'ok' : 'fail']">
+                  {{ h.success ? '✅' : '❌' }}
+                </span>
+                <span class="history-name">{{ h.toolName }}</span>
+                <span class="history-time">{{ formatTimestamp(h.timestamp) }}</span>
+              </div>
+              <div v-if="selectedHistoryIdx === idx" class="history-item-detail">
+                <div v-if="h.summary" class="history-summary">{{ h.summary }}</div>
+                <details>
+                  <summary>📋 args</summary>
+                  <pre>{{ h.argsJson }}</pre>
+                </details>
+                <details v-if="h.errorMessage">
+                  <summary>⚠️ error</summary>
+                  <pre>{{ h.errorMessage }}</pre>
+                </details>
+              </div>
+            </div>
+          </div>
+        </div>
       </aside>
     </main>
   </div>
@@ -349,4 +443,27 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 .summary { white-space: pre-wrap; word-break: break-word; }
 .result-panel details { margin-top: 6px; }
 .result-panel details pre { font-size: 11px; padding: 6px; background: rgba(0,0,0,0.05); border-radius: 4px; max-height: 150px; overflow-y: auto; }
+
+/* v0.1.2: 历史按钮 + 历史面板 */
+.history-btn { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 14px; }
+.history-panel { position: absolute; right: 12px; top: 60px; bottom: 12px; width: 360px; background: white; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; z-index: 50; }
+.tool-pane { position: relative; }
+.history-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #eee; background: #fafafa; }
+.history-head h3 { font-size: 14px; flex: 1; }
+.history-head .refresh { background: none; border: 1px solid #ddd; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 12px; }
+.history-head .close { background: none; border: none; cursor: pointer; font-size: 18px; padding: 0 4px; }
+.history-loading, .history-empty { padding: 20px; text-align: center; color: #888; font-size: 13px; }
+.history-list { flex: 1; overflow-y: auto; padding: 4px; }
+.history-item { padding: 8px 10px; border-radius: 6px; margin-bottom: 4px; cursor: pointer; background: #f5f6fa; border: 1px solid transparent; }
+.history-item:hover { background: #fff3e0; }
+.history-item.failed { background: #ffebee; }
+.history-item.expanded { background: #fff8e1; border-color: #ff6a00; }
+.history-item-head { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.history-status { font-size: 13px; }
+.history-name { font-family: monospace; font-weight: bold; flex: 1; color: #333; }
+.history-time { font-size: 10px; color: #888; }
+.history-item-detail { margin-top: 6px; font-size: 11px; }
+.history-summary { background: white; padding: 6px 8px; border-radius: 4px; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; }
+.history-item-detail details { margin-top: 4px; }
+.history-item-detail details pre { font-size: 10px; padding: 6px; background: rgba(0,0,0,0.05); border-radius: 4px; max-height: 100px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
 </style>
