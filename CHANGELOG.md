@@ -2,6 +2,49 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.5] - 2026-07-02
+
+### 🆕 Tool 结果多格式导出（MD / JSON / CSV）
+
+#### ✨ 新增能力
+- **3 个独立按钮**：「📥 MD」/「📥 JSON」/「📥 CSV」
+- **重构成 `exportResult(format: "md" | "json" | "csv")` 通用函数**
+- **3 个包装函数**：`exportMarkdown()` / `exportJson()` / `exportCsv()`
+- **共用下载逻辑**：Blob + URL.createObjectURL + `<a download>`
+
+#### 📄 格式详情
+- **MD**：v0.1.3 Markdown 报告（保留）
+- **JSON**：原始 data + 元信息头（结构化、可复用）
+- **CSV**：2 列表格（字段名 / 值），简单可导入 Excel
+
+#### 🎨 UI 风格
+- 3 个按钮并排放在 `.export-bar` 容器（flex gap=4px）
+- Melon 橙 #ff6a00 背景延续 v0.1.3
+- 三按钮共享样式 `margin-left: auto` 推到右侧
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 628ms / 11 modules transformed
+- ✅ 通用函数 exportResult 18 行 + 3 个包装函数各 1 行
+- ✅ CSV 字段值含逗号/引号/换行自动 escape（标准 RFC 4180）
+
+#### 🔧 关键决策
+- **不复用 exportMarkdown 旧代码**：直接重构 exportResult(format) 一个函数
+- **3 个独立按钮** vs dropdown：MVP 选 3 按钮，简单明了，未来用工具多了再 dropdown
+- **CSV 用字段值映射**：tool 结果 data 是任意 JSON shape，平铺到 key-value 行
+- **失败结果暂不导出**：保守做法（和 v0.1.3 一致）
+
+#### 🔜 v0.1.6 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** Sidecar 调时标准化（基础请求/响应 schema 文档化）
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：
+  - 重构 `exportMarkdown()` 为 `exportResult(format)` 通用函数（3 种格式分支）
+  - +3 个包装函数（each 1 line）
+  - +`export-bar` div 容器 + 2 个新按钮 `<button @click="exportJson">` + `<button @click="exportCsv">`
+  - +CSS `.export-bar { display: inline-flex; gap: 4px; margin-left: auto; }`
+
 ## [tauri-v0.1.4] - 2026-07-02
 
 ### 🆕 历史面板分页（before cursor）

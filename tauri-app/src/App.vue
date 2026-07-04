@@ -150,38 +150,87 @@ function cancelInvoke() {
 }
 
 // v0.1.3: 导出 Tool 结果为 Markdown
-function exportMarkdown() {
+// v0.1.5: 多格式导出（MD / JSON / CSV）
+function exportMarkdown() { exportResult("md"); }
+function exportJson() { exportResult("json"); }
+function exportCsv() { exportResult("csv"); }
+
+function exportResult(format: "md" | "json" | "csv") {
   const r = toolResult.value;
   if (!r) return;
   const name = r.toolName ?? selectedTool.value ?? "tool";
   const ts = new Date().toLocaleString("zh-CN", { hour12: false });
-  const lines: string[] = [];
-  lines.push(`# DeskPilot Tool 调用报告`);
-  lines.push(``);
-  lines.push(`- **工具名**: \`${name}\``);
-  lines.push(`- **调用时间**: ${ts}`);
-  lines.push(`- **状态**: ${r.success ? "✅ 成功" : "❌ 失败"}`);
-  lines.push(`- **耗时**: ${r.durationMs ?? "-"} ms`);
-  lines.push(``);
-  if (r.summary) {
-    lines.push(`## Summary`);
+  const stamp = Date.now();
+
+  let content = "";
+  let mime = "text/plain;charset=utf-8";
+  let ext = format;
+
+  if (format === "md") {
+    const lines: string[] = [];
+    lines.push(`# DeskPilot Tool 调用报告`);
     lines.push(``);
-    lines.push(r.summary);
+    lines.push(`- **工具名**: \`${name}\``);
+    lines.push(`- **调用时间**: ${ts}`);
+    lines.push(`- **状态**: ${r.success ? "✅ 成功" : "❌ 失败"}`);
+    lines.push(`- **耗时**: ${r.durationMs ?? "-"} ms`);
     lines.push(``);
+    if (r.summary) {
+      lines.push(`## Summary`);
+      lines.push(``);
+      lines.push(r.summary);
+      lines.push(``);
+    }
+    if (r.data !== undefined && r.data !== null) {
+      lines.push(`## Data`);
+      lines.push(``);
+      lines.push("```json");
+      lines.push(JSON.stringify(r.data, null, 2));
+      lines.push("```");
+    }
+    content = lines.join("\n");
+    mime = "text/markdown;charset=utf-8";
+  } else if (format === "json") {
+    const payload = {
+      toolName: name,
+      timestamp: ts,
+      success: r.success,
+      durationMs: r.durationMs ?? null,
+      summary: r.summary,
+      data: r.data ?? null,
+      errorMessage: r.errorMessage ?? null
+    };
+    content = JSON.stringify(payload, null, 2);
+    mime = "application/json;charset=utf-8";
+  } else if (format === "csv") {
+    const rows: string[][] = [
+      ["字段", "值"],
+      ["toolName", name],
+      ["timestamp", ts],
+      ["success", String(r.success)],
+      ["durationMs", String(r.durationMs ?? "")],
+      ["summary", r.summary ?? ""],
+      ["errorMessage", r.errorMessage ?? ""],
+      ["dataJson", r.data !== undefined && r.data !== null ? JSON.stringify(r.data) : ""]
+    ];
+    content = rows
+      .map(row => row.map(cell => {
+        const s = String(cell);
+        if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      }).join(","))
+      .join("\n");
+    mime = "text/csv;charset=utf-8";
+    ext = "csv";
   }
-  if (r.data !== undefined && r.data !== null) {
-    lines.push(`## Data`);
-    lines.push(``);
-    lines.push("```json");
-    lines.push(JSON.stringify(r.data, null, 2));
-    lines.push("```");
-  }
-  const md = lines.join("\n");
-  const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+
+  const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `deskpilot-${name}-${Date.now()}.md`;
+  a.download = `deskpilot-${name}-${stamp}.${ext}`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -386,7 +435,11 @@ function formatTimestamp(ts: string): string {
         <div v-if="toolResult" class="result-panel success">
           <div class="result-head">
             <strong>✅ 调用成功</strong>
-            <button class="export-md" @click="exportMarkdown" title="导出为 Markdown">📥 MD</button>
+            <div class="export-bar">
+              <button class="export-md" @click="exportMarkdown" title="导出为 Markdown">📥 MD</button>
+              <button class="export-md" @click="exportJson" title="导出为 JSON">📥 JSON</button>
+              <button class="export-md" @click="exportCsv" title="导出为 CSV">📥 CSV</button>
+            </div>
             <button class="close" @click="toolResult=null">×</button>
           </div>
           <pre v-if="toolResult.summary" class="summary">{{ toolResult.summary }}</pre>
@@ -520,7 +573,9 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 .result-panel details pre { font-size: 11px; padding: 6px; background: rgba(0,0,0,0.05); border-radius: 4px; max-height: 150px; overflow-y: auto; }
 
 /* v0.1.3: 导出 MD 按钮 */
-.export-md { background: #ff6a00; color: white; border: none; border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: auto; }
+/* v0.1.5: 多格式导出按钮组 */
+.export-bar { display: inline-flex; gap: 4px; margin-left: auto; }
+.export-md { background: #ff6a00; color: white; border: none; border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 12px; font-weight: bold; }
 .export-md:hover { background: #e55e00; }
 .result-head { display: flex; align-items: center; gap: 8px; }
 
