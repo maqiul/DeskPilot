@@ -2,6 +2,49 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.15] - 2026-07-02
+
+### 🆕 健康徽章加「点击重试探活」按钮
+
+#### ✨ 新增能力
+- **健康徽章变 button**：点击立即重新探测 Sidecar 端口 + 拉 /api/health
+- **Loading 态**：探活中显示 ⏳ spinner 旋转动画 + 按钮 disabled 防双击
+- **tooltip 增强**：所有徽章都加「（点击重试）」提示
+- **重试中 emoji 旋转**：0.8s linear infinite spin
+
+#### 🎨 UI 风格
+- 徽章 cursor: pointer（原来 cursor: help）
+- 边框 1px transparent，hover 时变 rgba(0,0,0,0.1)
+- disabled 状态：cursor: wait + opacity 0.7
+
+#### 🛠 技术实现
+- `refreshHealth()` async 函数：调用 `resolveSidecarBase()` + `fetchHealth()`
+- `isHealthRefreshing = ref(false)` loading 态
+- 3 个徽章都改 `<button>` 元素 + @click handler
+- spinner 用 CSS `@keyframes spin` 0.8s linear infinite
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 650ms / 11 modules transformed
+- ✅ TS 编译全过（4 个徽章转 button 无类型问题）
+
+#### 🔧 关键决策
+- **click 而非 hover**：用户主动触发，可控
+- **loading 防止双击**：`isHealthRefreshing` + `disabled` + `try/finally`
+- **重新探测端口**：解决「sidecar 之前 5180 现在 5183」场景
+- **spinner 而非 disabled 灰**：用户知道在动
+
+#### 🔜 v0.1.16 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** Sidecar 日志重定向到 Tauri UI
+- **C** 探活历史曲线图（最近 10 次 status）
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：
+  - +`refreshHealth()` 函数 + `isHealthRefreshing` reactive
+  - 3 个徽章 `<span>` → `<button>` + @click + disabled
+  - +CSS `.health-badge` button 重置 + `.spinner` + `@keyframes spin`
+
 ## [tauri-v0.1.14] - 2026-07-02
 
 ### 🆕 Frontend 探活结果暴露到 UI + Sidecar 端口自动探测

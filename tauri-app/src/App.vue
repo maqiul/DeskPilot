@@ -115,6 +115,21 @@ async function fetchHealth() {
   }
 }
 
+// v0.1.15: 手动重试探活（先重新探测端口，再拉 health，带 loading）
+async function refreshHealth() {
+  if (isHealthRefreshing.value) return;
+  isHealthRefreshing.value = true;
+  try {
+    const detectedBase = await resolveSidecarBase();
+    SIDE_BASE.value = detectedBase;
+    await fetchHealth();
+  } finally {
+    isHealthRefreshing.value = false;
+  }
+}
+
+const isHealthRefreshing = ref(false); // v0.1.15: 探活 loading 态
+
 async function refreshToolList() {
   try {
     const resp = await fetch(SIDE_TOOLS_LIST.value);
@@ -466,12 +481,14 @@ const filteredTools = computed(() => {
       <section class="chat-pane">
         <div class="chat-header">
           <span class="msg-count">{{ messages.length }} 条消息</span>
-          <!-- v0.1.14: Sidecar 健康徽章（ready=绿 / degraded=黄 / error=红） -->
-          <span v-if="health" :class="['health-badge', health.status.toLowerCase()]" :title="`Sidecar ${health.version} · 工具 ${health.toolCount} 个 · history_ok=${health.historyOk}`">
-            {{ health.status === "ready" ? "🟢" : "🟡" }} {{ health.toolCount }} tools
-          </span>
-          <span v-else-if="healthError" class="health-badge error" :title="healthError">🔴 离线</span>
-          <span v-else class="health-badge" title="探活中…">⏳ 探活中</span>
+          <!-- v0.1.15: 健康徽章改 button + 点击重试探活（带 loading 态） -->
+          <button v-if="health" :class="['health-badge', health.status.toLowerCase(), { refreshing: isHealthRefreshing }]" :title="`Sidecar ${health.version} · 工具 ${health.toolCount} 个 · history_ok=${health.historyOk}（点击重试）`" :disabled="isHealthRefreshing" @click="refreshHealth">
+            <span v-if="isHealthRefreshing" class="spinner">⏳</span>
+            <span v-else>{{ health.status === "ready" ? "🟢" : "🟡" }}</span>
+            {{ health.toolCount }} tools
+          </button>
+          <button v-else-if="healthError" class="health-badge error" :title="`${healthError}（点击重试）`" @click="refreshHealth">🔴 离线</button>
+          <button v-else class="health-badge" :title="'点击重试'" :disabled="isHealthRefreshing" @click="refreshHealth">⏳ 探活中</button>
           <!-- v0.1.11: 一键清空 -->
           <button class="clear-all" @click="requestClearAll" :disabled="messages.length === 0" title="清空全部聊天">🧹 清空</button>
         </div>
@@ -678,11 +695,16 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 /* v0.1.12: 消息时间戳 */
 .msg-timestamp { display: block; font-size: 10px; color: #999; margin-top: 4px; font-family: monospace; }
 
-/* v0.1.14: Sidecar 健康徽章 */
-.health-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; cursor: help; }
+/* v0.1.14: Sidecar 健康徽章（v0.1.15 改 button） */
+.health-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; font-family: inherit; line-height: 1.4; }
+.health-badge:hover:not(:disabled) { filter: brightness(0.95); border-color: rgba(0,0,0,0.1); }
+.health-badge:disabled { cursor: wait; opacity: 0.7; }
 .health-badge.ready { background: #e8f5e9; color: #2e7d32; }
 .health-badge.degraded { background: #fff8e1; color: #f57c00; }
 .health-badge.error { background: #ffebee; color: #c62828; }
+.health-badge.refreshing { opacity: 0.7; }
+.spinner { display: inline-block; animation: spin 0.8s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
 .msg.user { background: #ff6a00; color: white; align-self: flex-end; }
 .msg.assistant { background: #f5f6fa; color: #333; align-self: flex-start; border: 1px solid #e0e0e0; }
 .empty-hint { align-self: center; color: #888; padding: 40px; text-align: center; }
