@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { listen } from "@tauri-apps/api/event"; // v0.1.16: 监听 Rust emit 的 sidecar-log 事件
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -89,11 +90,28 @@ function executeSelected() {
 }
 
 onMounted(async () => {
+  // v0.1.16: 监听 Rust emit "sidecar-log" 事件
+  try {
+    const unlisten = await listen<string>("sidecar-log", (event) => {
+      appendLog(event.payload);
+    });
+    unlistenSidecarLog = unlisten;
+  } catch (e: any) {
+    console.warn("监听 sidecar-log 失败（可能在浏览器 dev 模式）:", e?.message ?? e);
+  }
   // v0.1.14: 先自动探测 Sidecar 端口（避免 5180 未起时全失败）
   const detectedBase = await resolveSidecarBase();
   SIDE_BASE.value = detectedBase;
   await fetchHealth();
   await refreshToolList();
+});
+
+onUnmounted(() => {
+  // v0.1.16: 清理事件监听
+  if (unlistenSidecarLog) {
+    unlistenSidecarLog();
+    unlistenSidecarLog = null;
+  }
 });
 
 // v0.1.14: 拉 Sidecar /api/health 深度探活
@@ -127,6 +145,37 @@ async function refreshHealth() {
     isHealthRefreshing.value = false;
   }
 }
+
+// v0.1.16: Sidecar 日志面板（监听 Rust emit "sidecar-log" 事件）
+const sidecarLogs = ref<{ ts: number; line: string }[]>([]);
+const showLogs = ref(false);
+const MAX_LOGS = 200; // 限制内存（环形 buffer）
+
+function appendLog(line: string) {
+  sidecarLogs.value.push({ ts: Date.now(), line });
+  if (sidecarLogs.value.length > MAX_LOGS) {
+    sidecarLogs.value.splice(0, sidecarLogs.value.length - MAX_LOGS);
+  }
+}
+
+function clearLogs() {
+  sidecarLogs.value = [];
+}
+
+function toggleLogs() {
+  showLogs.value = !showLogs.value;
+}
+
+function formatLogTs(ts: number): string {
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  const mss = String(d.getMilliseconds()).padStart(3, "0");
+  return `${hh}:${mm}:${ss}.${mss}`;
+}
+
+let unlistenSidecarLog: (() => void) | null = null; // v0.1.16: 清理函数
 
 const isHealthRefreshing = ref(false); // v0.1.15: 探活 loading 态
 
@@ -481,6 +530,10 @@ const filteredTools = computed(() => {
       <section class="chat-pane">
         <div class="chat-header">
           <span class="msg-count">{{ messages.length }} 条消息</span>
+          <!-- v0.1.16: 日志按钮（带未读数 / 总数） -->
+          <button class="logs-btn" @click="toggleLogs" :title="showLogs ? '关闭日志面板' : '打开 Sidecar 日志'">
+            📋 {{ showLogs ? '关闭' : '日志' }}<span v-if="sidecarLogs.length > 0" class="logs-count"> {{ sidecarLogs.length }}</span>
+          </button>
           <!-- v0.1.15: 健康徽章改 button + 点击重试探活（带 loading 态） -->
           <button v-if="health" :class="['health-badge', health.status.toLowerCase(), { refreshing: isHealthRefreshing }]" :title="`Sidecar ${health.version} · 工具 ${health.toolCount} 个 · history_ok=${health.historyOk}（点击重试）`" :disabled="isHealthRefreshing" @click="refreshHealth">
             <span v-if="isHealthRefreshing" class="spinner">⏳</span>
@@ -500,6 +553,21 @@ const filteredTools = computed(() => {
             <div class="confirm-actions">
               <button class="cancel" @click="cancelClearAll">取消</button>
               <button class="confirm" @click="clearAllMessages">确认清空</button>
+            </div>
+          </div>
+        </div>
+        <!-- v0.1.16: Sidecar 日志面板（右侧抽屉） -->
+        <div v-if="showLogs" class="logs-panel">
+          <div class="logs-head">
+            <span>📋 Sidecar 日志（{{ sidecarLogs.length }} / {{ MAX_LOGS }}）</span>
+            <button class="logs-clear" @click="clearLogs" :disabled="sidecarLogs.length === 0" title="清空日志">🗑️</button>
+            <button class="logs-close" @click="toggleLogs" title="关闭">×</button>
+          </div>
+          <div class="logs-list">
+            <div v-if="sidecarLogs.length === 0" class="logs-empty">暂无日志</div>
+            <div v-for="(log, i) in sidecarLogs" :key="i" class="logs-item">
+              <span class="logs-ts">{{ formatLogTs(log.ts) }}</span>
+              <span class="logs-line">{{ log.line }}</span>
             </div>
           </div>
         </div>
@@ -705,6 +773,23 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 .health-badge.refreshing { opacity: 0.7; }
 .spinner { display: inline-block; animation: spin 0.8s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* v0.1.16: 日志按钮 */
+.logs-btn { background: white; color: #555; border: 1px solid #ddd; border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 12px; }
+.logs-btn:hover { background: #f5f5f5; }
+.logs-count { font-size: 10px; color: #888; margin-left: 2px; }
+
+/* v0.1.16: 日志面板（右侧抽屉 360px） */
+.logs-panel { position: absolute; top: 0; right: 0; width: 360px; height: 100%; background: #fafafa; border-left: 1px solid #ddd; display: flex; flex-direction: column; z-index: 50; box-shadow: -4px 0 16px rgba(0,0,0,0.08); }
+.logs-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #eee; background: white; font-size: 12px; font-weight: bold; }
+.logs-clear, .logs-close { background: transparent; border: none; color: #999; font-size: 14px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.logs-clear:hover:not(:disabled), .logs-close:hover { background: #f0f0f0; color: #333; }
+.logs-clear:disabled { opacity: 0.3; cursor: not-allowed; }
+.logs-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+.logs-empty { padding: 20px; color: #999; text-align: center; font-size: 12px; }
+.logs-item { padding: 4px 12px; font-family: monospace; font-size: 11px; line-height: 1.5; border-bottom: 1px solid #f0f0f0; word-break: break-all; }
+.logs-ts { color: #999; margin-right: 8px; }
+.logs-line { color: #333; }
 .msg.user { background: #ff6a00; color: white; align-self: flex-end; }
 .msg.assistant { background: #f5f6fa; color: #333; align-self: flex-start; border: 1px solid #e0e0e0; }
 .empty-hint { align-self: center; color: #888; padding: 40px; text-align: center; }

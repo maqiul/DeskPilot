@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::process::{Command, Stdio};
+use tauri::Emitter; // v0.1.16: 让 app.emit() 可用
 
 const SIDECAR_URL: &str = "http://localhost:5180";
 const SIDECAR_PORT: &str = "5180";
@@ -44,9 +45,11 @@ async fn send_chat(prompt: String) -> Result<String, String> {
 
 /// v0.0.3: Tauri 启动时自动拉起 .NET Sidecar（绕过 tauri-plugin-shell 的 .dll 后缀 bug）。
 ///
+/// v0.1.16: 接受 AppHandle 用来 emit "sidecar-log" 事件给 Vue 前端
+///
 /// 二进制路径：从 `Cargo workspace` 推理到 `binaries/deskpilot-server-x86_64-pc-windows-msvc.exe`，
 /// 该目录包含完整的 .NET self-contained 运行时 + 所有依赖 .dll。
-fn start_sidecar() -> Result<(), String> {
+fn start_sidecar(app: &tauri::AppHandle) -> Result<(), String> {
     // 当前 exe: target/release/deskpilot-v2.exe
     // binaries 目录: src-tauri/binaries/
     let tauri_exe = std::env::current_exe()
@@ -79,13 +82,15 @@ fn start_sidecar() -> Result<(), String> {
 
     println!("✅ .NET Sidecar 已启动 (PID {})：{}", child.id(), SIDECAR_URL);
 
-    // 转储 .NET 输出到 stderr（开发模式可见 + 不阻塞）
+    // v0.1.16: .NET stderr 透传到 Tauri 事件 "sidecar-log"，前端 listen
     if let Some(stderr) = child.stderr.take() {
+        let app_clone = app.clone();
         std::thread::spawn(move || {
             use std::io::{BufRead, BufReader};
             let reader = BufReader::new(stderr);
             for line in reader.lines().flatten() {
-                eprintln!("[.NET] {}", line);
+                eprintln!("[.NET] {}", line); // 保留终端输出
+                let _ = app_clone.emit("sidecar-log", line);
             }
         });
     }
@@ -96,12 +101,14 @@ fn start_sidecar() -> Result<(), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .setup(|_app| {
-            // v0.0.3: Tauri 启动时自动拉 .NET Sidecar
-            match start_sidecar() {
+        .setup(|app| {
+            // v0.0.3: Tauri 启动时自动拉 .NET Sidecar（v0.1.16: 传 app_handle 用于 emit 日志）
+            let app_handle = app.handle().clone();
+            match start_sidecar(&app_handle) {
                 Ok(_) => {
                     // v0.0.6: 后台线程等 .NET 起来（最多 5 秒 retry）
-                    std::thread::spawn(|| {
+                    let app_emit = app_handle.clone();
+                    std::thread::spawn(move || {
                         let client = reqwest::blocking::Client::builder()
                             .timeout(std::time::Duration::from_secs(2))
                             .build()
@@ -123,17 +130,19 @@ pub fn run() {
                                     let hist_ok = json.pointer("/checks/historyStore/ok")
                                         .and_then(|v| v.as_bool())
                                         .unwrap_or(false);
-                                    println!(
+                                    let log = format!(
                                         "✅ Sidecar 深度健康检查通过（第 {} 次，status={}，tools={}，history_ok={}）：{}",
                                         i, status, tools, hist_ok, SIDECAR_URL
                                     );
+                                    println!("{}", log);
+                                    let _ = app_emit.emit("sidecar-log", log); // v0.1.16: 透传到 UI
                                     return;
                                 }
                             }
                         }
-                        eprintln!(
-                            "⚠️ Sidecar 10 次重试后仍未响应。前端 send_chat 可能失败。"
-                        );
+                        let log = "⚠️ Sidecar 10 次重试后仍未响应。前端 send_chat 可能失败。".to_string();
+                        eprintln!("{}", log);
+                        let _ = app_emit.emit("sidecar-log", log); // v0.1.16: 透传到 UI
                     });
                 }
                 Err(e) => {

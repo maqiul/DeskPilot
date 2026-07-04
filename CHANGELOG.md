@@ -2,6 +2,75 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.16] - 2026-07-02
+
+### 🆕 Sidecar 日志重定向到 Tauri UI
+
+#### ✨ 新增能力
+- **Rust 端 emit "sidecar-log"**：每个 .NET Sidecar stderr 行 emit 到 Vue
+- **探活日志也 emit**：✅/⚠️ 健康检查结果也透传
+- **Vue 端 listen 事件**：`@tauri-apps/api/event` listen<string> 注册
+- **日志按钮在 chat-header**：显示「📋 日志 N」（N = 日志条数）
+- **日志面板抽屉**：右侧 360px，仿历史面板风格
+- **环形 buffer 限内存**：MAX_LOGS = 200，超出自动截断
+- **清空按钮**：🗑️ 一键清
+- **毫秒级时间戳**：HH:mm:SS.fff
+
+#### 🎨 UI 风格
+- 抽屉右侧 360px + box-shadow -4px 0 16px
+- 头部白色 + 边框分隔
+- 日志条目 monospace 11px + 灰底交替
+- 灰色时间戳 + 黑色日志内容
+
+#### 🛠 技术实现
+- **Rust 端**：
+  - `use tauri::Emitter;`（Tauri 2.x 必需）
+  - `start_sidecar(app: &tauri::AppHandle)` 接受 handle
+  - stderr 子线程 `app_clone.emit("sidecar-log", line)`
+  - 探活成功/失败也 emit 一次
+- **Vue 端**：
+  - `import { listen } from "@tauri-apps/api/event"`
+  - `sidecarLogs = ref<{ts, line}[]>([])` reactive
+  - `MAX_LOGS = 200` 环形 buffer
+  - onMounted 注册 listen + onUnmounted 清理
+  - 模板：抽屉 + 时间戳 + 日志行
+
+#### 📊 验证
+- ✅ `cargo build --release` 0 错 44.83s
+- ✅ `npm run build` 0 错 723ms / 14 modules transformed
+- ✅ Tauri exe 11.7MB（11.73MB）
+
+#### 🐛 踩坑
+- **unexpected closing delimiter `}`**：edit_file 替换时多了一个 `});` 残留 → 手动删
+- **no method named `emit`**：Tauri 2.x 必须 `use tauri::Emitter;` 才能调 `app.emit()`
+
+#### 🔧 关键决策
+- **环形 buffer MAX_LOGS = 200**：避免长时间运行内存爆
+- **不持久化日志**：内存中，刷新清空（v0.1.x MVP 阶段）
+- **emit vs IPC**：用 emit (事件) 而非 IPC (command)，单向 fire-and-forget
+- **drawer 而非 modal**：模态会阻挡聊天，drawer 不挡
+
+#### 🔜 v0.1.17 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** 日志按 level 过滤（info/warn/error）
+- **C** 日志导出（保存到本地 .log 文件）
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src-tauri/src/lib.rs`：
+  - +`use tauri::Emitter;`
+  - start_sidecar 加 `app: &tauri::AppHandle` 参数
+  - stderr 子线程 `app_clone.emit("sidecar-log", line)`
+  - 探活成功/失败也 emit
+- `tauri-app/src/App.vue`：
+  - +`import { listen, onUnmounted } from ...`
+  - +sidecarLogs / showLogs / MAX_LOGS / 5 个函数
+  - onMounted 注册 listen
+  - onUnmounted 清理
+  - +聊天 header 日志按钮
+  - +抽屉 panel 模板
+  - +CSS（13 行）
+
 ## [tauri-v0.1.15] - 2026-07-02
 
 ### 🆕 健康徽章加「点击重试探活」按钮
