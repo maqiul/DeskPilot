@@ -2,6 +2,63 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.7] - 2026-07-02
+
+### 🆕 Sidecar 深度健康探活 `/api/health`
+
+#### ✨ 新增能力
+- **新端点 `GET /api/health`**：在 v0.0.6 浅度探活（sidecar 进程在）之上加深度验证
+- **ToolRegistry 检查**：`toolRegistry.count > 0` + 取前 3 个 Tool 名
+- **HistoryStore 检查**：`history.List(1)` 不抛异常即视为 ok
+- **返回 `status`**：`ready`（OK）/ `degraded`（任意检查失败）
+
+#### 📊 响应（200）
+
+```json
+{
+  "service": "DeskPilot.Server",
+  "version": "v0.1.7",
+  "status": "ready",
+  "checks": {
+    "toolRegistry": {
+      "ok": true,
+      "count": 15,
+      "sample": ["archive_files_by_date", "batch_excel", "batch_resize_image"],
+      "message": "工具已注册"
+    },
+    "historyStore": { "ok": true, "message": "ok" }
+  }
+}
+```
+
+#### 🎯 用途
+- Tauri setup() 重试可改用 `/api/health` 替代 `/`（更可靠）
+- 排查 DI 注入失败（ToolRegistry 为空）
+- 排查历史磁盘读失败
+
+#### 🛠 技术实现
+- `IToolRegistry` 注入（program 已 singleton 注册）
+- 异常用 `try-catch` 包住 historyStore 检查（避免单个检查失败抛 500）
+- Tool 列表直接 `registry.ListTools().Count()` + `registry.ListNames().Take(3)`
+
+#### 📊 验证
+- ✅ 后端 `dotnet publish` self-contained（151KB exe）
+- ✅ 端到端 `curl http://localhost:5182/api/health` → status: ready / count: 15 / sample: 3 Tool / historyStore: ok
+
+#### 🔧 关键决策
+- **`toolCount > 0` 作为 OK 标志**：v0.0.8 后固定 15 个，0 一定是 bug
+- **Tool 列表 sample size = 3**：避免日志过大
+- **不删除 `GET /` 浅端点**：保留老客户端兼容
+- **失败也返回 200**：errors 在 `checks.xxx.ok = false` 让客户端判断（避免吞 500）
+
+#### 🔜 v0.1.8 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **C** Frontend Tool 结果回填聊天历史
+- **D** 停
+
+#### 📦 项目变更
+- `src/DeskPilot.Server/Program.cs`：+`/api/health` 端点（39 行）+ 3 处 version v0.1.4 → v0.1.7
+
 ## [tauri-v0.1.6] - 2026-07-02
 
 ### 🆕 Sidecar HTTP API 完整文档

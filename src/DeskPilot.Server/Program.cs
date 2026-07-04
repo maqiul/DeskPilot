@@ -45,7 +45,7 @@ var app = builder.Build();
 app.MapGet("/", () => Results.Ok(new
 {
     service = "DeskPilot.Server",
-    version = "v0.1.4",
+    version = "v0.1.7",
     status = "running"
 }));
 
@@ -63,7 +63,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = sb.ToString(),
             success = true,
-            version = "v0.1.4"
+            version = "v0.1.7"
         });
     }
     catch (System.Exception ex)
@@ -72,7 +72,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = $"错误：{ex.Message}",
             success = false,
-            version = "v0.1.4"
+            version = "v0.1.7"
         });
     }
 });
@@ -215,6 +215,49 @@ app.MapGet("/api/tools/history", (ToolHistoryStore history, int? limit, string? 
     {
         count = entries.Count(),
         entries
+    });
+});
+
+// v0.1.7: 深度健康探活（验证 sidecar 不止进程在，且 ToolRegistry/历史存储都正常）
+app.MapGet("/api/health", (IToolRegistry registry, ToolHistoryStore history) =>
+{
+    var toolCount = registry.ListTools().Count();
+    var toolNames = registry.ListNames().ToList();
+    var ok = toolCount > 0;
+
+    // 探测历史存储：尝试读取（不写）
+    var historyOk = true;
+    var historyMsg = "ok";
+    try
+    {
+        var _ = history.List(1); // 不抛即视为 ok
+    }
+    catch (System.Exception ex)
+    {
+        historyOk = false;
+        historyMsg = ex.Message;
+    }
+
+    return Results.Ok(new
+    {
+        service = "DeskPilot.Server",
+        version = "v0.1.7",
+        status = ok ? "ready" : "degraded",
+        checks = new
+        {
+            toolRegistry = new
+            {
+                ok = toolCount > 0,
+                count = toolCount,
+                sample = toolNames.Take(3).ToList(),
+                message = toolCount > 0 ? "工具已注册" : "ToolRegistry 为空！请检查 Program.cs DI 注册"
+            },
+            historyStore = new
+            {
+                ok = historyOk,
+                message = historyMsg
+            }
+        }
     });
 });
 
