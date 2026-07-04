@@ -45,7 +45,7 @@ var app = builder.Build();
 app.MapGet("/", () => Results.Ok(new
 {
     service = "DeskPilot.Server",
-    version = "v0.1.1",
+    version = "v0.1.4",
     status = "running"
 }));
 
@@ -63,7 +63,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = sb.ToString(),
             success = true,
-            version = "v0.1.1"
+            version = "v0.1.4"
         });
     }
     catch (System.Exception ex)
@@ -72,7 +72,7 @@ app.MapGet("/api/chat", async (string prompt, IChatService chat, CancellationTok
         {
             reply = $"错误：{ex.Message}",
             success = false,
-            version = "v0.1.1"
+            version = "v0.1.4"
         });
     }
 });
@@ -189,10 +189,20 @@ app.MapPost("/api/tools/execute", async (string name, HttpContext ctx, IToolRegi
 });
 
 // v0.1.1: 列出最近 N 条 Tool 调用历史（默认 50，最大 100）
-app.MapGet("/api/tools/history", (ToolHistoryStore history, int? limit) =>
+// v0.1.4: 支持 before 参数分页（ISO 8601 时间戳，返回早于该时间的记录）
+app.MapGet("/api/tools/history", (ToolHistoryStore history, int? limit, string? before) =>
 {
     var n = Math.Clamp(limit ?? 50, 1, 100);
-    var entries = history.List(n).Select(e => new
+    IReadOnlyList<DeskPilot.Server.ToolHistoryEntry> entriesRaw;
+    if (!string.IsNullOrWhiteSpace(before) && DateTime.TryParse(before, out var beforeDt))
+    {
+        entriesRaw = history.ListBefore(beforeDt.ToUniversalTime(), n);
+    }
+    else
+    {
+        entriesRaw = history.List(n);
+    }
+    var entries = entriesRaw.Select(e => new
     {
         timestamp = e.Timestamp,
         toolName = e.ToolName,

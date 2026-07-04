@@ -2,6 +2,43 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.4] - 2026-07-02
+
+### 🆕 历史面板分页（before cursor）
+
+#### ✨ 新增能力
+- **服务端 `before` 参数**：`GET /api/tools/history?before=<ISO8601>&limit=50` 返回早于该时间的记录
+- **新函数 `ListBefore(DateTime before, int limit)`**：`_entries.Where(e => e.Timestamp < before).OrderByDescending(Timestamp).Take(limit)`
+- **前端 `loadMoreHistory()`**：取 history 数组最早一条的 timestamp 作为 before，append 到末尾
+- **「📥 加载更早」按钮**：在 history-list 底部，hasMore=false 时自动隐藏
+- **`— 已加载全部历史 —`** 提示：hasMore=false 时显示
+
+#### 🛠 技术细节
+- 后端 `DateTime.TryParse(before, out var beforeDt)` + `.ToUniversalTime()`（统一 UTC）
+- 前端 `loadHistory(reset = true)` 重载：true=替换 / false=append
+- 自动刷新（invokeTool 后）走 `loadHistory(true)` 仍为 reset
+
+#### 📊 验证
+- ✅ 后端 `dotnet publish` self-contained 151KB
+- ✅ 端到端：无 before = 3 条，`before=2026-07-03T09:33:00Z` = 2 条（验证有效）
+- ✅ 前端 `npm run build` 0 错 578ms / 11 modules transformed
+- ✅ HTML 标签 + CSS 样式 + Vue 逻辑全部就位
+
+#### 🔧 关键决策
+- **Cursor 选 timestamp**（非 offset）：offset 在并发写入下会重复/漏条，timestamp 单调保证
+- **首次 reset=true，后续 append**：避免历史被新调用顶掉
+- **Service Timer 自动停**：手动关闭 sidecar，端口立即释放，方便下次测试
+
+#### 🔜 v0.1.5 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **C** Tool 结果也支持导出 JSON / CSV
+- **D** 停
+
+#### 📦 项目变更
+- `src/DeskPilot.Server/ToolHistoryStore.cs`：+`ListBefore()` 重载
+- `src/DeskPilot.Server/Program.cs`：`/api/tools/history` 加 `before` 参数 + 3 处版本号 v0.1.1 → v0.1.4
+- `tauri-app/src/App.vue`：+`hasMoreHistory` reactive + `loadMoreHistory()` 函数 + 「加载更早」按钮 + 18 行 CSS
+
 ## [tauri-v0.1.3] - 2026-07-02
 
 ### 🆕 Tool 结果导出 Markdown

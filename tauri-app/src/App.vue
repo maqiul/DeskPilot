@@ -226,20 +226,25 @@ async function invokeTool(name: string) {
   } finally {
     isToolBusy.value = false;
     cancelInvoke();
-    // v0.1.2: 调用完自动刷新历史
+    // v0.1.2: 调用完自动刷新历史（v0.1.4: reset=true 重置）
     if (showHistory.value) {
-      loadHistory();
+      loadHistory(true);
     }
   }
 }
 
 // v0.1.2: 加载历史
-async function loadHistory() {
+async function loadHistory(reset = true) {
   isHistoryLoading.value = true;
   try {
     const resp = await fetch(`${SIDE_HISTORY}?limit=50`);
     const data = await resp.json();
-    history.value = data.entries ?? [];
+    const newEntries = data.entries ?? [];
+    if (reset) {
+      history.value = newEntries;
+    } else {
+      history.value = [...history.value, ...newEntries];
+    }
   } catch (e: any) {
     toolError.value = `加载历史失败：${e.message ?? e}`;
   } finally {
@@ -247,10 +252,33 @@ async function loadHistory() {
   }
 }
 
+// v0.1.4: 分页加载更早的历史（取最早一条的 timestamp 作为 before）
+async function loadMoreHistory() {
+  if (isHistoryLoading.value || history.value.length === 0) return;
+  isHistoryLoading.value = true;
+  try {
+    const earliestTs = history.value[history.value.length - 1].timestamp;
+    const resp = await fetch(`${SIDE_HISTORY}?limit=50&before=${encodeURIComponent(earliestTs)}`);
+    const data = await resp.json();
+    const newEntries = data.entries ?? [];
+    if (newEntries.length === 0) {
+      hasMoreHistory.value = false;
+    } else {
+      history.value = [...history.value, ...newEntries];
+    }
+  } catch (e: any) {
+    toolError.value = `加载历史失败：${e.message ?? e}`;
+  } finally {
+    isHistoryLoading.value = false;
+  }
+}
+
+const hasMoreHistory = ref(true);
+
 function toggleHistory() {
   showHistory.value = !showHistory.value;
   if (showHistory.value && history.value.length === 0) {
-    loadHistory();
+    loadHistory(true);
   }
 }
 
@@ -379,7 +407,7 @@ function formatTimestamp(ts: string): string {
         <div v-if="showHistory" class="history-panel">
           <div class="history-head">
             <h3>📚 调用历史</h3>
-            <button class="refresh" @click="loadHistory" :disabled="isHistoryLoading">🔄</button>
+            <button class="refresh" @click="loadHistory(true)" :disabled="isHistoryLoading">🔄</button>
             <button class="close" @click="showHistory=false">×</button>
           </div>
           <div v-if="isHistoryLoading" class="history-loading">加载中...</div>
@@ -413,6 +441,13 @@ function formatTimestamp(ts: string): string {
               </div>
             </div>
           </div>
+          <!-- v0.1.4: 加载更早分页按钮 -->
+          <div v-if="hasMoreHistory" class="history-more">
+            <button @click="loadMoreHistory" :disabled="isHistoryLoading">
+              {{ isHistoryLoading ? "加载中..." : "📥 加载更早" }}
+            </button>
+          </div>
+          <div v-else class="history-end">— 已加载全部历史 —</div>
         </div>
       </aside>
     </main>
@@ -511,4 +546,11 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 .history-summary { background: white; padding: 6px 8px; border-radius: 4px; margin-bottom: 6px; word-break: break-word; white-space: pre-wrap; }
 .history-item-detail details { margin-top: 4px; }
 .history-item-detail details pre { font-size: 10px; padding: 6px; background: rgba(0,0,0,0.05); border-radius: 4px; max-height: 100px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+
+/* v0.1.4: 分页加载更早 */
+.history-more { padding: 8px 12px; text-align: center; }
+.history-more button { background: white; border: 1px solid #ddd; border-radius: 6px; padding: 6px 16px; cursor: pointer; font-size: 12px; color: #555; }
+.history-more button:hover:not(:disabled) { border-color: #ff6a00; color: #ff6a00; }
+.history-more button:disabled { opacity: 0.5; cursor: not-allowed; }
+.history-end { padding: 12px; text-align: center; color: #aaa; font-size: 11px; }
 </style>

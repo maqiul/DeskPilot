@@ -51,6 +51,19 @@ public sealed class ToolHistoryStore
         return _entries.Take(limit).ToList();
     }
 
+    /// <summary>
+    /// v0.1.4: 分页查询 - 只返回 Timestamp 早于 <paramref name="before"/> 的记录。
+    /// 注意：_entries 是 ConcurrentQueue，按入队顺序 = 按时间升序遍历。
+    /// </summary>
+    public IReadOnlyList<ToolHistoryEntry> ListBefore(DateTime before, int limit = 50)
+    {
+        return _entries
+            .Where(e => e.Timestamp < before)
+            .OrderByDescending(e => e.Timestamp)
+            .Take(limit)
+            .ToList();
+    }
+
     private void PersistToDisk()
     {
         try
