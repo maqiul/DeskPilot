@@ -2,6 +2,68 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.14] - 2026-07-02
+
+### 🆕 Frontend 探活结果暴露到 UI + Sidecar 端口自动探测
+
+#### ✨ 新增能力
+- **Sidecar 端口自动探测**：onMounted 依次尝试 5180~5189，找到能响应 `/api/health` 的就用
+- **健康徽章在 chat-header 右侧**：3 态显示
+  - 🟢 ready（绿 #e8f5e9 + #2e7d32）：「15 tools」
+  - 🟡 degraded（黄 #fff8e1 + #f57c00）：同 ready 文案
+  - 🔴 离线（红 #ffebee + #c62828）：「🔴 离线」+ hover 错误详情
+  - ⏳ 探活中（灰）：等待响应
+- **hover tooltip**：显示 `Sidecar v0.1.7 · 工具 15 个 · history_ok=true`
+- **SIDE_BASE 改 ref**：resolveSidecarBase() 会覆盖，所有端点自动用新 base
+
+#### 🎨 UI 风格
+- 徽章 11px 字体 + 圆角 10px
+- 颜色系统与 WPF Melon 橙同源（绿/黄/红语义化）
+- `cursor: help` 鼠标手型 + 浏览器原生 title
+
+#### 🛠 技术实现
+- `SIDE_BASE = ref("http://localhost:5180")` + 4 个 `computed` 派生端点
+- `resolveSidecarBase()` async 探测函数
+- `health = ref<{status, toolCount, historyOk, version} | null>(null)` reactive
+- `healthError = ref<string>("")` 错误态
+- `fetchHealth()` async 拉 /api/health + 解析
+- onMounted 改：先 `resolveSidecarBase()` 覆盖 → `fetchHealth()` → `refreshToolList()`
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 617ms / 11 modules transformed
+- ✅ TypeScript 全过（4 个错全修：2 个 computed 重复 import / 2 个 .value 缺失）
+- ✅ Sidecar v0.1.13 跑 5183 端口 200 OK → Vue 探测 5180 失败会找到 5183
+
+#### 🐛 踩坑
+- **TS2300 Duplicate identifier 'computed'**：v0.1.9 留下孤儿 import `import { computed } from "vue"`（line 448）→ 删孤儿
+- **TS2345 ComputedRef<string> not assignable to RequestInfo**：`fetch(SIDE_HISTORY)` 不解包 computed → 改 `fetch(SIDE_HISTORY.value)`
+- **SIDE_BASE 改 ref 的连锁反应**：5 个 fetch 调用全部加 .value（sendMessage / loadHistory / loadMoreHistory / refreshToolList / fetchHealth + invokeTool）
+
+#### 🔧 关键决策
+- **端口探测 vs 固定 5180**：dev 跑 5183 / prod 5180 / 多实例 5181 → 自动探测最稳
+- **computed 派生**：4 个端点 URL 自动跟随 SIDE_BASE 变化，避免 4 处手动改
+- **健康徽章优先文案**：徽章主体显示工具数（信息密度高），详情 hover tooltip
+- **3 态显隐**：探活中（⏳）也算一态，避免 0 数据时空白
+
+#### 🔜 v0.1.15 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** Sidecar 日志重定向到 Tauri UI（实时日志面板）
+- **C** 健康徽章加「点击重试探活」按钮
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：
+  - +`import { computed } from "vue"`（合并到已有 import）
+  - +`SIDE_BASE = ref(...)` + 4 个 `computed` 派生 URL
+  - +`resolveSidecarBase()` 函数（10 行）
+  - +`health` `healthError` reactive
+  - +`fetchHealth()` 函数
+  - 改 onMounted 顺序（先探测 → 后 health → 后 tools）
+  - +health-badge 三态 template
+  - +CSS `.health-badge` 3 态
+  - 修 v0.1.9 孤儿 import computed
+  - 5 个 fetch 调用加 .value
+
 ## [tauri-v0.1.13] - 2026-07-02
 
 ### 🆕 Tauri 端启用 Sidecar 深度健康探活

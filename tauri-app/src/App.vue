@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -39,13 +39,29 @@ const showHistory = ref(false);
 const appendResultToChat = ref(true); // v0.1.8: Tool 结果自动回填聊天
 const toolSearchKeyword = ref(""); // v0.1.9: Tool 搜索过滤（同 WPF v0.24）
 const showClearAllConfirm = ref(false); // v0.1.11: 清空全部二次确认
+// v0.1.14: 探活结果（status / toolCount / historyOk / version）
+const health = ref<{ status: string; toolCount: number; historyOk: boolean; version: string } | null>(null);
+const healthError = ref<string>("");
 const isHistoryLoading = ref(false);
 const selectedHistoryIdx = ref<number>(-1);
 
-const SIDE_BASE = "http://localhost:5180";
-const SIDE_STREAM = `${SIDE_BASE}/api/chat/stream`;
-const SIDE_TOOLS_LIST = `${SIDE_BASE}/api/tools/list`;
-const SIDE_HISTORY = `${SIDE_BASE}/api/tools/history`;
+// v0.1.14: SIDE_BASE 改为 ref（resolveSidecarBase 会覆盖）
+const SIDE_BASE = ref("http://localhost:5180");
+const SIDE_STREAM = computed(() => `${SIDE_BASE.value}/api/chat/stream`);
+const SIDE_TOOLS_LIST = computed(() => `${SIDE_BASE.value}/api/tools/list`);
+const SIDE_HISTORY = computed(() => `${SIDE_BASE.value}/api/tools/history`);
+const SIDE_HEALTH = computed(() => `${SIDE_BASE.value}/api/health`);
+
+// v0.1.14: 自动探测可用 Sidecar 端口（5180~5189 依次尝试）
+async function resolveSidecarBase(): Promise<string> {
+  for (let port = 5180; port <= 5189; port++) {
+    try {
+      const r = await fetch(`http://localhost:${port}/api/health`, { method: "GET" });
+      if (r.ok) return `http://localhost:${port}`;
+    } catch {}
+  }
+  return SIDE_BASE.value; // fallback
+}
 
 // v0.1.0: 服务端 /api/tools/list 返回 risk 字段，前端去掉硬编码 Set
 // Destructive Tool 二次确认从每个 tool 的 risk 字段判断
@@ -73,12 +89,35 @@ function executeSelected() {
 }
 
 onMounted(async () => {
+  // v0.1.14: 先自动探测 Sidecar 端口（避免 5180 未起时全失败）
+  const detectedBase = await resolveSidecarBase();
+  SIDE_BASE.value = detectedBase;
+  await fetchHealth();
   await refreshToolList();
 });
 
+// v0.1.14: 拉 Sidecar /api/health 深度探活
+async function fetchHealth() {
+  healthError.value = "";
+  try {
+    const resp = await fetch(SIDE_HEALTH.value);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    health.value = {
+      status: data.status ?? "unknown",
+      toolCount: data.checks?.toolRegistry?.count ?? 0,
+      historyOk: data.checks?.historyStore?.ok ?? false,
+      version: data.version ?? "unknown"
+    };
+  } catch (e: any) {
+    healthError.value = e?.message ?? String(e);
+    health.value = null;
+  }
+}
+
 async function refreshToolList() {
   try {
-    const resp = await fetch(SIDE_TOOLS_LIST);
+    const resp = await fetch(SIDE_TOOLS_LIST.value);
     const data = await resp.json();
     tools.value = data.tools ?? [];
   } catch (e: any) {
@@ -96,7 +135,7 @@ async function sendMessage() {
   messages.value.push({ role: "assistant", content: "", timestamp: Date.now() });
 
   try {
-    const response = await fetch(`${SIDE_STREAM}?prompt=${encodeURIComponent(prompt)}`);
+    const response = await fetch(`${SIDE_STREAM.value}?prompt=${encodeURIComponent(prompt)}`);
     if (!response.ok || !response.body) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -263,7 +302,7 @@ async function invokeTool(name: string) {
   if (!argsJson) argsJson = "{}";
 
   try {
-    const resp = await fetch(`${SIDE_BASE}/api/tools/execute?name=${encodeURIComponent(name)}`, {
+    const resp = await fetch(`${SIDE_BASE.value}/api/tools/execute?name=${encodeURIComponent(name)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: argsJson
@@ -347,7 +386,7 @@ function cancelClearAll() {
 async function loadHistory(reset = true) {
   isHistoryLoading.value = true;
   try {
-    const resp = await fetch(`${SIDE_HISTORY}?limit=50`);
+    const resp = await fetch(`${SIDE_HISTORY.value}?limit=50`);
     const data = await resp.json();
     const newEntries = data.entries ?? [];
     if (reset) {
@@ -368,7 +407,7 @@ async function loadMoreHistory() {
   isHistoryLoading.value = true;
   try {
     const earliestTs = history.value[history.value.length - 1].timestamp;
-    const resp = await fetch(`${SIDE_HISTORY}?limit=50&before=${encodeURIComponent(earliestTs)}`);
+    const resp = await fetch(`${SIDE_HISTORY.value}?limit=50&before=${encodeURIComponent(earliestTs)}`);
     const data = await resp.json();
     const newEntries = data.entries ?? [];
     if (newEntries.length === 0) {
@@ -406,7 +445,6 @@ function formatTimestamp(ts: string): string {
 }
 
 // v0.1.9: Tool 搜索过滤（按 name + description 子串匹配，大小写不敏感）
-import { computed } from "vue";
 const filteredTools = computed(() => {
   const kw = toolSearchKeyword.value.trim().toLowerCase();
   if (!kw) return tools.value;
@@ -428,6 +466,12 @@ const filteredTools = computed(() => {
       <section class="chat-pane">
         <div class="chat-header">
           <span class="msg-count">{{ messages.length }} 条消息</span>
+          <!-- v0.1.14: Sidecar 健康徽章（ready=绿 / degraded=黄 / error=红） -->
+          <span v-if="health" :class="['health-badge', health.status.toLowerCase()]" :title="`Sidecar ${health.version} · 工具 ${health.toolCount} 个 · history_ok=${health.historyOk}`">
+            {{ health.status === "ready" ? "🟢" : "🟡" }} {{ health.toolCount }} tools
+          </span>
+          <span v-else-if="healthError" class="health-badge error" :title="healthError">🔴 离线</span>
+          <span v-else class="health-badge" title="探活中…">⏳ 探活中</span>
           <!-- v0.1.11: 一键清空 -->
           <button class="clear-all" @click="requestClearAll" :disabled="messages.length === 0" title="清空全部聊天">🧹 清空</button>
         </div>
@@ -633,6 +677,12 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 
 /* v0.1.12: 消息时间戳 */
 .msg-timestamp { display: block; font-size: 10px; color: #999; margin-top: 4px; font-family: monospace; }
+
+/* v0.1.14: Sidecar 健康徽章 */
+.health-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; cursor: help; }
+.health-badge.ready { background: #e8f5e9; color: #2e7d32; }
+.health-badge.degraded { background: #fff8e1; color: #f57c00; }
+.health-badge.error { background: #ffebee; color: #c62828; }
 .msg.user { background: #ff6a00; color: white; align-self: flex-end; }
 .msg.assistant { background: #f5f6fa; color: #333; align-self: flex-start; border: 1px solid #e0e0e0; }
 .empty-hint { align-self: center; color: #888; padding: 40px; text-align: center; }
