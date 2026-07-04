@@ -2,6 +2,42 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.6] - 2026-07-02
+
+### 🆕 Sidecar HTTP API 完整文档
+
+#### ✨ 新增
+- **`docs/Sidecar-API.md`**：完整 HTTP API 参考（9358 bytes / 8 sections）
+
+#### 📋 文档覆盖范围
+1. **健康检查** `GET /` — 服务名 + 版本号 + 状态
+2. **聊天流式** `GET /api/chat` — 兼容老客户端
+3. **聊天 SSE** `GET /api/chat/stream` — text/event-stream（推荐）
+4. **工具清单** `GET /api/tools/list` — 含 risk 字段
+5. **工具执行** `POST /api/tools/execute?name=X` — body 是 args JSON
+6. **工具历史** `GET /api/tools/history?limit=N&before=ISO8601`
+7. **共享类型** ToolHistoryEntry / ToolDescriptor
+8. **错误约定** 全部 200 OK + body.success / body.error
+
+#### 📝 变更记录
+- 表格列 v0.0.2 ~ v0.1.5 全部端点演进
+- 每个端点含方法/路径/查询参数/body/响应/示例 curl + JS
+
+#### 🎯 设计决策
+- **不上 Swashbuckle**：零新依赖、零 build 风险
+- **手工维护**：Markdown 比 OpenAPI YAML 更易读、易编辑
+- **后端代码不变**：纯文档，不影响 v0.1.5 release 包
+- **包含本地开发指南**：sidecar 启动 + 编译 + Tauri 集成
+
+#### 🔜 v0.1.7 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** Sidecar 加 /api/health 深度探活（检查 ToolRegistry 不空）
+- **C** Frontend 添加 Tool 调用结果回填聊天历史
+- **D** 停
+
+#### 📦 项目变更
+- 新文件：`docs/Sidecar-API.md`（~270 行）
+
 ## [tauri-v0.1.5] - 2026-07-02
 
 ### 🆕 Tool 结果多格式导出（MD / JSON / CSV）
