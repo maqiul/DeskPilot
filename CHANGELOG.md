@@ -2,6 +2,54 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.8] - 2026-07-02
+
+### 🆕 Frontend Tool 结果回填聊天
+
+#### ✨ 新增能力
+- **自动回填开关**「💬/💭」：放在工具面板头部（紧挨 📚 按钮）
+- **默认 on**：Tool 成功完成后，结果自动追加到聊天区作为一条 assistant 消息
+- **回填格式**：
+  - 头部：`🛠 **<toolName>** 调用结果：`
+  - summary 原文
+  - data 转 JSON 代码块
+
+#### 🔘 开关交互
+- 复选框 + emoji 双重指示（on=💬 off=💭）
+- 切换立即生效（响应式 v-model）
+- hover 灰色背景 + tooltip
+
+#### 🛠 技术实现
+- `appendResultToChat: ref(true)` 新增 reactive
+- invokeTool() finally 分支加 messages.value.push({role:"assistant", content:formatResultForChat()})
+- formatResultForChat() 复用 v0.1.3 exportMarkdown 内容格式（轻量版）
+
+#### 🎨 UI 风格
+- append-toggle 边框 + 6px 圆角延续 v0.1.2 历史按钮
+- emoji 即表示，无需文字
+- hover 浅灰 + 用户选择 none
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 584ms / 11 modules transformed
+
+#### 🔧 关键决策
+- **默认 on**：MVP 默认体验好，回填是可观察的 AI 行为
+- **off 可关**：用户反馈"刷屏"时可一键关掉
+- **仅成功回填**：失败不污染聊天历史（保守）
+- **不回填 args**：用户已经知道点的是哪个 Tool
+
+#### 🔜 v0.1.9 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** Frontend Tool 调用加搜索过滤（同 v0.24 WPF）
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：
+  - +`appendResultToChat = ref(true)`
+  - +`formatResultForChat()` 函数（13 行）
+  - +`<label class="append-toggle">` UI（含复选框 + emoji）
+  - +CSS `.append-toggle` 12 行
+
 ## [tauri-v0.1.7] - 2026-07-02
 
 ### 🆕 Sidecar 深度健康探活 `/api/health`

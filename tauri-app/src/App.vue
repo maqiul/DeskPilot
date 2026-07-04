@@ -35,6 +35,7 @@ interface HistoryEntry {
 }
 const history = ref<HistoryEntry[]>([]);
 const showHistory = ref(false);
+const appendResultToChat = ref(true); // v0.1.8: Tool 结果自动回填聊天
 const isHistoryLoading = ref(false);
 const selectedHistoryIdx = ref<number>(-1);
 
@@ -279,7 +280,32 @@ async function invokeTool(name: string) {
     if (showHistory.value) {
       loadHistory(true);
     }
+    // v0.1.8: 成功结果回填到聊天历史（开关由 appendResultToChat 控制）
+    if (appendResultToChat.value && toolResult.value) {
+      messages.value.push({
+        role: "assistant",
+        content: formatResultForChat(toolResult.value)
+      });
+    }
   }
+}
+
+// v0.1.8: 把 Tool 结果格式化为聊天内容（人读 + JSON 代码块）
+function formatResultForChat(r: any): string {
+  const name = r.toolName ?? "tool";
+  const lines: string[] = [];
+  lines.push(`🛠 **${name}** 调用结果：`);
+  lines.push(``);
+  if (r.summary) {
+    lines.push(r.summary);
+    lines.push(``);
+  }
+  if (r.data !== undefined && r.data !== null) {
+    lines.push("```json");
+    lines.push(JSON.stringify(r.data, null, 2));
+    lines.push("```");
+  }
+  return lines.join("\n");
 }
 
 // v0.1.2: 加载历史
@@ -376,6 +402,10 @@ function formatTimestamp(ts: string): string {
           <h2>🛠 工具面板</h2>
           <span class="tool-count">{{ tools.length }} 个</span>
           <button class="refresh" @click="refreshToolList" :disabled="isToolBusy">🔄</button>
+          <label class="append-toggle" title="工具结果自动回填聊天">
+            <input type="checkbox" v-model="appendResultToChat" />
+            <span class="append-icon">{{ appendResultToChat ? '💬' : '💭' }}</span>
+          </label>
           <button class="history-btn" @click="toggleHistory">📚</button>
         </div>
 
@@ -581,6 +611,12 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 
 /* v0.1.2: 历史按钮 + 历史面板 */
 .history-btn { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 14px; }
+
+/* v0.1.8: Tool 结果回填聊天开关 */
+.append-toggle { display: inline-flex; align-items: center; gap: 2px; cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 6px; border: 1px solid #ddd; user-select: none; background: none; }
+.append-toggle:hover { background: #f5f5f5; }
+.append-toggle input { margin: 0; cursor: pointer; }
+.append-icon { font-size: 14px; line-height: 1; }
 .history-panel { position: absolute; right: 12px; top: 60px; bottom: 12px; width: 360px; background: white; border: 1px solid #ddd; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; z-index: 50; }
 .tool-pane { position: relative; }
 .history-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #eee; background: #fafafa; }
