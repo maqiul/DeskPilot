@@ -2,6 +2,46 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.3] - 2026-07-02
+
+### 🆕 Tool 结果导出 Markdown
+
+#### ✨ 新增能力
+- **「📥 MD」按钮**：成功结果区右侧，紧挨关闭按钮
+- **一键导出**：点击触发浏览器下载 `deskpilot-<toolName>-<timestamp>.md`
+- **内容丰富**：
+  - 元信息头（工具名 / 时间 / 状态 / 耗时）
+  - Summary 高亮
+  - Data 转 JSON 代码块
+
+#### 🎨 UI 风格
+- 复用 v0.0.9 Melon 橙 #ff6a00 背景
+- 白色加粗字体 + 4px 圆角
+- hover 加深橙 #e55e00
+
+#### 🛠 技术实现
+- 纯前端实现：Blob + URL.createObjectURL + `<a download>` 触发下载
+- 不依赖服务端（避免新增 `/api/export` 端点）
+- 时间戳用 `zh-CN` 格式保持一致
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 661ms / 11 modules transformed
+- ✅ 27 行 exportMarkdown 函数 + 14 行 CSS
+
+#### 🔧 关键决策
+- **不新增后端端点**：纯前端足够，避免 API surface 扩大
+- **下载文件命名**：`deskpilot-<toolName>-<timestamp>.md`（便于归档）
+- **失败结果不导出**：只导出成功结果（避免误导用户归档错误报告）
+
+#### 🔜 v0.1.4 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** 历史面板加分页（beforeTimestamp cursor）
+- **C** Tool 结果也支持导出 JSON / CSV
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：+`exportMarkdown()` 函数 + `<button class="export-md" @click="exportMarkdown">📥 MD</button>` + 14 行 CSS
+
 ## [tauri-v0.1.2] - 2026-07-02
 
 ### 🆕 Vue 端「📚 调用历史」面板

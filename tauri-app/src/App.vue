@@ -149,6 +149,45 @@ function cancelInvoke() {
   toolArgsInput.value = "";
 }
 
+// v0.1.3: 导出 Tool 结果为 Markdown
+function exportMarkdown() {
+  const r = toolResult.value;
+  if (!r) return;
+  const name = r.toolName ?? selectedTool.value ?? "tool";
+  const ts = new Date().toLocaleString("zh-CN", { hour12: false });
+  const lines: string[] = [];
+  lines.push(`# DeskPilot Tool 调用报告`);
+  lines.push(``);
+  lines.push(`- **工具名**: \`${name}\``);
+  lines.push(`- **调用时间**: ${ts}`);
+  lines.push(`- **状态**: ${r.success ? "✅ 成功" : "❌ 失败"}`);
+  lines.push(`- **耗时**: ${r.durationMs ?? "-"} ms`);
+  lines.push(``);
+  if (r.summary) {
+    lines.push(`## Summary`);
+    lines.push(``);
+    lines.push(r.summary);
+    lines.push(``);
+  }
+  if (r.data !== undefined && r.data !== null) {
+    lines.push(`## Data`);
+    lines.push(``);
+    lines.push("```json");
+    lines.push(JSON.stringify(r.data, null, 2));
+    lines.push("```");
+  }
+  const md = lines.join("\n");
+  const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `deskpilot-${name}-${Date.now()}.md`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 async function confirmInvoke() {
   const name = pendingTool.value;
   pendingTool.value = "";
@@ -319,6 +358,7 @@ function formatTimestamp(ts: string): string {
         <div v-if="toolResult" class="result-panel success">
           <div class="result-head">
             <strong>✅ 调用成功</strong>
+            <button class="export-md" @click="exportMarkdown" title="导出为 Markdown">📥 MD</button>
             <button class="close" @click="toolResult=null">×</button>
           </div>
           <pre v-if="toolResult.summary" class="summary">{{ toolResult.summary }}</pre>
@@ -443,6 +483,11 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 .summary { white-space: pre-wrap; word-break: break-word; }
 .result-panel details { margin-top: 6px; }
 .result-panel details pre { font-size: 11px; padding: 6px; background: rgba(0,0,0,0.05); border-radius: 4px; max-height: 150px; overflow-y: auto; }
+
+/* v0.1.3: 导出 MD 按钮 */
+.export-md { background: #ff6a00; color: white; border: none; border-radius: 4px; padding: 2px 10px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: auto; }
+.export-md:hover { background: #e55e00; }
+.result-head { display: flex; align-items: center; gap: 8px; }
 
 /* v0.1.2: 历史按钮 + 历史面板 */
 .history-btn { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 14px; }
