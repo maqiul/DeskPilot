@@ -2,6 +2,55 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.13] - 2026-07-02
+
+### 🆕 Tauri 端启用 Sidecar 深度健康探活
+
+#### ✨ 新增能力
+- **Tauri 启动时**调 Sidecar `/api/health`（v0.1.7 已实现），不再是浅度 `/`
+- **解析 `status` 字段**：`"ready"` 或 `"degraded"` 视为通过
+- **打印实际健康指标**：`tools` 数 + `history_ok` 布尔 + 重试次数
+- **失败 fallback**：JSON 解析失败时仍按 status HTTP 200 走浅度探活
+
+#### 🎨 终端日志升级
+- 旧：「✅ Sidecar 健康检查通过（第 X 次）」
+- 新：「✅ Sidecar 深度健康检查通过（第 X 次，status=ready，tools=15，history_ok=true）」
+
+#### 🛠 技术实现
+- `client.get(format!("{}/api/health", SIDECAR_URL)).send()` + 链式 `.json::<serde_json::Value>()`
+- `json.get("status").and_then(|v| v.as_str())` 安全取值
+- `json.pointer("/checks/toolRegistry/count")` JSON Pointer 取嵌套字段
+- `json.pointer("/checks/historyStore/ok")` 同上
+- `if let Some(json) = health_result` 模式匹配链式 Option
+
+#### 📊 验证
+- ✅ `cargo build --release` 0 错 49.91s（11.7MB exe）
+- ✅ serde_json 1.0 已在 Cargo.toml（零新依赖）
+- ✅ 编译时未触发 serde_json feature 警告
+
+#### 🐛 踩坑
+- **mismatched closing delimiter `)`**：edit_file 替换时**外层 `for i in 1..=10 {` 的闭合 `}` 被吞** → 手动补 `}` 修复
+- **教训**：替换嵌套代码块时必须保留所有外层闭合括号
+
+#### 🔧 关键决策
+- **深度 vs 浅度**：浅度 `/` 只验 200，深度 `/api/health` 验 ToolRegistry + HistoryStore（v0.1.7 就有但没启用）
+- **双状态接受**：`ready` / `degraded` 都通过（degraded = 仍可启动，UI 提示）
+- **零新依赖**：serde_json 已就位
+- **不阻塞启动**：health 失败只 warn 不 panic，UI 仍可显示
+
+#### 🔜 v0.1.14 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** Tauri 端把探活结果暴露到 UI（让前端看到 tools 数 / status）
+- **C** Sidecar 日志重定向到 Tauri 日志面板
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src-tauri/src/lib.rs`：
+  - 探活 URL：`{}/` → `{}/api/health`
+  - 解析：`is_success()` → `serde_json::Value` + status 字段判断
+  - 日志：增加 `status=X，tools=Y，history_ok=Z` 详情
+  - 失败分支：保留（如果 JSON 解析失败下次重试）
+
 ## [tauri-v0.1.12] - 2026-07-02
 
 ### 🆕 聊天区消息时间戳（HH:mm:SS）

@@ -108,14 +108,27 @@ pub fn run() {
                             .unwrap_or_else(|_| reqwest::blocking::Client::new());
                         for i in 1..=10 {
                             std::thread::sleep(std::time::Duration::from_millis(500));
-                            let ok = client
-                                .get(format!("{}/", SIDECAR_URL))
+                            // v0.1.13: 升级为深度探活（/api/health 检查 ToolRegistry + HistoryStore）
+                            let health_result = client
+                                .get(format!("{}/api/health", SIDECAR_URL))
                                 .send()
-                                .map(|r| r.status().is_success())
-                                .unwrap_or(false);
-                            if ok {
-                                println!("✅ Sidecar 健康检查通过（第 {} 次）：{}", i, SIDECAR_URL);
-                                return;
+                                .ok()
+                                .and_then(|r| r.json::<serde_json::Value>().ok());
+                            if let Some(json) = health_result {
+                                let status = json.get("status").and_then(|v| v.as_str()).unwrap_or("");
+                                if status == "ready" || status == "degraded" {
+                                    let tools = json.pointer("/checks/toolRegistry/count")
+                                        .and_then(|v| v.as_u64())
+                                        .unwrap_or(0);
+                                    let hist_ok = json.pointer("/checks/historyStore/ok")
+                                        .and_then(|v| v.as_bool())
+                                        .unwrap_or(false);
+                                    println!(
+                                        "✅ Sidecar 深度健康检查通过（第 {} 次，status={}，tools={}，history_ok={}）：{}",
+                                        i, status, tools, hist_ok, SIDECAR_URL
+                                    );
+                                    return;
+                                }
                             }
                         }
                         eprintln!(
