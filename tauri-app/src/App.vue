@@ -36,6 +36,7 @@ interface HistoryEntry {
 const history = ref<HistoryEntry[]>([]);
 const showHistory = ref(false);
 const appendResultToChat = ref(true); // v0.1.8: Tool 结果自动回填聊天
+const toolSearchKeyword = ref(""); // v0.1.9: Tool 搜索过滤（同 WPF v0.24）
 const isHistoryLoading = ref(false);
 const selectedHistoryIdx = ref<number>(-1);
 
@@ -369,6 +370,17 @@ function formatTimestamp(ts: string): string {
     return ts;
   }
 }
+
+// v0.1.9: Tool 搜索过滤（按 name + description 子串匹配，大小写不敏感）
+import { computed } from "vue";
+const filteredTools = computed(() => {
+  const kw = toolSearchKeyword.value.trim().toLowerCase();
+  if (!kw) return tools.value;
+  return tools.value.filter(t =>
+    t.name.toLowerCase().includes(kw) ||
+    t.description.toLowerCase().includes(kw)
+  );
+});
 </script>
 
 <template>
@@ -400,7 +412,7 @@ function formatTimestamp(ts: string): string {
       <aside class="tool-pane">
         <div class="tool-header">
           <h2>🛠 工具面板</h2>
-          <span class="tool-count">{{ tools.length }} 个</span>
+          <span class="tool-count">{{ filteredTools.length }} / {{ tools.length }} 个</span>
           <button class="refresh" @click="refreshToolList" :disabled="isToolBusy">🔄</button>
           <label class="append-toggle" title="工具结果自动回填聊天">
             <input type="checkbox" v-model="appendResultToChat" />
@@ -409,9 +421,20 @@ function formatTimestamp(ts: string): string {
           <button class="history-btn" @click="toggleHistory">📚</button>
         </div>
 
+        <!-- v0.1.9: Tool 搜索过滤（v0.24 WPF 风格） -->
+        <input
+          v-model="toolSearchKeyword"
+          class="tool-search"
+          placeholder="🔍 搜索 Tool (name / description)"
+        />
+
+        <div v-if="filteredTools.length === 0 && toolSearchKeyword" class="tool-empty">
+          无匹配 Tool
+        </div>
+
         <div class="tool-list">
           <div
-            v-for="t in tools"
+            v-for="t in filteredTools"
             :key="t.name"
             :class="['tool-card', { destructive: isDestructive(t) }]"
           >
@@ -565,6 +588,11 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 .tool-header { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee; }
 .tool-header h2 { font-size: 16px; flex: 1; }
 .tool-count { font-size: 12px; color: #888; padding: 2px 8px; background: #f5f6fa; border-radius: 10px; }
+
+/* v0.1.9: Tool 搜索过滤输入 */
+.tool-search { width: 100%; padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; margin: 6px 0; box-sizing: border-box; outline: none; }
+.tool-search:focus { border-color: #ff6a00; }
+.tool-empty { padding: 20px; text-align: center; color: #999; font-size: 13px; background: #f5f6fa; border-radius: 6px; margin: 8px 0; }
 .refresh { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
 .tool-list { flex: 1; overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; gap: 8px; }
 .tool-card { padding: 10px; border: 1px solid #e0e0e0; border-radius: 8px; background: #fafafa; }

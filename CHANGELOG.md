@@ -2,6 +2,53 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.9] - 2026-07-02
+
+### 🆕 Frontend Tool 搜索过滤（同 WPF v0.24 风格）
+
+#### ✨ 新增能力
+- **搜索输入框** 放在工具面板头部下方
+- **占宽 100%** + 6px 圆角 + Melon 橙聚焦边框
+- **子串匹配**：Tool name + description，大小写不敏感
+- **`filteredTools` computed**：实时响应 searchKeyword
+- **`tool-count` 升级**：`X / Y` 显示（命中数 / 总数）
+- **`tool-empty` 状态**：有搜索关键词但 0 命中时显示「无匹配 Tool」
+
+#### 🔧 Vue 实现
+- `import { computed } from "vue"`（新增）
+- `toolSearchKeyword: ref("")` reactive
+- `filteredTools = computed(() => ...)` 过滤逻辑
+- v-for 改用 `filteredTools` 而非 `tools`
+- 空态 `<div class="tool-empty">` 用 v-if
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 607ms / 11 modules transformed
+- ✅ 搜索 "hash" → 只显示 hash_files / hash 相关
+- ✅ 搜索 "image" → 显示 4 个 image Tool
+- ✅ 清空关键词 → 显示全部 15 个
+
+#### 🔧 关键决策
+- **computed vs watch**：用 computed 因为它是纯派生（无副作用）
+- **大小写不敏感**：统一小写匹配，老马中文输入英文工具名也匹配
+- **同时匹配 name + description**：用户可能记不住 name 但记得「计算哈希」
+- **空态保留 tool-list 容器**：避免布局跳动
+
+#### 🔜 v0.1.10 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** Tool 调用结果回填聊天后支持手动删除单条
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：
+  - +`import { computed } from "vue"`
+  - +`toolSearchKeyword = ref("")`
+  - +`filteredTools = computed(...)` 函数
+  - `<span class="tool-count">{{ tools.length }} 个>` → `<span class="tool-count">{{ filteredTools.length }} / {{ tools.length }} 个`
+  - tool-list v-for 改用 `filteredTools`
+  - +`<input class="tool-search">` UI
+  - +`<div class="tool-empty">` 空态
+  - +CSS `.tool-search` `.tool-empty` 6 行
+
 ## [tauri-v0.1.8] - 2026-07-02
 
 ### 🆕 Frontend Tool 结果回填聊天
