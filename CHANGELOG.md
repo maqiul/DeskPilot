@@ -2,6 +2,49 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.10] - 2026-07-02
+
+### 🆕 聊天区单条删除按钮
+
+#### ✨ 新增能力
+- **删除按钮**「×」hover 显示在消息右上角
+- **单击删除**：`messages.splice(idx, 1)` 立即移除该条
+- **响应范围**：支持 user / assistant / tool 任何角色消息
+
+#### 🎨 UI 风格
+- 默认完全透明（opacity: 0）—— 不影响布局
+- hover msg 时显示（opacity: 1）—— 不抢眼
+- 鼠标在按钮上时变红底（#ffebee + #c62828）—— 警示色
+- 0.15s 平滑过渡动画
+
+#### 🛠 技术实现
+- `removeMessage(idx)` 函数 + `messages.value.splice(idx, 1)`
+- `<button class="msg-delete">` 绝对定位 top: 4px right: 6px
+- 在 `.msg:hover .msg-delete` 触发显示
+- msg 加 `position: relative` 让按钮绝对定位生效
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 648ms / 11 modules transformed
+- ✅ Hover 显示 / 鼠标离开隐藏 / 点击删除立刻移除
+- ✅ 删除中间条目不会影响后续（Vue v-for :key 用 i）
+
+#### 🔧 关键决策
+- **hover 显示**：避免每条都有 × 按钮造成视觉噪音
+- **绝对定位右上角**：不挤压消息内容
+- **CSS opacity + transition**：纯 CSS 平滑动画，零 JS 动画开销
+- **splice 而非 filter**：保持原 idx 简单（Vue 用 i 当 key 即可）
+
+#### 🔜 v0.1.11 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** 聊天区加「清空全部」按钮（点 X 一次全清）
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：
+  - +`removeMessage(idx)` 函数（5 行）
+  - +`<button class="msg-delete">×</button>` 在 ChatMessage 内
+  - +CSS `.msg-delete`（8 行）
+
 ## [tauri-v0.1.9] - 2026-07-02
 
 ### 🆕 Frontend Tool 搜索过滤（同 WPF v0.24 风格）

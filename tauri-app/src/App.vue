@@ -309,6 +309,12 @@ function formatResultForChat(r: any): string {
   return lines.join("\n");
 }
 
+// v0.1.10: 删除单条聊天消息（呼应 v0.27 WPF 风格）
+function removeMessage(idx: number) {
+  if (idx < 0 || idx >= messages.value.length) return;
+  messages.value.splice(idx, 1);
+}
+
 // v0.1.2: 加载历史
 async function loadHistory(reset = true) {
   isHistoryLoading.value = true;
@@ -395,6 +401,8 @@ const filteredTools = computed(() => {
         <div class="messages">
           <div v-for="(m, i) in messages" :key="i" :class="['msg', m.role]">
             <strong>{{ m.role === "user" ? "你" : "AI" }}：</strong>{{ m.content }}
+            <!-- v0.1.10: 单条删除按钮（hover 显示） -->
+            <button class="msg-delete" @click="removeMessage(i)" title="删除这条消息">×</button>
           </div>
           <div v-if="messages.length === 0" class="empty-hint">
             👈 试试右侧工具面板，例如调用 <code>text_stats</code> 统计 README.md
@@ -572,7 +580,10 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 /* 左聊天区 */
 .chat-pane { flex: 7; display: flex; flex-direction: column; background: white; border-radius: 12px; padding: 12px; overflow: hidden; }
 .messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px; }
-.msg { padding: 10px 14px; border-radius: 12px; max-width: 80%; line-height: 1.5; word-break: break-word; white-space: pre-wrap; }
+.msg { padding: 10px 14px; border-radius: 12px; max-width: 80%; line-height: 1.5; word-break: break-word; white-space: pre-wrap; position: relative; }
+.msg-delete { position: absolute; top: 4px; right: 6px; background: transparent; border: none; color: #999; font-size: 14px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s; }
+.msg:hover .msg-delete { opacity: 1; }
+.msg-delete:hover { background: #ffebee; color: #c62828; }
 .msg.user { background: #ff6a00; color: white; align-self: flex-end; }
 .msg.assistant { background: #f5f6fa; color: #333; align-self: flex-start; border: 1px solid #e0e0e0; }
 .empty-hint { align-self: center; color: #888; padding: 40px; text-align: center; }
