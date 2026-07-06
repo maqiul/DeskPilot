@@ -162,6 +162,24 @@ function clearLogs() {
   sidecarLogs.value = [];
 }
 
+// v0.1.17: 导出日志到本地 .log 文件（Blob + download）
+function exportLogs() {
+  if (sidecarLogs.value.length === 0) return;
+  const body = sidecarLogs.value
+    .map(l => `${formatLogTs(l.ts)}  ${l.line}`)
+    .join("\n");
+  const blob = new Blob([body], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  a.href = url;
+  a.download = `deskpilot-sidecar-${stamp}.log`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function toggleLogs() {
   showLogs.value = !showLogs.value;
 }
@@ -560,6 +578,7 @@ const filteredTools = computed(() => {
         <div v-if="showLogs" class="logs-panel">
           <div class="logs-head">
             <span>📋 Sidecar 日志（{{ sidecarLogs.length }} / {{ MAX_LOGS }}）</span>
+            <button class="logs-export" @click="exportLogs" :disabled="sidecarLogs.length === 0" title="导出 .log 文件">📥</button>
             <button class="logs-clear" @click="clearLogs" :disabled="sidecarLogs.length === 0" title="清空日志">🗑️</button>
             <button class="logs-close" @click="toggleLogs" title="关闭">×</button>
           </div>
@@ -782,9 +801,9 @@ main { flex: 1; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 /* v0.1.16: 日志面板（右侧抽屉 360px） */
 .logs-panel { position: absolute; top: 0; right: 0; width: 360px; height: 100%; background: #fafafa; border-left: 1px solid #ddd; display: flex; flex-direction: column; z-index: 50; box-shadow: -4px 0 16px rgba(0,0,0,0.08); }
 .logs-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #eee; background: white; font-size: 12px; font-weight: bold; }
-.logs-clear, .logs-close { background: transparent; border: none; color: #999; font-size: 14px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
-.logs-clear:hover:not(:disabled), .logs-close:hover { background: #f0f0f0; color: #333; }
-.logs-clear:disabled { opacity: 0.3; cursor: not-allowed; }
+.logs-clear, .logs-close, .logs-export { background: transparent; border: none; color: #999; font-size: 14px; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.logs-clear:hover:not(:disabled), .logs-close:hover, .logs-export:hover:not(:disabled) { background: #f0f0f0; color: #333; }
+.logs-clear:disabled, .logs-export:disabled { opacity: 0.3; cursor: not-allowed; }
 .logs-list { flex: 1; overflow-y: auto; padding: 4px 0; }
 .logs-empty { padding: 20px; color: #999; text-align: center; font-size: 12px; }
 .logs-item { padding: 4px 12px; font-family: monospace; font-size: 11px; line-height: 1.5; border-bottom: 1px solid #f0f0f0; word-break: break-all; }

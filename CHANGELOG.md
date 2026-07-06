@@ -2,6 +2,49 @@
 
 DeskPilot 所有重要变更记录。版本遵循 [Semantic Versioning](https://semver.org/)。
 
+## [tauri-v0.1.17] - 2026-07-02
+
+### 🆕 Sidecar 日志导出本地 .log 文件
+
+#### ✨ 新增能力
+- **「📥」按钮**：在日志抽屉头部，与 🗑️ 平级
+- **点击导出**：自动下载 `.log` 文件
+- **文件名**：`deskpilot-sidecar-<ISO timestamp>.log`（含毫秒精度）
+- **格式**：`HH:mm:SS.fff  <line>\n` 每行一条
+- **MIME 类型**：`text/plain;charset=utf-8`
+
+#### 🎨 UI 风格
+- 按钮复用 logs-clear 样式（透明灰）
+- hover 变深灰 + 圆角
+- 0 日志时禁用（opacity 0.3）
+
+#### 🛠 技术实现
+- `exportLogs()` 函数：拼 body → Blob → URL.createObjectURL → `<a download>` → revoke
+- 文件名时间戳：`new Date().toISOString().replace(/[:.]/g, "-")`（冒号点号转 - 兼容 Windows 文件名）
+- 复用 v0.1.3/v0.1.5 的 Blob 下载模式（统一规范）
+
+#### 📊 验证
+- ✅ `npm run build` 0 错 726ms / 14 modules transformed
+- ✅ 复用 v0.1.5 exportResult 函数族（架构一致）
+
+#### 🔧 关键决策
+- **纯前端 Blob**：不调 Tauri fs API（v0.1.5 导出策略一致）
+- **ISO 时间戳文件名**：避免重名 + 调试时按时间排序
+- **text/plain 而非 application/json**：用户可直接用文本编辑器看
+- **HTML 下载而非 Tauri dialog**：MVP 阶段，下载走浏览器原生
+
+#### 🔜 v0.1.18 候选（你拍板）
+- **A** 接 SemanticKernel（需 API key OPENAI/DEEPSEEK/ANTHROPIC）
+- **B** 日志按 level 过滤（info/warn/error）
+- **C** Sidecar stderr 按级别着色（绿/黄/红）
+- **D** 停
+
+#### 📦 项目变更
+- `tauri-app/src/App.vue`：
+  - +`exportLogs()` 函数（15 行）
+  - +`<button class="logs-export">📥</button>` 在抽屉头部
+  - +CSS `.logs-export` 选择器合并到 logs-clear 规则
+
 ## [tauri-v0.1.16] - 2026-07-02
 
 ### 🆕 Sidecar 日志重定向到 Tauri UI
